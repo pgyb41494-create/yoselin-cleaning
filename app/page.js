@@ -196,7 +196,7 @@ export default function HomePage() {
       {/* ── LOCATION ── */}
       <section className="hp-location" id="schedule">
         <div className="hp-section-label">Locations</div>
-        <div className="hp-location-cta-row">
+        <div className="hp-location-stack">
           <div className="hp-location-box">
             <span className="hp-loc-pin">📍</span>
             <div>
