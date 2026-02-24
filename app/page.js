@@ -1,9 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { auth, db, ADMIN_EMAIL } from '../lib/firebase';
+import {
+  GoogleAuthProvider, signInWithPopup, onAuthStateChanged,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  updateProfile, sendPasswordResetEmail,
+} from 'firebase/auth';
+import { auth, ADMIN_EMAIL } from '../lib/firebase';
 
 const reviews = [
   { name: 'Maria G.', stars: 5, text: 'Yoselin did an amazing job! My house has never looked this clean. She even organized my pantry without me asking. Highly recommend!', date: 'Jan 2025' },
@@ -15,18 +18,23 @@ const reviews = [
 export default function HomePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [signingIn, setSigningIn] = useState(false);
-  const [error, setError] = useState('');
+  const [authMode, setAuthMode] = useState(null); // null | 'login' | 'signup'
   const [tabOpen, setTabOpen] = useState(false);
 
+  // form fields
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
+    const unsub = onAuthStateChanged(auth, (user) => {
       if (user) {
-        if (user.email === ADMIN_EMAIL) {
-          router.push('/admin');
-        } else {
-          router.push('/dashboard');
-        }
+        if (user.email === ADMIN_EMAIL) router.push('/admin');
+        else router.push('/dashboard');
       } else {
         setLoading(false);
       }
@@ -34,28 +42,71 @@ export default function HomePage() {
     return () => unsub();
   }, [router]);
 
-  const signIn = async () => {
-    setError('');
-    setSigningIn(true);
+  const redirect = (user) => {
+    if (user.email === ADMIN_EMAIL) router.push('/admin');
+    else router.push('/dashboard');
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError(''); setBusy(true);
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    } catch (e) {
-      setError('Sign-in failed. Please try again.');
-      setSigningIn(false);
+      const result = await signInWithPopup(auth, new GoogleAuthProvider());
+      redirect(result.user);
+    } catch {
+      setError('Google sign-in failed. Please try again.');
+      setBusy(false);
     }
   };
 
-  if (loading) return (
-    <div className="spinner-page"><div className="spinner"></div></div>
-  );
+  const handleLogin = async () => {
+    setError(''); setBusy(true);
+    if (!email || !password) { setError('Please fill in all fields.'); setBusy(false); return; }
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      redirect(result.user);
+    } catch (e) {
+      const msg = e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found'
+        ? 'Incorrect email or password.' : 'Login failed. Please try again.';
+      setError(msg); setBusy(false);
+    }
+  };
+
+  const handleSignup = async () => {
+    setError(''); setBusy(true);
+    if (!name.trim()) { setError('Please enter your name.'); setBusy(false); return; }
+    if (!email || !password) { setError('Please fill in all fields.'); setBusy(false); return; }
+    if (password.length < 6) { setError('Password must be at least 6 characters.'); setBusy(false); return; }
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(result.user, { displayName: name.trim() });
+      redirect(result.user);
+    } catch (e) {
+      const msg = e.code === 'auth/email-already-in-use'
+        ? 'An account with this email already exists. Try logging in.' : 'Sign up failed. Please try again.';
+      setError(msg); setBusy(false);
+    }
+  };
+
+  const handleReset = async () => {
+    if (!email) { setError('Enter your email above first.'); return; }
+    setError(''); setBusy(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setResetSent(true); setBusy(false);
+    } catch {
+      setError('Could not send reset email.'); setBusy(false);
+    }
+  };
+
+  const closeModal = () => { setAuthMode(null); setError(''); setName(''); setEmail(''); setPassword(''); setResetSent(false); };
+
+  if (loading) return <div className="spinner-page"><div className="spinner"></div></div>;
 
   return (
     <div className="hp-root">
 
       {/* ── NAVBAR ── */}
       <nav className="hp-nav">
-        {/* Left tab button */}
         <div className="hp-tab-wrap">
           <button className="hp-tab-btn" onClick={() => setTabOpen(!tabOpen)}>
             <span /><span /><span />
@@ -69,17 +120,11 @@ export default function HomePage() {
             </div>
           )}
         </div>
-
-        {/* Center brand */}
         <div className="hp-nav-brand">Yoselins Cleaning</div>
-
-        {/* Right login */}
-        <button className="hp-nav-login" onClick={signIn} disabled={signingIn}>
-          {signingIn ? '...' : 'Login'}
-        </button>
+        <button className="hp-nav-login" onClick={() => setAuthMode('login')}>Login</button>
       </nav>
 
-      {/* ── HERO / INTRO ── */}
+      {/* ── HERO ── */}
       <section className="hp-hero">
         <p className="hp-hero-tagline">Ready To Make Your Place Shine</p>
         <h1 className="hp-hero-title">Professional Cleaning<br /><span>You Can Trust</span></h1>
@@ -88,15 +133,12 @@ export default function HomePage() {
           Based in Fairfield, Ohio — serving the surrounding area.
         </p>
         <div className="hp-hero-btns">
-          <button className="hp-btn-primary" onClick={signIn} disabled={signingIn}>
-            {signingIn ? 'Signing in...' : 'Login / Sign Up'}
-          </button>
-          <a href="#services" className="hp-btn-outline">Get a Quote</a>
+          <button className="hp-btn-primary" onClick={() => setAuthMode('signup')}>Create Account</button>
+          <button className="hp-btn-outline" onClick={() => setAuthMode('login')}>Log In</button>
         </div>
-        {error && <p className="hp-err">{error}</p>}
       </section>
 
-      {/* ── WHAT WE OFFER ── */}
+      {/* ── SERVICES ── */}
       <section className="hp-services" id="services">
         <div className="hp-section-label">What We Offer</div>
         <div className="hp-services-grid">
@@ -124,8 +166,6 @@ export default function HomePage() {
       {/* ── PICS / REVIEWS ── */}
       <section className="hp-gallery" id="pics">
         <div className="hp-section-label">Pics / Reviews</div>
-
-        {/* Photo placeholders */}
         <div className="hp-photos-row">
           {['Before & After', 'Kitchen Deep Clean', 'Bathroom Detail', 'Living Room', 'Office Space'].map((label, i) => (
             <div className="hp-photo" key={i}>
@@ -136,8 +176,6 @@ export default function HomePage() {
             </div>
           ))}
         </div>
-
-        {/* Reviews */}
         <div className="hp-reviews-grid" id="reviews">
           {reviews.map(r => (
             <div className="hp-review-card" key={r.name}>
@@ -165,10 +203,9 @@ export default function HomePage() {
             <p>Serving Fairfield and surrounding cities in the Cincinnati area</p>
           </div>
         </div>
-        <button className="hp-btn-primary" style={{marginTop:'28px'}} onClick={signIn} disabled={signingIn}>
-          {signingIn ? 'Signing in...' : 'Login | Sign Up'}
+        <button className="hp-btn-primary" style={{marginTop:'28px'}} onClick={() => setAuthMode('signup')}>
+          Login | Sign Up
         </button>
-        {error && <p className="hp-err">{error}</p>}
       </section>
 
       {/* ── FOOTER ── */}
@@ -185,6 +222,109 @@ export default function HomePage() {
         <div className="hp-footer-brand">✨ Yoselins Cleaning</div>
         <p className="hp-footer-copy">© 2025 Yoselins Cleaning. All rights reserved.</p>
       </footer>
+
+      {/* ── AUTH MODAL ── */}
+      {authMode && (
+        <div className="am-overlay" onClick={(e) => e.target.classList.contains('am-overlay') && closeModal()}>
+          <div className="am-modal">
+
+            {/* Close */}
+            <button className="am-close" onClick={closeModal}>✕</button>
+
+            {/* Logo */}
+            <div className="am-logo">✨</div>
+            <h2 className="am-title">
+              {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
+            </h2>
+            <p className="am-sub">
+              {authMode === 'login' ? 'Sign in to your account' : 'Set up your account in seconds'}
+            </p>
+
+            {resetSent ? (
+              <div className="am-reset-success">
+                <div style={{fontSize:'2rem',marginBottom:'8px'}}>📧</div>
+                <p>Password reset email sent! Check your inbox.</p>
+                <button className="am-link-btn" onClick={() => setResetSent(false)}>Back to Login</button>
+              </div>
+            ) : (
+              <>
+                {/* Name field — signup only */}
+                {authMode === 'signup' && (
+                  <div className="am-field">
+                    <label>Your Name</label>
+                    <input
+                      type="text"
+                      placeholder="First and last name"
+                      value={name}
+                      onChange={e => setName(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleSignup()}
+                    />
+                  </div>
+                )}
+
+                <div className="am-field">
+                  <label>Email</label>
+                  <input
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignup())}
+                  />
+                </div>
+
+                <div className="am-field">
+                  <label>Password</label>
+                  <div className="am-pass-wrap">
+                    <input
+                      type={showPass ? 'text' : 'password'}
+                      placeholder={authMode === 'signup' ? 'At least 6 characters' : 'Your password'}
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignup())}
+                    />
+                    <button className="am-eye" onClick={() => setShowPass(s => !s)}>
+                      {showPass ? '🙈' : '👁️'}
+                    </button>
+                  </div>
+                </div>
+
+                {error && <p className="am-error">{error}</p>}
+
+                <button
+                  className="am-submit"
+                  onClick={authMode === 'login' ? handleLogin : handleSignup}
+                  disabled={busy}
+                >
+                  {busy ? '...' : authMode === 'login' ? 'Log In' : 'Create Account'}
+                </button>
+
+                {/* Forgot password */}
+                {authMode === 'login' && (
+                  <button className="am-link-btn" onClick={handleReset} disabled={busy}>
+                    Forgot password?
+                  </button>
+                )}
+
+                <div className="am-divider"><span>or</span></div>
+
+                <button className="am-google" onClick={handleGoogleSignIn} disabled={busy}>
+                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="" />
+                  Continue with Google
+                </button>
+
+                <p className="am-switch">
+                  {authMode === 'login' ? (
+                    <>No account? <button onClick={() => { setAuthMode('signup'); setError(''); }}>Sign up</button></>
+                  ) : (
+                    <>Already have an account? <button onClick={() => { setAuthMode('login'); setError(''); }}>Log in</button></>
+                  )}
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );
