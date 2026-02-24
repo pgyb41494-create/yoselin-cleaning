@@ -52,14 +52,22 @@ export default function PortalPage() {
       </nav>
 
       <div className="portal-body">
+        {/* Back to dashboard */}
+        <button
+          onClick={() => router.push('/dashboard')}
+          style={{ display:'flex', alignItems:'center', gap:'6px', background:'none', border:'none', color:'#6b7280', fontSize:'.82rem', fontWeight:600, cursor:'pointer', marginBottom:'16px', padding:'6px 0' }}
+        >
+          ← Back to Dashboard
+        </button>
+
         <div className="portal-head">My Cleaning Request 📋</div>
-        <div className="portal-sub">Track your request and chat with Yoselin.</div>
+        <div className="portal-sub">Track your request and chat with us.</div>
 
         {!request ? (
           <div className="book-cta">
             <h2>No request yet</h2>
-            <p>Book your first cleaning and get an instant estimate!</p>
-            <a href="/book">Book a Cleaning →</a>
+            <p>Get a quote and get an instant estimate!</p>
+            <a href="/book">Get a Quote →</a>
           </div>
         ) : (
           <div className="req-card">
@@ -78,7 +86,15 @@ export default function PortalPage() {
                 <div className="price-chip-label">YOUR ESTIMATE</div>
                 <div className="price-chip-val">${request.estimate}</div>
               </div>
-              <button className="chat-open-btn" onClick={() => setChatOpen(true)}>💬 Chat with Yoselin</button>
+              <div style={{ display:'flex', gap:'10px', marginTop:'4px' }}>
+                <button className="chat-open-btn" style={{ flex:1 }} onClick={() => setChatOpen(true)}>💬 Chat with Owner</button>
+                <button
+                  onClick={() => router.push('/dashboard')}
+                  style={{ flex:1, padding:'12px', background:'#f3f4f6', border:'1.5px solid #e2e8f0', borderRadius:'12px', fontWeight:700, fontSize:'.88rem', cursor:'pointer', color:'#374151' }}
+                >
+                  🏠 My Dashboard
+                </button>
+              </div>
             </div>
           </div>
         )}
