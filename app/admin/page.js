@@ -21,13 +21,24 @@ export default function AdminPage() {
   const [qBusy, setQBusy] = useState(false);
   const [qDone, setQDone] = useState(false);
 
+  const [authError, setAuthError] = useState(false);
+
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      if (!u || u.email !== ADMIN_EMAIL) { router.push('/'); return; }
-      setUser(u);
+    let timeout;
+    try {
+      const unsub = onAuthStateChanged(auth, (u) => {
+        clearTimeout(timeout);
+        if (!u || u.email !== ADMIN_EMAIL) { router.push('/'); return; }
+        setUser(u);
+        setLoading(false);
+      });
+      // If auth never responds (blocked by ad blocker), show error after 8s
+      timeout = setTimeout(() => { setLoading(false); setAuthError(true); }, 8000);
+      return () => { unsub(); clearTimeout(timeout); };
+    } catch (e) {
       setLoading(false);
-    });
-    return () => unsub();
+      setAuthError(true);
+    }
   }, [router]);
 
   useEffect(() => {
@@ -77,6 +88,17 @@ export default function AdminPage() {
   };
 
   if (loading) return <div className="spinner-page"><div className="spinner"></div></div>;
+
+  if (authError) return (
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0d0d0d',padding:'20px'}}>
+      <div style={{background:'#181818',border:'1.5px solid #2a2a2a',borderRadius:'24px',padding:'48px 38px',maxWidth:'440px',textAlign:'center'}}>
+        <div style={{fontSize:'2.5rem',marginBottom:'12px'}}>🛡️</div>
+        <h2 style={{color:'white',fontFamily:'Playfair Display,serif',fontSize:'1.5rem',marginBottom:'8px'}}>Connection Blocked</h2>
+        <p style={{color:'#9ca3af',fontSize:'.9rem',lineHeight:1.6,marginBottom:'20px'}}>It looks like an ad blocker or browser extension is preventing this page from loading. Please disable your ad blocker for this site and refresh the page.</p>
+        <button onClick={() => window.location.reload()} style={{padding:'12px 28px',background:'linear-gradient(135deg,#1a6fd4,#db2777)',color:'white',border:'none',borderRadius:'12px',fontSize:'.95rem',fontWeight:700,cursor:'pointer'}}>Refresh Page</button>
+      </div>
+    </div>
+  );
 
   const newReqs = requests.filter(r => r.status === 'new');
   const confirmedReqs = requests.filter(r => r.status === 'confirmed');
