@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can read/write their own user document
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+      // Admin can read all users
+      allow read: if request.auth != null && request.auth.token.email == 'pgyb41494@gmail.com';
+    }
+
+    // Requests
+    match /requests/{reqId} {
+      // Customers can create and read their own requests
+      allow create: if request.auth != null;
+      allow read, update: if request.auth != null && (
+        resource.data.uid == request.auth.uid ||
+        request.auth.token.email == 'pgyb41494@gmail.com'
+      );
+      // Admin can read and update all requests
+      allow read, update, delete: if request.auth != null && request.auth.token.email == 'pgyb41494@gmail.com';
+    }
+
+    // Chat messages
+    match /chats/{reqId}/messages/{msgId} {
+      // Allow read/write if user owns the request or is admin
+      allow read, write: if request.auth != null;
+    }
+  }
+}
