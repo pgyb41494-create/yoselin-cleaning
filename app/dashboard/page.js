@@ -1,152 +1,191 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { auth, db, isAdmin } from '../../lib/firebase';
-import ChatPanel from '../../components/ChatPanel';
-
-const s = {
-  page: { minHeight: '100vh', background: '#f1f4f9' },
-  nav: { background: '#0d0d0d', padding: '15px 26px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  brand: { fontFamily: "'Playfair Display', serif", color: 'white', fontSize: '1.1rem', fontWeight: 700 },
-  brandSpan: { color: '#f472b6' },
-  logoutBtn: { background: '#222', border: '1px solid #444', color: '#c0c4cc', padding: '8px 16px', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontSize: '.79rem', cursor: 'pointer' },
-  body: { maxWidth: '700px', margin: '0 auto', padding: '28px 16px 60px' },
-  heading: { fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', fontWeight: 900, marginBottom: '4px', color: '#0d0d0d' },
-  sub: { fontSize: '.85rem', color: '#4b5563', marginBottom: '22px' },
-  card: { background: 'white', borderRadius: '18px', border: '1.5px solid #e2e8f0', marginBottom: '16px', overflow: 'hidden' },
-  cardHead: { background: '#0d0d0d', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  cardTitle: { fontWeight: 700, color: 'white', fontSize: '.95rem' },
-  cardBody: { padding: '18px 20px' },
-  row: { display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid #f3f4f6', fontSize: '.83rem' },
-  rowKey: { color: '#4b5563', fontWeight: 600 },
-  rowVal: { fontWeight: 600, color: '#111827' },
-  priceChip: { background: '#0d0d0d', borderRadius: '12px', padding: '16px 20px', textAlign: 'center', marginTop: '14px' },
-  priceLabel: { fontSize: '.72rem', color: '#9ca3af', marginBottom: '3px' },
-  priceVal: { fontFamily: "'Playfair Display', serif", fontSize: '2rem', fontWeight: 900, background: 'linear-gradient(135deg,#f472b6,#4a9eff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' },
-  chatBtn: { width: '100%', marginTop: '16px', padding: '13px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontSize: '.95rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' },
-  bookBtn: { display: 'block', width: '100%', marginTop: '12px', padding: '14px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '14px', fontFamily: "'DM Sans', sans-serif", fontSize: '1rem', fontWeight: 700, cursor: 'pointer', textAlign: 'center' },
-  emptyState: { textAlign: 'center', padding: '48px 20px', background: 'white', borderRadius: '18px', border: '1.5px solid #e2e8f0' },
-};
-
-function StatusBadge({ status }) {
-  const map = {
-    new: { bg: '#fce4f3', color: '#db2777', label: '🆕 Pending Review' },
-    confirmed: { bg: '#e8f2ff', color: '#1a6fd4', label: '✅ Confirmed' },
-    done: { bg: '#d1fae5', color: '#065f46', label: '🏁 Completed' },
-  };
-  const st = map[status] || map.new;
-  return (
-    <span style={{ background: st.bg, color: st.color, padding: '3px 10px', borderRadius: '99px', fontSize: '.69rem', fontWeight: 700 }}>
-      {st.label}
-    </span>
-  );
-}
+import { auth, db, ADMIN_EMAIL } from '../../lib/firebase';
+import Chat from '../../components/Chat';
 
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const [requests, setRequests] = useState([]);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatReq, setChatReq] = useState(null);
+  const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('home');
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
-      if (!u) { router.replace('/'); return; }
-      if (isAdmin(u)) { router.replace('/admin'); return; }
+      if (!u) { router.push('/'); return; }
+      if (u.email === ADMIN_EMAIL) { router.push('/admin'); return; }
       setUser(u);
-      setLoading(false);
     });
     return () => unsub();
   }, [router]);
 
   useEffect(() => {
     if (!user) return;
-    const q = query(collection(db, 'requests'), where('uid', '==', user.uid));
-    const unsub = onSnapshot(q, (snap) => {
-      const reqs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      reqs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-      setRequests(reqs);
+    const q = query(collection(db, 'requests'), where('userId', '==', user.uid));
+    const unsub = onSnapshot(q, snap => {
+      if (!snap.empty) {
+        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        setRequest(docs[0]);
+      }
+      setLoading(false);
     });
     return () => unsub();
   }, [user]);
 
-  function openChat(req) {
-    setChatReq(req);
-    setChatOpen(true);
-  }
+  if (loading) return <div className="spinner-page"><div className="spinner"></div></div>;
 
-  if (loading) return <div style={{ ...s.page, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ color: '#6b7280' }}>Loading...</div></div>;
+  const firstName = user?.displayName?.split(' ')[0] || 'there';
+  const statusLabel = request?.status === 'new' ? '⏳ Pending' : request?.status === 'confirmed' ? '✅ Confirmed' : '🏁 Completed';
+  const statusColor = request?.status === 'new' ? '#f59e0b' : request?.status === 'confirmed' ? '#10b981' : '#6b7280';
 
   return (
-    <div style={s.page}>
-      <nav style={s.nav}>
-        <div style={s.brand}>Yoselin's <span style={s.brandSpan}>Cleaning</span></div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {user?.photoURL && <img src={user.photoURL} alt="" style={{ width: 30, height: 30, borderRadius: '50%' }} />}
-          <button style={s.logoutBtn} onClick={() => signOut(auth).then(() => router.replace('/'))}>Sign Out</button>
+    <div className="cd-root">
+
+      {/* NAV */}
+      <nav className="cd-nav">
+        <div className="cd-nav-brand">✨ Yoselins Cleaning</div>
+        <div className="cd-nav-right">
+          {user?.photoURL && <img src={user.photoURL} className="nav-avatar" alt="" />}
+          <span className="cd-nav-name">{firstName}</span>
+          <button className="signout-btn" onClick={() => { signOut(auth); router.push('/'); }}>Sign Out</button>
         </div>
       </nav>
 
-      <div style={s.body}>
-        <div style={s.heading}>My Requests 📋</div>
-        <div style={s.sub}>Track your cleaning appointments and chat with Yoselin.</div>
+      {/* GREETING */}
+      <div className="cd-greeting">
+        <h1>Hey, {firstName} 👋</h1>
+        <p>What would you like to do today?</p>
+      </div>
 
-        {requests.length === 0 ? (
-          <div style={s.emptyState}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>🧹</div>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, marginBottom: '8px', color: '#0d0d0d' }}>No requests yet</div>
-            <div style={{ color: '#6b7280', fontSize: '.85rem', marginBottom: '20px' }}>Book your first cleaning and we'll take care of the rest!</div>
-            <button style={s.bookBtn} onClick={() => router.push('/booking')}>✨ Book a Cleaning</button>
-          </div>
-        ) : (
-          <>
-            <button style={{ ...s.bookBtn, marginBottom: '16px' }} onClick={() => router.push('/booking')}>✨ Book Another Cleaning</button>
-            {requests.map(req => (
-              <div key={req.id} style={s.card}>
-                <div style={s.cardHead}>
-                  <div style={s.cardTitle}>Cleaning Request</div>
-                  <StatusBadge status={req.status} />
+      {/* TAB BAR */}
+      <div className="cd-tabs">
+        <button className={`cd-tab ${activeTab === 'home' ? 'active' : ''}`} onClick={() => setActiveTab('home')}>🏠 Home</button>
+        <button className={`cd-tab ${activeTab === 'messages' ? 'active' : ''}`} onClick={() => setActiveTab('messages')}>💬 Messages</button>
+        <button className={`cd-tab ${activeTab === 'request' ? 'active' : ''}`} onClick={() => setActiveTab('request')}>📋 My Request</button>
+      </div>
+
+      <div className="cd-body">
+
+        {/* ── HOME TAB ── */}
+        {activeTab === 'home' && (
+          <div className="cd-home">
+
+            {/* Quick status card if they have a request */}
+            {request && (
+              <div className="cd-status-card">
+                <div className="csc-left">
+                  <div className="csc-label">Current Request</div>
+                  <div className="csc-id">#{request.id.slice(-6).toUpperCase()}</div>
+                  <div className="csc-status" style={{ color: statusColor }}>{statusLabel}</div>
                 </div>
-                <div style={s.cardBody}>
-                  {[
-                    ['Submitted', req.submittedAt],
-                    ['Service Date', req.date || 'TBD'],
-                    ['Time', req.time || 'TBD'],
-                    ['Address', req.address],
-                    ['Frequency', req.frequency],
-                    ['Add-Ons', req.addons || 'None'],
-                  ].map(([k, v]) => (
-                    <div key={k} style={{ ...s.row }}>
-                      <span style={s.rowKey}>{k}</span>
-                      <span style={s.rowVal}>{v}</span>
-                    </div>
-                  ))}
-                  <div style={s.priceChip}>
-                    <div style={s.priceLabel}>YOUR ESTIMATE</div>
-                    <div style={s.priceVal}>${req.estimate}</div>
+                <div className="csc-right">
+                  <div className="csc-price-label">Estimate</div>
+                  <div className="csc-price">${request.estimate}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Action cards */}
+            <div className="cd-actions-grid">
+              <div className="cd-action-card" onClick={() => request ? setActiveTab('request') : router.push('/book')}>
+                <div className="cac-icon">🗓</div>
+                <div className="cac-title">{request ? 'View Booking' : 'Book a Cleaning'}</div>
+                <div className="cac-desc">{request ? 'See your appointment details' : 'Get an instant quote and schedule'}</div>
+              </div>
+
+              <div className="cd-action-card" onClick={() => request ? setActiveTab('messages') : null} style={{ opacity: request ? 1 : 0.5, cursor: request ? 'pointer' : 'not-allowed' }}>
+                <div className="cac-icon">💬</div>
+                <div className="cac-title">Messages</div>
+                <div className="cac-desc">{request ? 'View and send messages' : 'Available after booking'}</div>
+              </div>
+
+              <div className="cd-action-card" onClick={() => router.push('/book')}>
+                <div className="cac-icon">💰</div>
+                <div className="cac-title">Get a Quote</div>
+                <div className="cac-desc">See pricing for your space</div>
+              </div>
+
+              <div className="cd-action-card" onClick={() => setActiveTab('request')} style={{ opacity: request ? 1 : 0.5, cursor: request ? 'pointer' : 'not-allowed' }}>
+                <div className="cac-icon">📋</div>
+                <div className="cac-title">My Request</div>
+                <div className="cac-desc">{request ? 'Track your cleaning request' : 'No request yet'}</div>
+              </div>
+            </div>
+
+            {/* No booking CTA */}
+            {!request && (
+              <div className="cd-cta-box">
+                <div style={{ fontSize: '2rem', marginBottom: '10px' }}>✨</div>
+                <h3>Ready to get started?</h3>
+                <p>Book your first cleaning and get an instant estimate in under 2 minutes.</p>
+                <button className="cd-btn-primary" onClick={() => router.push('/book')}>Book a Cleaning →</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── MESSAGES TAB ── */}
+        {activeTab === 'messages' && (
+          <div className="cd-messages">
+            {!request ? (
+              <div className="cd-empty">
+                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>💬</div>
+                <h3>No messages yet</h3>
+                <p>Messages will appear here after you book a cleaning.</p>
+                <button className="cd-btn-primary" style={{ marginTop: '16px' }} onClick={() => router.push('/book')}>Book a Cleaning →</button>
+              </div>
+            ) : (
+              <div className="cd-chat-wrap">
+                <Chat requestId={request.id} currentUser={user} senderRole="customer" onClose={null} inline={true} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── MY REQUEST TAB ── */}
+        {activeTab === 'request' && (
+          <div className="cd-request">
+            {!request ? (
+              <div className="cd-empty">
+                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>📋</div>
+                <h3>No request yet</h3>
+                <p>Book your first cleaning to see your request details here.</p>
+                <button className="cd-btn-primary" style={{ marginTop: '16px' }} onClick={() => router.push('/book')}>Book a Cleaning →</button>
+              </div>
+            ) : (
+              <div className="req-card">
+                <div className="req-head">
+                  <div className="req-title">Request #{request.id.slice(-6).toUpperCase()}</div>
+                  <span className={`badge badge-${request.status}`}>{statusLabel}</span>
+                </div>
+                <div className="req-body">
+                  <div className="prow"><span className="pk">Submitted</span><span className="pv">{request.submittedAt}</span></div>
+                  <div className="prow"><span className="pk">Service Date</span><span className="pv">{request.date || 'TBD'}</span></div>
+                  <div className="prow"><span className="pk">Time</span><span className="pv">{request.time || 'TBD'}</span></div>
+                  <div className="prow"><span className="pk">Address</span><span className="pv">{request.address}</span></div>
+                  <div className="prow"><span className="pk">Frequency</span><span className="pv">{request.frequency}</span></div>
+                  <div className="prow"><span className="pk">Add-Ons</span><span className="pv">{request.addons || 'None'}</span></div>
+                  <div className="prow"><span className="pk">Rooms</span><span className="pv">{request.rooms}</span></div>
+                  <div className="prow"><span className="pk">Bathrooms</span><span className="pv">{request.bathrooms}</span></div>
+                  <div className="price-chip">
+                    <div className="price-chip-label">YOUR ESTIMATE</div>
+                    <div className="price-chip-val">${request.estimate}</div>
                   </div>
-                  <button style={s.chatBtn} onClick={() => openChat(req)}>
-                    💬 Chat with Yoselin
+                  <button className="cd-btn-primary" style={{ width: '100%', marginTop: '14px' }} onClick={() => setActiveTab('messages')}>
+                    💬 View Messages
                   </button>
                 </div>
               </div>
-            ))}
-          </>
+            )}
+          </div>
         )}
-      </div>
 
-      {chatOpen && chatReq && (
-        <ChatPanel
-          requestId={chatReq.id}
-          clientName={user?.displayName || user?.email}
-          senderRole="customer"
-          senderName={user?.displayName?.split(' ')[0] || 'You'}
-          onClose={() => setChatOpen(false)}
-        />
-      )}
+      </div>
     </div>
   );
 }
