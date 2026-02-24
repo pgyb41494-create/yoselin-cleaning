@@ -196,16 +196,18 @@ export default function HomePage() {
       {/* ── LOCATION ── */}
       <section className="hp-location" id="schedule">
         <div className="hp-section-label">Locations</div>
-        <div className="hp-location-box">
-          <span className="hp-loc-pin">📍</span>
-          <div>
-            <strong>Based In Fairfield, Ohio</strong>
-            <p>Serving Fairfield and surrounding cities in the Cincinnati area</p>
+        <div className="hp-location-cta-row">
+          <div className="hp-location-box">
+            <span className="hp-loc-pin">📍</span>
+            <div>
+              <strong>Based In Fairfield, Ohio</strong>
+              <p>Serving Fairfield and surrounding cities in the Cincinnati area</p>
+            </div>
           </div>
+          <button className="hp-btn-primary hp-loc-btn" onClick={() => setAuthMode('signup')}>
+            Login | Sign Up
+          </button>
         </div>
-        <button className="hp-btn-primary" style={{marginTop:'28px'}} onClick={() => setAuthMode('signup')}>
-          Login | Sign Up
-        </button>
       </section>
 
       {/* ── FOOTER ── */}
