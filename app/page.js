@@ -8,7 +8,7 @@ import { auth, db, ADMIN_EMAIL } from '../lib/firebase';
 const reviews = [
   { name: 'Maria G.', stars: 5, text: 'Yoselin did an amazing job! My house has never looked this clean. She even organized my pantry without me asking. Highly recommend!', date: 'Jan 2025' },
   { name: 'Ashley R.', stars: 5, text: 'Super professional and thorough. I booked a deep clean and she went above and beyond. Will definitely be booking again every month!', date: 'Feb 2025' },
-  { name: 'Carlos M.', stars: 5, text: 'Best cleaning service I've ever used. On time, very detailed, and left everything sparkling. The booking process was so easy too.', date: 'Feb 2025' },
+  { name: 'Carlos M.', stars: 5, text: 'Best cleaning service I have ever used. On time, very detailed, and left everything sparkling. The booking process was so easy too.', date: 'Feb 2025' },
   { name: 'Tiffany W.', stars: 5, text: 'I was nervous about letting someone in my home but Yoselin made me feel so comfortable. Trustworthy, kind, and incredibly thorough.', date: 'Mar 2025' },
   { name: 'James P.', stars: 5, text: 'Moved into a new place and hired Yoselin for a move-in clean. It was spotless — smelled amazing and everything was gleaming. 10/10!', date: 'Mar 2025' },
   { name: 'Sandra L.', stars: 5, text: 'My go-to cleaner now. She remembers exactly how I like things and always does a little extra. Worth every penny!', date: 'Apr 2025' },
