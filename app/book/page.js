@@ -54,7 +54,7 @@ export default function BookPage() {
       // check if already has request
       const q = query(collection(db, 'requests'), where('userId', '==', u.uid));
       const snap = await getDocs(q);
-      if (!snap.empty) router.push('/portal');
+      if (!snap.empty) router.push('/dashboard');
     });
     return () => unsub();
   }, [router]);
@@ -418,9 +418,9 @@ export default function BookPage() {
           <p><strong>Yoselin will contact you within 24 hours</strong> to confirm your appointment.</p>
           <br />
           <p style={{fontSize:'.82rem',background:'#f3f4f6',borderRadius:'10px',padding:'12px'}}>
-            💡 You can track your request and chat with Yoselin in your <strong>portal</strong>.
+            💡 You can track your request and message us from your <strong>dashboard</strong>.
           </p>
-          <button className="sclose" onClick={() => router.push('/portal')}>Go to My Portal →</button>
+          <button className="sclose" onClick={() => router.push('/dashboard')}>Go to My Dashboard →</button>
         </div>
       </div>
     </div>
