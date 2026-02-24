@@ -503,9 +503,9 @@ tr:hover td { background: var(--soft); }
 .cd-request { display: flex; flex-direction: column; gap: 16px; }
 .chat-inline { display: flex; flex-direction: column; }
 
-/* ═══ LOCATION CTA ROW ═══ */
-.hp-location-cta-row { display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; max-width: 700px; margin: 0 auto; }
-.hp-loc-btn { white-space: nowrap; flex-shrink: 0; }
+/* ═══ LOCATION STACK ═══ */
+.hp-location-stack { display: flex; flex-direction: column; align-items: center; gap: 20px; max-width: 600px; margin: 0 auto; }
+.hp-loc-btn { width: 100%; max-width: 320px; text-align: center; justify-content: center; }
 
 /* ═══ CLIENT DASHBOARD REDESIGN ═══ */
 .cd-root { min-height: 100vh; background: #f4f6fb; }
@@ -695,3 +695,77 @@ tr:hover td { background: var(--soft); }
 .am-switch button { background: none; border: none; color: var(--blue); font-weight: 700; cursor: pointer; font-size: .8rem; }
 .am-reset-success { text-align: center; padding: 20px 0; }
 .am-reset-success p { color: #d1d5db; font-size: .88rem; margin-bottom: 14px; line-height: 1.6; }
+
+/* ═══ MOBILE RESPONSIVE ═══ */
+@media (max-width: 640px) {
+  /* Homepage navbar */
+  .hp-nav { padding: 0 12px; height: 52px; }
+  .hp-nav-brand { font-size: 1.1rem; }
+  .hp-nav-login { padding: 7px 14px; font-size: .8rem; }
+
+  /* Hero */
+  .hp-hero { padding: 32px 16px 28px; }
+  .hp-hero-title { font-size: 1.8rem; }
+  .hp-hero-tagline { font-size: .78rem; }
+  .hp-hero-intro { font-size: .84rem; }
+  .hp-hero-btns { flex-direction: column; gap: 10px; }
+  .hp-btn-primary, .hp-btn-outline { width: 100%; text-align: center; justify-content: center; padding: 13px 20px; }
+
+  /* Services */
+  .hp-services { padding: 28px 16px; }
+  .hp-services-grid { grid-template-columns: 1fr; gap: 12px; }
+  .hp-service-card { padding: 18px 16px; }
+
+  /* Gallery / reviews */
+  .hp-gallery { padding: 28px 16px; }
+  .hp-photos-row { gap: 10px; }
+  .hp-photo { min-width: 120px; height: 95px; }
+  .hp-reviews-grid { grid-template-columns: 1fr; gap: 12px; }
+  .hp-review-card { padding: 16px; }
+
+  /* Location */
+  .hp-location { padding: 28px 16px; }
+  .hp-location-box { padding: 14px 16px; flex-direction: column; text-align: center; gap: 8px; }
+  .hp-loc-btn { font-size: .9rem; padding: 13px 20px; }
+
+  /* Footer */
+  .hp-footer { padding: 28px 16px; }
+
+  /* Auth modal */
+  .am-modal { padding: 28px 20px 24px; border-radius: 18px; }
+
+  /* Dashboard */
+  .cd-hero { padding: 20px 16px; }
+  .cd-hero-inner { flex-direction: column; gap: 12px; }
+  .cd-hero-left h1 { font-size: 1.3rem; }
+  .cd-hero-status { width: 100%; }
+  .cd-body { padding: 16px 12px 60px; }
+  .cd-tiles { grid-template-columns: 1fr; }
+  .cd-welcome-card { min-height: 160px; }
+  .cwc-content { padding: 20px 18px; }
+  .cwc-content h2 { font-size: 1.2rem; }
+  .cd-booking-banner { flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px; }
+  .cbb-right { align-self: flex-start; }
+  .cdc-key { min-width: 90px; }
+
+  /* Admin */
+  .ad-stats { gap: 0; padding: 14px 16px; }
+  .ad-stat { min-width: 70px; padding: 0 8px; }
+  .ad-stat-val { font-size: 1.3rem; }
+  .ad-stat-label { font-size: .62rem; }
+  .ad-new-quote-btn { padding: 8px 12px; font-size: .76rem; }
+  .ad-tabs-row { padding: 0 12px; }
+  .ad-tab { padding: 12px 14px; font-size: .78rem; }
+  .ad-body { padding: 16px 12px 60px; }
+  .ad-cards { grid-template-columns: 1fr; }
+
+  /* Booking wizard */
+  .row2 { grid-template-columns: 1fr !important; }
+  .wizard-body { padding: 16px 12px 60px; }
+  .steps-row { gap: 4px; }
+  .dot-label { font-size: .6rem; }
+
+  /* Chat */
+  .chat-panel { border-radius: 0; }
+  .chat-msgs { height: 320px !important; }
+}
