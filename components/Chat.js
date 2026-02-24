@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { collection, addDoc, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
-export default function Chat({ requestId, currentUser, senderRole, clientName, onClose }) {
+export default function Chat({ requestId, currentUser, senderRole, clientName, onClose, inline = false }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const bottomRef = useRef(null);
@@ -34,8 +34,44 @@ export default function Chat({ requestId, currentUser, senderRole, clientName, o
     });
   };
 
-  const displayName = senderRole === 'admin' ? clientName || 'Client' : 'Yoselin';
+  // Inline mode — embedded in dashboard tab, no overlay
+  if (inline) {
+    return (
+      <div className="chat-inline">
+        <div className="chat-msgs" style={{ height: '400px', overflowY: 'auto', padding: '16px', background: '#f9fafb', borderRadius: '14px', marginBottom: '12px' }}>
+          {messages.length === 0 ? (
+            <div className="chat-empty">No messages yet. Say hello! 👋</div>
+          ) : messages.map(m => {
+            const isMe = m.sender === senderRole;
+            return (
+              <div key={m.id} className={`msg-wrap ${isMe ? 'mine' : ''}`}>
+                <div className="msg-sender">{m.senderName}</div>
+                <div className={`bubble ${isMe ? 'bubble-customer' : 'bubble-admin'}`}>
+                  {m.text}
+                  <div className="bubble-time">
+                    {m.createdAt?.toDate ? m.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          <div ref={bottomRef} />
+        </div>
+        <div className="chat-input-wrap" style={{ borderRadius: '12px', border: '1.5px solid var(--border)', padding: '10px 14px' }}>
+          <input
+            className="chat-input"
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && send()}
+            placeholder="Type a message..."
+          />
+          <button className="chat-send" onClick={send}>Send</button>
+        </div>
+      </div>
+    );
+  }
 
+  // Overlay mode — used in admin panel
   return (
     <div className="chat-overlay show">
       <div className="chat-panel">
@@ -43,11 +79,11 @@ export default function Chat({ requestId, currentUser, senderRole, clientName, o
           <div className="chat-head-info">
             <div className="chat-avatar">✨</div>
             <div>
-              <div className="chat-name">{senderRole === 'admin' ? `Chat with ${displayName}` : 'Chat with Yoselin'}</div>
+              <div className="chat-name">{senderRole === 'admin' ? `Chat with ${clientName || 'Client'}` : 'Messages'}</div>
               <div className="chat-status">Yoselin's Cleaning Service</div>
             </div>
           </div>
-          <button className="chat-close" onClick={onClose}>✕</button>
+          {onClose && <button className="chat-close" onClick={onClose}>✕</button>}
         </div>
 
         <div className="chat-msgs">
