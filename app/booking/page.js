@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db, isAdmin } from '../../lib/firebase';
+import { auth, db, ADMIN_EMAIL } from '../../lib/firebase';
 
 // ─── Pricing ───────────────────────────────────────────
 const bPrices = { half:15, small:50, medium:65, large:80 };
@@ -86,7 +86,7 @@ export default function BookingPage() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       if (!u) { router.replace('/'); return; }
-      if (isAdmin(u)) { router.replace('/admin'); return; }
+      if (u.email === ADMIN_EMAIL) { router.replace('/admin'); return; }
       setUser(u);
       setInfo(prev => ({ ...prev, email: u.email || '', firstName: u.displayName?.split(' ')[0] || '', lastName: u.displayName?.split(' ').slice(1).join(' ') || '' }));
     });
