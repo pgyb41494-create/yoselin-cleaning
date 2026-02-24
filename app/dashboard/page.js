@@ -21,14 +21,24 @@ export default function DashboardPage() {
   const [settingsErr, setSettingsErr] = useState('');
   const [settingsBusy, setSettingsBusy] = useState(false);
 
+  const [authError, setAuthError] = useState(false);
+
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      if (!u) { router.push('/'); return; }
-      if (u.email === ADMIN_EMAIL) { router.push('/admin'); return; }
-      setUser(u);
-      setSettingsName(u.displayName || '');
-    });
-    return () => unsub();
+    let timeout;
+    try {
+      const unsub = onAuthStateChanged(auth, (u) => {
+        clearTimeout(timeout);
+        if (!u) { router.push('/'); return; }
+        if (u.email === ADMIN_EMAIL) { router.push('/admin'); return; }
+        setUser(u);
+        setSettingsName(u.displayName || '');
+      });
+      timeout = setTimeout(() => { setLoading(false); setAuthError(true); }, 8000);
+      return () => { unsub(); clearTimeout(timeout); };
+    } catch (e) {
+      setLoading(false);
+      setAuthError(true);
+    }
   }, [router]);
 
   useEffect(() => {
@@ -72,6 +82,17 @@ export default function DashboardPage() {
   };
 
   if (loading) return <div className="spinner-page"><div className="spinner"></div></div>;
+
+  if (authError) return (
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0d0d0d',padding:'20px'}}>
+      <div style={{background:'#181818',border:'1.5px solid #2a2a2a',borderRadius:'24px',padding:'48px 38px',maxWidth:'440px',textAlign:'center'}}>
+        <div style={{fontSize:'2.5rem',marginBottom:'12px'}}>🛡️</div>
+        <h2 style={{color:'white',fontFamily:'Playfair Display,serif',fontSize:'1.5rem',marginBottom:'8px'}}>Connection Blocked</h2>
+        <p style={{color:'#9ca3af',fontSize:'.9rem',lineHeight:1.6,marginBottom:'20px'}}>It looks like an ad blocker or browser extension is preventing this page from loading. Please disable your ad blocker for this site and refresh the page.</p>
+        <button onClick={() => window.location.reload()} style={{padding:'12px 28px',background:'linear-gradient(135deg,#1a6fd4,#db2777)',color:'white',border:'none',borderRadius:'12px',fontSize:'.95rem',fontWeight:700,cursor:'pointer'}}>Refresh Page</button>
+      </div>
+    </div>
+  );
 
   const firstName = user?.displayName?.split(' ')[0] || 'there';
   const statusLabel = request?.status === 'new' ? 'Pending Review' : request?.status === 'confirmed' ? 'Confirmed' : 'Completed';
