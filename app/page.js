@@ -25,9 +25,7 @@ export default function HomePage() {
         if (user.email === ADMIN_EMAIL) {
           router.push('/admin');
         } else {
-          const q = query(collection(db, 'requests'), where('userId', '==', user.uid));
-          const snap = await getDocs(q);
-          router.push(snap.empty ? '/book' : '/portal');
+          router.push('/dashboard');
         }
       } else {
         setLoading(false);
