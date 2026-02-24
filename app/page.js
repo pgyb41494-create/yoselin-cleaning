@@ -30,16 +30,26 @@ export default function HomePage() {
   const [busy, setBusy] = useState(false);
   const [resetSent, setResetSent] = useState(false);
 
+  const [authError, setAuthError] = useState(false);
+
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        if (user.email === ADMIN_EMAIL) router.push('/admin');
-        else router.push('/dashboard');
-      } else {
-        setLoading(false);
-      }
-    });
-    return () => unsub();
+    let timeout;
+    try {
+      const unsub = onAuthStateChanged(auth, (user) => {
+        clearTimeout(timeout);
+        if (user) {
+          if (user.email === ADMIN_EMAIL) router.push('/admin');
+          else router.push('/dashboard');
+        } else {
+          setLoading(false);
+        }
+      });
+      timeout = setTimeout(() => { setLoading(false); setAuthError(true); }, 8000);
+      return () => { unsub(); clearTimeout(timeout); };
+    } catch (e) {
+      setLoading(false);
+      setAuthError(true);
+    }
   }, [router]);
 
   const redirect = (user) => {
@@ -104,6 +114,13 @@ export default function HomePage() {
 
   return (
     <div className="hp-root">
+
+      {/* AD BLOCKER WARNING */}
+      {authError && (
+        <div style={{background:'#fef3c7',borderBottom:'2px solid #f59e0b',padding:'10px 20px',textAlign:'center',fontSize:'.85rem',color:'#92400e',fontWeight:600}}>
+          ⚠️ An ad blocker may be interfering with login. Please disable it for this site if you have trouble signing in.
+        </div>
+      )}
 
       {/* ── NAVBAR ── */}
       <nav className="hp-nav">
