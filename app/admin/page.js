@@ -307,7 +307,7 @@ export default function AdminPage() {
                   const done = requests.filter(r => r.status === 'done');
                   if (!window.confirm('Delete all ' + done.length + ' completed requests? This cannot be undone.')) return;
                   for (const r of done) await deleteDoc(doc(db, 'requests', r.id));
-                }} style={{ padding: '8px 18px', background: 'rgba(239,68,68,.1)', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '10px', fontFamily: 'DM Sans', sans-serif, fontWeight: '700', fontSize: '.78rem', cursor: 'pointer' }}>
+                }} style={{ padding: '8px 18px', background: 'rgba(239,68,68,.1)', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.78rem', cursor: 'pointer' }}>
                   Delete All Completed ({requests.filter(r => r.status === 'done').length})
                 </button>
               )}
@@ -696,7 +696,7 @@ export default function AdminPage() {
             {/* Delete - only for completed requests */}
             {selected.status === 'done' && (
               <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #2a2a2a' }}>
-                <button onClick={() => deleteRequest(selected)} style={{ width: '100%', padding: '11px', background: 'rgba(239,68,68,.1)', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '12px', fontFamily: 'DM Sans', sans-serif, fontWeight: '700', fontSize: '.84rem', cursor: 'pointer', transition: 'all .2s' }}
+                <button onClick={() => deleteRequest(selected)} style={{ width: '100%', padding: '11px', background: 'rgba(239,68,68,.1)', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.84rem', cursor: 'pointer', transition: 'all .2s' }}
                   onMouseEnter={e => { e.target.style.background = 'rgba(239,68,68,.2)'; e.target.style.borderColor = '#ef4444'; }}
                   onMouseLeave={e => { e.target.style.background = 'rgba(239,68,68,.1)'; e.target.style.borderColor = 'rgba(239,68,68,.3)'; }}>
                   Delete This Request
