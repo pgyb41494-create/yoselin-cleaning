@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendEmailVerification } from 'firebase/auth';
@@ -9,11 +9,11 @@ import Chat from '../../components/Chat';
 
 // ── Loyalty tiers ─────────────────────────────────────
 function getLoyaltyTier(count) {
-  if (count >= 8) return { label: 'VIP Client',       icon: '💎', color: '#7c3aed', bg: 'rgba(124,58,237,.15)', next: null,      nextAt: null };
-  if (count >= 5) return { label: 'Gold Client',      icon: '🥇', color: '#f59e0b', bg: 'rgba(245,158,11,.15)', next: 'VIP',     nextAt: 8 };
-  if (count >= 3) return { label: 'Regular Client',   icon: '🥈', color: '#9ca3af', bg: 'rgba(156,163,175,.15)',next: 'Gold',    nextAt: 5 };
+  if (count >= 8) return { label: 'VIP Client',       icon: '��', color: '#7c3aed', bg: 'rgba(124,58,237,.15)', next: null,      nextAt: null };
+  if (count >= 5) return { label: 'Gold Client',      icon: '��', color: '#f59e0b', bg: 'rgba(245,158,11,.15)', next: 'VIP',     nextAt: 8 };
+  if (count >= 3) return { label: 'Regular Client',   icon: '��', color: '#9ca3af', bg: 'rgba(156,163,175,.15)',next: 'Gold',    nextAt: 5 };
   if (count >= 1) return { label: 'Returning Client', icon: '✨', color: '#10b981', bg: 'rgba(16,185,129,.15)', next: 'Regular', nextAt: 3 };
-  return                  { label: 'New Client',       icon: '🌟', color: '#60a5fa', bg: 'rgba(96,165,250,.15)', next: 'Returning',nextAt: 1 };
+  return                  { label: 'New Client',       icon: '��', color: '#60a5fa', bg: 'rgba(96,165,250,.15)', next: 'Returning',nextAt: 1 };
 }
 
 // ── Countdown helper ──────────────────────────────────
@@ -159,7 +159,7 @@ export default function DashboardPage() {
   if (authError) return (
     <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0d0d0d',padding:'20px'}}>
       <div style={{background:'#181818',border:'1.5px solid #2a2a2a',borderRadius:'24px',padding:'48px 38px',maxWidth:'440px',textAlign:'center'}}>
-        <div style={{fontSize:'2.5rem',marginBottom:'12px'}}>🛡️</div>
+        <div style={{fontSize:'2.5rem',marginBottom:'12px'}}>��️</div>
         <h2 style={{color:'white',fontFamily:"'Playfair Display',serif",fontSize:'1.5rem',marginBottom:'8px'}}>Connection Blocked</h2>
         <p style={{color:'#9ca3af',fontSize:'.9rem',lineHeight:1.6,marginBottom:'20px'}}>An ad blocker may be preventing this page. Please disable it and refresh.</p>
         <button onClick={() => window.location.reload()} style={{padding:'12px 28px',background:'linear-gradient(135deg,#1a6fd4,#db2777)',color:'white',border:'none',borderRadius:'12px',fontSize:'.95rem',fontWeight:700,cursor:'pointer'}}>Refresh Page</button>
@@ -173,17 +173,17 @@ export default function DashboardPage() {
   const isDone       = request?.status === 'done';
   const isConfirmed  = request?.status === 'confirmed';
   const isNew        = request?.status === 'new';
-  const statusLabel  = isNew ? 'Pending Review' : isConfirmed ? 'Confirmed ✅' : 'Completed 🏁';
+  const statusLabel  = isNew ? 'Pending Review' : isConfirmed ? 'Confirmed ✅' : 'Completed ��';
   const statusColor  = isNew ? '#f59e0b' : isConfirmed ? '#10b981' : '#6b7280';
   const isGoogleUser = user?.providerData?.[0]?.providerId === 'google.com';
   const countdown    = isConfirmed ? getCountdown(request?.date) : null;
   const loyalty      = getLoyaltyTier(allDone);
 
   const tabs = [
-    { id: 'home',     label: 'Home',     icon: '🏠' },
+    { id: 'home',     label: 'Home',     icon: '��' },
     ...(!isDone ? [
-      { id: 'messages', label: 'Messages', icon: '💬', badge: unreadCount },
-      { id: 'request',  label: 'My Quote', icon: '📋' },
+      { id: 'messages', label: 'Messages', icon: '��', badge: unreadCount },
+      { id: 'request',  label: 'My Quote', icon: '��' },
     ] : []),
     { id: 'settings', label: 'Settings',  icon: '⚙️' },
   ];
@@ -226,9 +226,9 @@ export default function DashboardPage() {
       <div className="cd-hero">
         <div className="cd-hero-inner">
           <div className="cd-hero-left">
-            <h1>Hey, {firstName} 👋</h1>
+            <h1>Hey, {firstName} ��</h1>
             <p style={{color:'#9ca3af',fontSize:'.9rem',marginTop:'4px'}}>
-              {isDone ? 'Your cleaning is complete — thank you!' :
+              {isDone ? 'Your cleaning is complete � thank you!' :
                isConfirmed ? 'Your appointment is confirmed!' :
                request ? 'We\'re reviewing your quote.' :
                'Welcome to your cleaning portal'}
@@ -239,11 +239,11 @@ export default function DashboardPage() {
             <div style={{display:'flex',alignItems:'center',gap:'7px',background:loyalty.bg,border:`1px solid ${loyalty.color}44`,borderRadius:'99px',padding:'6px 13px'}}>
               <span style={{fontSize:'1rem'}}>{loyalty.icon}</span>
               <span style={{fontSize:'.73rem',fontWeight:700,color:loyalty.color}}>{loyalty.label}</span>
-              {allDone > 0 && <span style={{fontSize:'.68rem',color:loyalty.color,opacity:.7}}>· {allDone} job{allDone!==1?'s':''}</span>}
+              {allDone > 0 && <span style={{fontSize:'.68rem',color:loyalty.color,opacity:.7}}>� {allDone} job{allDone!==1?'s':''}</span>}
             </div>
             {request && (
               <div className="cd-hero-status">
-                <div className="chs-icon">{isDone?'🏁':isConfirmed?'✅':'⏳'}</div>
+                <div className="chs-icon">{isDone?'��':isConfirmed?'✅':'⏳'}</div>
                 <div>
                   <div className="chs-label">Your Booking</div>
                   <div className="chs-status" style={{color:statusColor}}>{statusLabel}</div>
@@ -269,7 +269,7 @@ export default function DashboardPage() {
       {verifyBanner && (
         <div style={{background:'rgba(245,158,11,.1)',borderBottom:'2px solid rgba(245,158,11,.3)',padding:'12px 20px',display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'8px'}}>
           <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-            <span style={{fontSize:'1.1rem'}}>📬</span>
+            <span style={{fontSize:'1.1rem'}}>��</span>
             <div>
               <div style={{fontWeight:700,color:'#f59e0b',fontSize:'.85rem'}}>Please verify your email</div>
               <div style={{fontSize:'.76rem',color:'#9ca3af'}}>Check your inbox for a verification link to secure your account.</div>
@@ -308,7 +308,7 @@ export default function DashboardPage() {
                   display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
                 }}>
                   {countdown.days <= 1
-                    ? <span style={{fontSize:'1.5rem'}}>🎉</span>
+                    ? <span style={{fontSize:'1.5rem'}}>��</span>
                     : <>
                         <span style={{fontFamily:"'Playfair Display',serif",fontWeight:900,fontSize:'1.4rem',color:'white',lineHeight:1}}>{countdown.days}</span>
                         <span style={{fontSize:'.55rem',color:'#9ca3af',fontWeight:700,textTransform:'uppercase',letterSpacing:'.5px'}}>days</span>
@@ -317,7 +317,7 @@ export default function DashboardPage() {
                 </div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:'.7rem',fontWeight:700,color:'#9ca3af',textTransform:'uppercase',letterSpacing:'.5px',marginBottom:'3px'}}>
-                    {countdown.urgent?'🎉 Coming Up!':'📅 Upcoming'}
+                    {countdown.urgent?'�� Coming Up!':'�� Upcoming'}
                   </div>
                   <div style={{fontSize:'1rem',fontWeight:800,color:'white',marginBottom:'3px'}}>
                     {countdown.days===0?'Your cleaning is TODAY!':
@@ -325,7 +325,7 @@ export default function DashboardPage() {
                      `Cleaning in ${countdown.days} days`}
                   </div>
                   <div style={{fontSize:'.8rem',color:'#9ca3af'}}>
-                    {request.date}{request.time&&request.time!=='N/A'?` · ${request.time}`:''}
+                    {request.date}{request.time&&request.time!=='N/A'?` � ${request.time}`:''}
                   </div>
                 </div>
               </div>
@@ -346,7 +346,7 @@ export default function DashboardPage() {
               <div className="cd-welcome-card">
                 <div className="cwc-bg"/>
                 <div className="cwc-content">
-                  <div className="cwc-icon">🏁</div>
+                  <div className="cwc-icon">��</div>
                   <h2>Job Complete!</h2>
                   <p>Your cleaning has been marked complete. Hope everything is sparkling! Need another clean?</p>
                   <button className="cd-btn-primary cwc-btn" onClick={() => router.push('/book')}>Book Again →</button>
@@ -356,8 +356,8 @@ export default function DashboardPage() {
               <div className="cd-booking-banner">
                 <div className="cbb-left">
                   <div className="cbb-ref">Booking #{request.id.slice(-6).toUpperCase()}</div>
-                  <div className="cbb-date">📅 {request.date||'TBD'} · {request.time||'TBD'}</div>
-                  <div className="cbb-addr">📍 {request.address}</div>
+                  <div className="cbb-date">�� {request.date||'TBD'} � {request.time||'TBD'}</div>
+                  <div className="cbb-addr">�� {request.address}</div>
                 </div>
                 <div className="cbb-right">
                   <div className="cbb-price">${request.estimate}</div>
@@ -369,7 +369,7 @@ export default function DashboardPage() {
             {/* ── Status timeline (new + confirmed) ── */}
             {request && !isDone && (
               <Card>
-                <CardHead icon="🗺️" title="Booking Progress" sub="Where your request stands" />
+                <CardHead icon="��️" title="Booking Progress" sub="Where your request stands" />
                 <div style={{padding:'16px 20px',display:'flex',alignItems:'center',gap:'0'}}>
                   {[
                     { label:'Submitted', done:true  },
@@ -400,11 +400,11 @@ export default function DashboardPage() {
             {/* ── Leave a Review (done only) ── */}
             {isDone && !alreadyReview && (
               <Card>
-                <CardHead icon="⭐" title="Leave a Review" sub="Share your experience — it really helps us grow!" />
+                <CardHead icon="⭐" title="Leave a Review" sub="Share your experience � it really helps us grow!" />
                 <div style={{padding:'18px 20px'}}>
                   {reviewDone ? (
                     <div style={{textAlign:'center',padding:'16px 0'}}>
-                      <div style={{fontSize:'2.4rem',marginBottom:'10px'}}>🎉</div>
+                      <div style={{fontSize:'2.4rem',marginBottom:'10px'}}>��</div>
                       <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:'white',fontSize:'1.05rem',marginBottom:'5px'}}>Thank you!</div>
                       <div style={{color:'#9ca3af',fontSize:'.83rem'}}>Your review will appear on our homepage.</div>
                     </div>
@@ -490,7 +490,7 @@ export default function DashboardPage() {
                 </>
               ) : (
                 <div style={{fontSize:'.78rem',color:loyalty.color,fontWeight:700,textAlign:'center'}}>
-                  💎 Highest tier — thank you for your loyalty!
+                  �� Highest tier � thank you for your loyalty!
                 </div>
               )}
             </Card>
@@ -500,26 +500,26 @@ export default function DashboardPage() {
               {!isDone && (
                 <>
                   <div className="cd-tile" onClick={() => setActiveTab('messages')} style={{opacity:request?1:.45,pointerEvents:request?'auto':'none'}}>
-                    <div className="ct-icon-wrap ct-blue">💬</div>
+                    <div className="ct-icon-wrap ct-blue">��</div>
                     <div className="ct-text"><div className="ct-title">Messages</div><div className="ct-sub">{request?'Chat with us':'After quote'}</div></div>
-                    <div className="ct-arrow">›</div>
+                    <div className="ct-arrow">�</div>
                   </div>
                   <div className="cd-tile" onClick={() => setActiveTab('request')} style={{opacity:request?1:.45,pointerEvents:request?'auto':'none'}}>
-                    <div className="ct-icon-wrap ct-pink">📋</div>
+                    <div className="ct-icon-wrap ct-pink">��</div>
                     <div className="ct-text"><div className="ct-title">My Quote</div><div className="ct-sub">{request?'View details':'No quote yet'}</div></div>
-                    <div className="ct-arrow">›</div>
+                    <div className="ct-arrow">�</div>
                   </div>
                 </>
               )}
               <div className="cd-tile" onClick={() => router.push('/book')}>
-                <div className="ct-icon-wrap ct-green">💰</div>
+                <div className="ct-icon-wrap ct-green">��</div>
                 <div className="ct-text"><div className="ct-title">{request?'New Quote':'Get a Quote'}</div><div className="ct-sub">Instant estimate</div></div>
-                <div className="ct-arrow">›</div>
+                <div className="ct-arrow">�</div>
               </div>
               <div className="cd-tile" onClick={() => setActiveTab('settings')}>
                 <div className="ct-icon-wrap ct-gray">⚙️</div>
                 <div className="ct-text"><div className="ct-title">Settings</div><div className="ct-sub">Update your info</div></div>
-                <div className="ct-arrow">›</div>
+                <div className="ct-arrow">�</div>
               </div>
             </div>
 
@@ -533,7 +533,7 @@ export default function DashboardPage() {
           <div className="cd-tab-panel">
             {!request ? (
               <div className="cd-empty-state">
-                <div className="ces-icon">💬</div>
+                <div className="ces-icon">��</div>
                 <h3>No Messages Yet</h3>
                 <p>Once you submit a quote, you can message us here.</p>
                 <button className="cd-btn-primary" onClick={() => router.push('/book')}>Get a Quote →</button>
@@ -554,7 +554,7 @@ export default function DashboardPage() {
           <div className="cd-tab-panel">
             {!request ? (
               <div className="cd-empty-state">
-                <div className="ces-icon">📋</div>
+                <div className="ces-icon">��</div>
                 <h3>No Quote Yet</h3>
                 <p>Submit your first request and we'll get back to you within 24 hours.</p>
                 <button className="cd-btn-primary" onClick={() => router.push('/book')}>Get a Quote →</button>
@@ -576,21 +576,21 @@ export default function DashboardPage() {
                   </div>
                   <div className="cdc-grid">
                     {[
-                      ['🏠 Building',  request.buildingType||'Not specified'],
-                      ['📅 Date',      request.date||'TBD'],
-                      ['🕐 Time',      request.time||'TBD'],
-                      ['📍 Address',   request.address],
-                      ['🔁 Frequency', request.frequency],
-                      ['🛁 Bathrooms', request.bathrooms],
-                      ['🛏️ Rooms',    request.rooms],
+                      ['�� Building',  request.buildingType||'Not specified'],
+                      ['�� Date',      request.date||'TBD'],
+                      ['�� Time',      request.time||'TBD'],
+                      ['�� Address',   request.address],
+                      ['�� Frequency', request.frequency],
+                      ['�� Bathrooms', request.bathrooms],
+                      ['��️ Rooms',    request.rooms],
                       ['✨ Add-Ons',   request.addons||'None'],
-                      ['🐾 Pets',      request.pets==='yes'?'Yes':'No'],
+                      ['�� Pets',      request.pets==='yes'?'Yes':'No'],
                     ].map(([k,v]) => (
                       <div className="cdc-row" key={k}><span className="cdc-key">{k}</span><span className="cdc-val">{v}</span></div>
                     ))}
                   </div>
                   <button className="cd-btn-primary" style={{width:'100%',marginTop:'16px'}} onClick={() => setActiveTab('messages')}>
-                    💬 Send a Message
+                    �� Send a Message
                   </button>
                 </div>
               </div>

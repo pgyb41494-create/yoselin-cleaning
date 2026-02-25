@@ -1,4 +1,4 @@
-﻿'use client';
+﻿﻿'use client';
 import { useState, useEffect } from 'react';
 import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -50,6 +50,8 @@ const KITCHEN = [
   { key: 'basement', name: 'Basement', desc: 'Finished or unfinished' },
 ];
 
+const BUILDING_TYPES = ['House', 'Apartment', 'Condo', 'Party Event', 'Office', 'Bank', 'Retail Store'];
+
 const initBaths = () => ({ half: 0, small: 0, medium: 0, large: 0 });
 const initRooms = () => ({ bed_small: 0, bed_medium: 0, bed_large: 0, liv_medium: 0, liv_large: 0, office: 0, kit_small: 0, kit_medium: 0, kit_large: 0, laundry: 0, basement: 0 });
 
@@ -72,7 +74,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     lastName: user?.displayName?.split(' ').slice(1).join(' ') || '',
     phone: '', email: user?.email || '',
     address: '', date: '', time: '',
-    pets: 'no', otherReqs: '', notes: '', referral: '', access: "I'll be home",
+    buildingType: '', pets: 'no', otherReqs: '', notes: '', referral: '', access: "I'll be home",
   });
 
   useEffect(() => {
@@ -146,6 +148,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       phone: form.phone || 'N/A',
       email: form.email || user?.email || 'N/A',
       address: form.address || 'N/A',
+      buildingType: form.buildingType || 'Not specified',
       date: form.date || 'N/A',
       time: form.time || 'N/A',
       bathrooms: bathDesc,
@@ -184,7 +187,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
           await deleteDoc(doc(db, 'availability', slotDoc.id));
         });
       } catch (e) {
-        // Non-critical — booking still goes through
+        // Non-critical � booking still goes through
         console.warn('Could not remove availability slot:', e);
       }
     }
@@ -268,9 +271,18 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                     <input type="email" value={form.email} onChange={e => setF('email', e.target.value)} placeholder="your@email.com" />
                   </div>
                 </div>
-                <div className="fg">
-                  <label>Service Address</label>
-                  <input type="text" value={form.address} onChange={e => setF('address', e.target.value)} placeholder="Street address, City, ZIP" />
+                <div className="row2">
+                  <div className="fg">
+                    <label>Service Address</label>
+                    <input type="text" value={form.address} onChange={e => setF('address', e.target.value)} placeholder="Street address, City, ZIP" />
+                  </div>
+                  <div className="fg">
+                    <label>Building Type</label>
+                    <select value={form.buildingType} onChange={e => setF('buildingType', e.target.value)}>
+                      <option value="">Select building type</option>
+                      {BUILDING_TYPES.map(bt => <option key={bt} value={bt}>{bt}</option>)}
+                    </select>
+                  </div>
                 </div>
                 <div className="row2">
                   <div className="fg">
@@ -485,7 +497,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
             {/* ── Photo Upload ── */}
             <div className="wcard">
               <div className="card-header">
-                <div className="card-icon">📷</div>
+                <div className="card-icon">��</div>
                 <div>
                   <div className="card-title">Photos <span className="opt" style={{fontFamily:'DM Sans,sans-serif',fontWeight:400,fontSize:'.78rem',color:'#6b7280'}}>(optional)</span></div>
                   <div className="card-sub">Upload photos of your space to help us prepare</div>
@@ -493,9 +505,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               </div>
               <div className="card-body">
                 <label className="photo-upload-area" htmlFor="bw-photo-input" style={{cursor:'pointer'}}>
-                  <div className="pua-icon">📷</div>
+                  <div className="pua-icon">��</div>
                   <div className="pua-text">Tap to add photos</div>
-                  <div className="pua-sub">Up to 5 images · JPG or PNG</div>
+                  <div className="pua-sub">Up to 5 images � JPG or PNG</div>
                   <input
                     id="bw-photo-input"
                     type="file"
