@@ -4,7 +4,10 @@ import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, orderBy, query } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL } from '../../lib/firebase';
+import { useUnreadCount } from '../../lib/useUnreadCount';
+import { sendBookingConfirmation } from '../../lib/email';
 import Chat from '../../components/Chat';
+import { notifyBookingConfirmed } from '../../lib/notifications';
 import BookingWizard from '../../components/BookingWizard';
 
 function generateTimes() {
@@ -52,6 +55,19 @@ function getDaysInMonth(year, month) {
   return new Date(year, month + 1, 0).getDate();
 }
 
+// Shows a red count bubble when admin has unread messages from a customer
+function UnreadDot({ requestId }) {
+  const count = useUnreadCount(requestId, 'admin');
+  if (!count) return null;
+  return (
+    <span style={{
+      display:'inline-flex', alignItems:'center', justifyContent:'center',
+      background:'#ef4444', color:'white', fontSize:'.6rem', fontWeight:'800',
+      minWidth:'17px', height:'17px', borderRadius:'99px', padding:'0 4px', marginLeft:'6px',
+    }}>{count > 9 ? '9+' : count}</span>
+  );
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -76,6 +92,9 @@ export default function AdminPage() {
 
   // Client history
   const [historyClient, setHistoryClient] = useState(null);
+
+  // Unread messages map: { [requestId]: count }
+  const [unreadMap, setUnreadMap] = useState({});
 
   // Calendar state
   const now = new Date();
@@ -108,7 +127,12 @@ export default function AdminPage() {
     const unsubAvail = onSnapshot(collection(db, 'availability'), snap => {
       setAvailability(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
-    return () => { unsubReqs(); unsubAvail(); };
+    const unsubUnread = onSnapshot(collection(db, 'chatUnread'), snap => {
+      const map = {};
+      snap.docs.forEach(d => { map[d.id] = d.data().unreadByAdmin || 0; });
+      setUnreadMap(map);
+    });
+    return () => { unsubReqs(); unsubAvail(); unsubUnread(); };
   }, [user]);
 
   // Sync note text when selected changes
@@ -143,9 +167,17 @@ export default function AdminPage() {
 
   const confirmReq = async (req) => {
     await updateDoc(doc(db, 'requests', req.id), { status: 'confirmed' });
+    notifyBookingConfirmed({
+      clientName: req.name,
+      clientEmail: req.email,
+      date: req.date,
+      time: req.time,
+      address: req.address,
+      estimate: req.estimate,
+    });
     await addDoc(collection(db, 'chats', req.id, 'messages'), {
       text: 'Hi ' + req.name.split(' ')[0] + '! Your cleaning appointment has been confirmed for ' + req.date + '. Please reach out if you have any questions!',
-      sender: 'admin', senderName: 'Yoselin', createdAt: serverTimestamp(),
+      sender: 'admin', senderName: 'Owner', createdAt: serverTimestamp(),
     });
     setSelected(r => r ? { ...r, status: 'confirmed' } : r);
   };
@@ -329,8 +361,13 @@ export default function AdminPage() {
                       <tr key={r.id} style={{ borderBottom: '1px solid #1f1f1f' }}>
                         <td style={{ padding: '12px 15px', fontSize: '.83rem', color: '#d1d5db' }}>{r.submittedAt}</td>
                         <td style={{ padding: '12px 15px', fontSize: '.83rem', color: 'white' }}>
-                          <strong>{r.name}</strong>
-                          {r.createdByAdmin && <span style={{ fontSize: '.65rem', color: '#60a5fa', marginLeft: '6px', fontWeight: '700', background: 'rgba(96,165,250,.15)', padding: '2px 6px', borderRadius: '4px' }}>ADMIN</span>}
+                          <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                            <strong>{r.name}</strong>
+                            {r.createdByAdmin && <span style={{ fontSize: '.65rem', color: '#60a5fa', fontWeight: '700', background: 'rgba(96,165,250,.15)', padding: '2px 6px', borderRadius: '4px' }}>ADMIN</span>}
+                            {(unreadMap[r.id] || 0) > 0 && (
+                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444', display: 'inline-block', flexShrink: 0 }} title={${unreadMap[r.id]} unread message(s)}></span>
+                            )}
+                          </div>
                         </td>
                         <td style={{ padding: '12px 15px', fontSize: '.83rem', color: '#d1d5db' }}>{r.email}</td>
                         <td style={{ padding: '12px 15px', fontSize: '.83rem', color: '#d1d5db' }}>{r.date}</td>
@@ -764,8 +801,14 @@ export default function AdminPage() {
       )}
 
       {chatReq && (
-        <Chat requestId={chatReq.id} currentUser={user} senderRole="admin" clientName={chatReq.name} onClose={() => setChatReq(null)} />
+        <Chat requestId={chatReq.id} currentUser={user} senderRole="admin" clientName={chatReq.name} clientEmail={chatReq.email} onClose={() => setChatReq(null)} />
       )}
     </div>
   );
 }
+
+
+
+
+
+
