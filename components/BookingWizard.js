@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 import { collection, addDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -8,11 +8,11 @@ const RPRICES = { bed_small: 25, bed_medium: 30, bed_large: 35, liv_medium: 15, 
 const RNAMES = { bed_small: 'Small Bedroom', bed_medium: 'Medium Bedroom', bed_large: 'Large/Master Bedroom', liv_medium: 'Medium Living Room', liv_large: 'Large Living Room', office: 'Office/Study', kit_small: 'Small Kitchen', kit_medium: 'Medium Kitchen', kit_large: 'Large Kitchen', laundry: 'Laundry Room', basement: 'Basement' };
 const BNAMES = { half: 'Half Bath', small: 'Small Full Bath', medium: 'Medium Full Bath', large: 'Large/Master Bath' };
 const EXTRAS = [
-  { id: 'cabinets', name: '🗄️ Inside Cabinets', price: 16 },
-  { id: 'pantry', name: '🥫 Inside Pantry', price: 20 },
-  { id: 'oven', name: '🔥 Inside Oven', price: 16 },
-  { id: 'fridge', name: '❄️ Inside Fridge', price: 16 },
-  { id: 'baseboard', name: '🧹 Baseboard Cleaning', price: 5 },
+  { id: 'cabinets', name: 'ðŸ—„ï¸ Inside Cabinets', price: 16 },
+  { id: 'pantry', name: 'ðŸ¥« Inside Pantry', price: 20 },
+  { id: 'oven', name: 'ðŸ”¥ Inside Oven', price: 16 },
+  { id: 'fridge', name: 'â„ï¸ Inside Fridge', price: 16 },
+  { id: 'baseboard', name: 'ðŸ§¹ Baseboard Cleaning', price: 5 },
 ];
 const FREQS = [
   { val: 'once', label: 'One-Time', tag: 'No discount', pct: 0 },
@@ -142,7 +142,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
         <div className="steps-row">
           {stepLabels.map((label, i) => (
             <div key={i} className={`step-dot ${i < step ? 'done' : i === step ? 'active' : ''}`}>
-              <div className="dot-circle">{i < step ? '✓' : i + 1}</div>
+              <div className="dot-circle">{i < step ? 'âœ“' : i + 1}</div>
               <div className="dot-label">{label}</div>
             </div>
           ))}
@@ -153,7 +153,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
         {step === 0 && (
           <div>
-            <div className="page-title">👤 {adminMode ? 'Client Information' : 'Your Information'}</div>
+            <div className="page-title">ðŸ‘¤ {adminMode ? 'Client Information' : 'Your Information'}</div>
             <div className="page-sub">Tell us who you are and how to reach you</div>
             <div className="wcard"><div className="card-body">
               <div className="row2">
@@ -196,18 +196,18 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                 </div>
               </div>
             </div></div>
-            <div className="nav-btns"><button className="btn-next" onClick={() => goTo(1)}>Next: Rooms →</button></div>
+            <div className="nav-btns"><button className="btn-next" onClick={() => goTo(1)}>Next: Rooms â†’</button></div>
           </div>
         )}
 
         {step === 1 && (
           <div>
-            <div className="page-title">🏠 Rooms</div>
+            <div className="page-title">ðŸ  Rooms</div>
             <div className="page-sub">Select room types and quantities</div>
             <div className="wcard">
-              <div className="card-header"><div className="card-icon">🛏️</div><div><div className="card-title">Bedrooms & Living</div></div></div>
+              <div className="card-header"><div className="card-icon">ðŸ›ï¸</div><div><div className="card-title">Bedrooms & Living</div></div></div>
               <div className="card-body"><div className="bath-box">
-                {[['bed_small','🛏️ Small Bedroom','Guest room or compact space'],['bed_medium','🛏️ Medium Bedroom','Standard bedroom with closet'],['bed_large','🌟 Large/Master Bedroom','Spacious with en-suite'],['liv_medium','🛋️ Medium Living Room','Standard family room'],['liv_large','🛋️ Large Living Room','Open-concept space'],['office','💼 Office/Study','Home office or reading room']].map(([k,n,d]) => (
+                {[['bed_small','ðŸ›ï¸ Small Bedroom','Guest room or compact space'],['bed_medium','ðŸ›ï¸ Medium Bedroom','Standard bedroom with closet'],['bed_large','ðŸŒŸ Large/Master Bedroom','Spacious with en-suite'],['liv_medium','ðŸ›‹ï¸ Medium Living Room','Standard family room'],['liv_large','ðŸ›‹ï¸ Large Living Room','Open-concept space'],['office','ðŸ’¼ Office/Study','Home office or reading room']].map(([k,n,d]) => (
                   <div className="bath-row" key={k}>
                     <div style={{flex:1}}><div className="bname">{n}</div><div className="bdesc">{d}</div></div>
                     <QCtrl val={rooms[k]} onInc={() => setRooms(r=>({...r,[k]:r[k]+1}))} onDec={() => setRooms(r=>({...r,[k]:Math.max(0,r[k]-1)}))} />
@@ -216,9 +216,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               </div></div>
             </div>
             <div className="wcard">
-              <div className="card-header"><div className="card-icon">🛁</div><div><div className="card-title">Bathrooms</div></div></div>
+              <div className="card-header"><div className="card-icon">ðŸ›</div><div><div className="card-title">Bathrooms</div></div></div>
               <div className="card-body"><div className="bath-box">
-                {[['half','🚽 Half Bathroom','Toilet + sink only'],['small','🚿 Small Full Bathroom','Shower or tub'],['medium','🛁 Medium Full Bathroom','Standard with tub + shower'],['large','🌟 Large/Master Bathroom','Large shower, spacious']].map(([k,n,d]) => (
+                {[['half','ðŸš½ Half Bathroom','Toilet + sink only'],['small','ðŸš¿ Small Full Bathroom','Shower or tub'],['medium','ðŸ› Medium Full Bathroom','Standard with tub + shower'],['large','ðŸŒŸ Large/Master Bathroom','Large shower, spacious']].map(([k,n,d]) => (
                   <div className="bath-row" key={k}>
                     <div style={{flex:1}}><div className="bname">{n}</div><div className="bdesc">{d}</div></div>
                     <QCtrl val={baths[k]} onInc={() => setBaths(b=>({...b,[k]:b[k]+1}))} onDec={() => setBaths(b=>({...b,[k]:Math.max(0,b[k]-1)}))} />
@@ -227,9 +227,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               </div></div>
             </div>
             <div className="wcard">
-              <div className="card-header"><div className="card-icon">🍳</div><div><div className="card-title">Kitchen & Utility</div></div></div>
+              <div className="card-header"><div className="card-icon">ðŸ³</div><div><div className="card-title">Kitchen & Utility</div></div></div>
               <div className="card-body"><div className="bath-box">
-                {[['kit_small','🍳 Small Kitchen','Compact kitchenette'],['kit_medium','🍳 Medium Kitchen','Standard with dining'],['kit_large','🍳 Large Kitchen','Open-concept or chefs kitchen'],['laundry','🧺 Laundry Room','Washer/dryer area'],['basement','🏚️ Basement','Finished or unfinished']].map(([k,n,d]) => (
+                {[['kit_small','ðŸ³ Small Kitchen','Compact kitchenette'],['kit_medium','ðŸ³ Medium Kitchen','Standard with dining'],['kit_large','ðŸ³ Large Kitchen','Open-concept or chefs kitchen'],['laundry','ðŸ§º Laundry Room','Washer/dryer area'],['basement','ðŸšï¸ Basement','Finished or unfinished']].map(([k,n,d]) => (
                   <div className="bath-row" key={k}>
                     <div style={{flex:1}}><div className="bname">{n}</div><div className="bdesc">{d}</div></div>
                     <QCtrl val={rooms[k]} onInc={() => setRooms(r=>({...r,[k]:r[k]+1}))} onDec={() => setRooms(r=>({...r,[k]:Math.max(0,r[k]-1)}))} />
@@ -238,15 +238,15 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               </div></div>
             </div>
             <div className="nav-btns">
-              <button className="btn-back" onClick={() => goTo(0)}>← Back</button>
-              <button className="btn-next" onClick={() => goTo(2)}>Next: Add-Ons →</button>
+              <button className="btn-back" onClick={() => goTo(0)}>â† Back</button>
+              <button className="btn-next" onClick={() => goTo(2)}>Next: Add-Ons â†’</button>
             </div>
           </div>
         )}
 
         {step === 2 && (
           <div>
-            <div className="page-title">✨ Add-On Services</div>
+            <div className="page-title">âœ¨ Add-On Services</div>
             <div className="page-sub">Select any extras (all optional)</div>
             <div className="wcard"><div className="card-body">
               <div className="extras-grid">
@@ -259,13 +259,13 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                 <div className={`eitem ${windows?'selected':''}`} onClick={() => setWinModal(true)}>
                   <input type="checkbox" readOnly checked={windows} style={{width:'17px',height:'17px',accentColor:'var(--pink-deep)',flexShrink:0,marginTop:'2px'}} />
                   <div>
-                    <div className="ename">🪟 Window Trim</div>
-                    {windows && <div style={{fontSize:'.72rem',color:'var(--blue)',fontWeight:'700',marginTop:'3px'}}>✓ {windowCount} window{windowCount>1?'s':''}</div>}
+                    <div className="ename">ðŸªŸ Window Trim</div>
+                    {windows && <div style={{fontSize:'.72rem',color:'var(--blue)',fontWeight:'700',marginTop:'3px'}}>âœ“ {windowCount} window{windowCount>1?'s':''}</div>}
                   </div>
                 </div>
               </div>
               <div className="divider"></div>
-              <div className="fg"><label>🐾 Any Pets?</label>
+              <div className="fg"><label>ðŸ¾ Any Pets?</label>
                 <select value={form.pets} onChange={e => setF('pets', e.target.value)}>
                   <option value="no">No</option><option value="yes">Yes</option>
                 </select>
@@ -275,15 +275,15 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               </div>
             </div></div>
             <div className="nav-btns">
-              <button className="btn-back" onClick={() => goTo(1)}>← Back</button>
-              <button className="btn-next" onClick={() => goTo(3)}>Next: Frequency →</button>
+              <button className="btn-back" onClick={() => goTo(1)}>â† Back</button>
+              <button className="btn-next" onClick={() => goTo(3)}>Next: Frequency â†’</button>
             </div>
           </div>
         )}
 
         {step === 3 && (
           <div>
-            <div className="page-title">📅 Frequency & Discounts</div>
+            <div className="page-title">ðŸ“… Frequency & Discounts</div>
             <div className="page-sub">More frequent = more savings!</div>
             <div className="wcard"><div className="card-body">
               <label style={{display:'block',fontWeight:'700',fontSize:'.82rem',color:'#111827',marginBottom:'12px'}}>Cleaning Frequency</label>
@@ -299,35 +299,35 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                 <div className="fg"><label>First time with us?</label>
                   <select value={firstTime} onChange={e => setFirstTime(e.target.value)}>
                     <option value="no">No, returning client</option>
-                    <option value="yes">Yes! First time — 10% off</option>
+                    <option value="yes">Yes! First time â€” 10% off</option>
                   </select>
                 </div>
                 <div className="fg"><label>Senior discount?</label>
                   <select value={senior} onChange={e => setSenior(e.target.value)}>
                     <option value="no">No</option>
-                    <option value="yes">Yes — 10% senior discount</option>
+                    <option value="yes">Yes â€” 10% senior discount</option>
                   </select>
                 </div>
               </div>
             </div></div>
             <div className={`wt-toggle ${walkthrough?'active':''}`} onClick={() => setWalkthrough(w=>!w)}>
-              <div style={{fontSize:'1.3rem'}}>🏠</div>
+              <div style={{fontSize:'1.3rem'}}>ðŸ </div>
               <div className="wt-info"><div className="wt-title">Request a Walk-Through</div><div className="wt-desc">We'll visit before cleaning to give an exact quote</div></div>
-              <div className="wt-check">{walkthrough?'✓':''}</div>
+              <div className="wt-check">{walkthrough?'âœ“':''}</div>
             </div>
             <div className="nav-btns" style={{marginTop:'18px'}}>
-              <button className="btn-back" onClick={() => goTo(2)}>← Back</button>
-              <button className="btn-next" onClick={() => goTo(4)}>Next: Review →</button>
+              <button className="btn-back" onClick={() => goTo(2)}>â† Back</button>
+              <button className="btn-next" onClick={() => goTo(4)}>Next: Review â†’</button>
             </div>
           </div>
         )}
 
         {step === 4 && (
           <div>
-            <div className="page-title">📋 Review & Submit</div>
+            <div className="page-title">ðŸ“‹ Review & Submit</div>
             <div className="page-sub">Add notes and submit</div>
             <div className="wcard">
-              <div className="card-header"><div className="card-icon">📝</div><div><div className="card-title">Special Requests</div></div></div>
+              <div className="card-header"><div className="card-icon">ðŸ“</div><div><div className="card-title">Special Requests</div></div></div>
               <div className="card-body">
                 <div className="fg"><label>Notes <span className="opt">(optional)</span></label>
                   <textarea value={form.notes} onChange={e => setF('notes', e.target.value)} placeholder="e.g. Focus on kitchen, allergic to certain products..." />
@@ -370,14 +370,14 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                 </div>
               </div>
               <div className="plines">
-                {price.lines.map((l,i) => <div key={i} className="pline">✓ {l}</div>)}
+                {price.lines.map((l,i) => <div key={i} className="pline">âœ“ {l}</div>)}
               </div>
-              <div className="pnote">💡 Final price confirmed after walkthrough or consultation.</div>
+              <div className="pnote">ðŸ’¡ Final price confirmed after walkthrough or consultation.</div>
             </div>
             <div className="nav-btns">
-              <button className="btn-back" onClick={() => goTo(3)}>← Back</button>
+              <button className="btn-back" onClick={() => goTo(3)}>â† Back</button>
               <button className="btn-next" onClick={handleSubmit} disabled={submitting}>
-                {submitting ? 'Submitting...' : `✨ Submit Request — $${price.final}`}
+                {submitting ? 'Submitting...' : `âœ¨ Submit Request â€” $${price.final}`}
               </button>
             </div>
           </div>
@@ -386,7 +386,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
       <div className={`win-overlay ${winModal?'show':''}`}>
         <div className="win-modal">
-          <h3>🪟 Window Trim</h3>
+          <h3>ðŸªŸ Window Trim</h3>
           <p>How many windows would you like cleaned?</p>
           <div style={{display:'flex',justifyContent:'center',gap:'14px',marginBottom:'18px'}}>
             <button className="qbtn" style={{width:'38px',height:'38px',fontSize:'1.3rem'}} onClick={() => setWindowCount(w=>Math.max(1,w-1))}>-</button>
@@ -401,3 +401,4 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     </div>
   );
 }
+
