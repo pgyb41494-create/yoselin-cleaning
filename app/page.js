@@ -132,8 +132,6 @@ export default function HomePage() {
             <div className="hp-tab-dropdown">
               <a href="#pics" onClick={() => setTabOpen(false)}>📸 Pics</a>
               <a href="#reviews" onClick={() => setTabOpen(false)}>⭐ Reviews</a>
-              <a href="#services" onClick={() => setTabOpen(false)}>💰 Quotes</a>
-              <a href="#schedule" onClick={() => setTabOpen(false)}>🗓 Schedule</a>
             </div>
           )}
         </div>
