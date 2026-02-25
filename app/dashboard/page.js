@@ -2,27 +2,27 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL } from '../../lib/firebase';
 import Chat from '../../components/Chat';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState(null);
+  const [user, setUser]       = useState(null);
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('home');
-
-  // Settings state
-  const [settingsName, setSettingsName] = useState('');
-  const [currentPass, setCurrentPass] = useState('');
-  const [newPass, setNewPass] = useState('');
-  const [settingsMsg, setSettingsMsg] = useState('');
-  const [settingsErr, setSettingsErr] = useState('');
-  const [settingsBusy, setSettingsBusy] = useState(false);
-
   const [authError, setAuthError] = useState(false);
 
+  // Settings
+  const [settingsName, setSettingsName] = useState('');
+  const [currentPass,  setCurrentPass]  = useState('');
+  const [newPass,      setNewPass]      = useState('');
+  const [settingsMsg,  setSettingsMsg]  = useState('');
+  const [settingsErr,  setSettingsErr]  = useState('');
+  const [settingsBusy, setSettingsBusy] = useState(false);
+
+  // ── Auth ──────────────────────────────────────────────
   useEffect(() => {
     let timeout;
     try {
@@ -35,12 +35,10 @@ export default function DashboardPage() {
       });
       timeout = setTimeout(() => { setLoading(false); setAuthError(true); }, 8000);
       return () => { unsub(); clearTimeout(timeout); };
-    } catch (e) {
-      setLoading(false);
-      setAuthError(true);
-    }
+    } catch { setLoading(false); setAuthError(true); }
   }, [router]);
 
+  // ── Request listener ──────────────────────────────────
   useEffect(() => {
     if (!user) return;
     const q = query(collection(db, 'requests'), where('userId', '==', user.uid));
@@ -55,12 +53,13 @@ export default function DashboardPage() {
     return () => unsub();
   }, [user]);
 
+  // ── Settings actions ──────────────────────────────────
   const saveName = async () => {
     if (!settingsName.trim()) { setSettingsErr('Name cannot be empty.'); return; }
     setSettingsBusy(true); setSettingsErr(''); setSettingsMsg('');
     try {
       await updateProfile(user, { displayName: settingsName.trim() });
-      setSettingsMsg('Name updated successfully!');
+      setSettingsMsg('Name updated!');
     } catch { setSettingsErr('Failed to update name.'); }
     setSettingsBusy(false);
   };
@@ -88,17 +87,31 @@ export default function DashboardPage() {
       <div style={{background:'#181818',border:'1.5px solid #2a2a2a',borderRadius:'24px',padding:'48px 38px',maxWidth:'440px',textAlign:'center'}}>
         <div style={{fontSize:'2.5rem',marginBottom:'12px'}}>🛡️</div>
         <h2 style={{color:'white',fontFamily:'Playfair Display,serif',fontSize:'1.5rem',marginBottom:'8px'}}>Connection Blocked</h2>
-        <p style={{color:'#9ca3af',fontSize:'.9rem',lineHeight:1.6,marginBottom:'20px'}}>It looks like an ad blocker or browser extension is preventing this page from loading. Please disable your ad blocker for this site and refresh the page.</p>
+        <p style={{color:'#9ca3af',fontSize:'.9rem',lineHeight:1.6,marginBottom:'20px'}}>An ad blocker may be preventing this page from loading. Please disable it and refresh.</p>
         <button onClick={() => window.location.reload()} style={{padding:'12px 28px',background:'linear-gradient(135deg,#1a6fd4,#db2777)',color:'white',border:'none',borderRadius:'12px',fontSize:'.95rem',fontWeight:700,cursor:'pointer'}}>Refresh Page</button>
       </div>
     </div>
   );
 
-  const firstName = user?.displayName?.split(' ')[0] || 'there';
-  const statusLabel = request?.status === 'new' ? 'Pending Review' : request?.status === 'confirmed' ? 'Confirmed' : 'Completed';
-  const statusColor = request?.status === 'new' ? '#f59e0b' : request?.status === 'confirmed' ? '#10b981' : '#6b7280';
-  const statusIcon = request?.status === 'new' ? '⏳' : request?.status === 'confirmed' ? '✅' : '🏁';
+  const firstName    = user?.displayName?.split(' ')[0] || 'there';
+  const isDone       = request?.status === 'done';
+  const statusLabel  = request?.status === 'new' ? 'Pending Review' : request?.status === 'confirmed' ? 'Confirmed' : 'Completed';
+  const statusColor  = request?.status === 'new' ? '#f59e0b' : request?.status === 'confirmed' ? '#10b981' : '#6b7280';
+  const statusIcon   = request?.status === 'new' ? '⏳' : request?.status === 'confirmed' ? '✅' : '🏁';
   const isGoogleUser = user?.providerData?.[0]?.providerId === 'google.com';
+
+  // Tabs — hide Messages & My Quote when job is done
+  const tabs = [
+    { id: 'home',     label: 'Home',     icon: '🏠' },
+    ...(!isDone ? [
+      { id: 'messages', label: 'Messages', icon: '💬' },
+      { id: 'request',  label: 'My Quote', icon: '📋' },
+    ] : []),
+    { id: 'settings', label: 'Settings', icon: '⚙️' },
+  ];
+
+  // If current tab was hidden, fall back to home
+  const safeTab = tabs.find(t => t.id === activeTab) ? activeTab : 'home';
 
   return (
     <div className="cd-root">
@@ -116,12 +129,12 @@ export default function DashboardPage() {
         </div>
       </nav>
 
-      {/* HERO GREETING */}
+      {/* HERO */}
       <div className="cd-hero">
         <div className="cd-hero-inner">
           <div className="cd-hero-left">
             <h1>Hey, {firstName} 👋</h1>
-            <p>Welcome to your cleaning portal</p>
+            <p>{isDone ? 'Your cleaning is complete — thank you!' : 'Welcome to your cleaning portal'}</p>
           </div>
           {request && (
             <div className="cd-hero-status">
@@ -138,15 +151,10 @@ export default function DashboardPage() {
 
       {/* TAB BAR */}
       <div className="cd-tabs">
-        {[
-          { id: 'home', label: 'Home', icon: '🏠' },
-          { id: 'messages', label: 'Messages', icon: '💬' },
-          { id: 'request', label: 'My Quote', icon: '📋' },
-          { id: 'settings', label: 'Settings', icon: '⚙️' },
-        ].map(t => (
+        {tabs.map(t => (
           <button
             key={t.id}
-            className={`cd-tab ${activeTab === t.id ? 'active' : ''}`}
+            className={`cd-tab ${safeTab === t.id ? 'active' : ''}`}
             onClick={() => setActiveTab(t.id)}
           >
             <span className="cd-tab-icon">{t.icon}</span>
@@ -158,20 +166,29 @@ export default function DashboardPage() {
       <div className="cd-body">
 
         {/* ── HOME TAB ── */}
-        {activeTab === 'home' && (
+        {safeTab === 'home' && (
           <div className="cd-home">
 
-            {/* Big quote CTA or status */}
+            {/* Status / CTA banner */}
             {!request ? (
               <div className="cd-welcome-card">
                 <div className="cwc-bg" />
                 <div className="cwc-content">
                   <div className="cwc-icon">✨</div>
                   <h2>Get Your Free Quote</h2>
-                  <p>Fill out a quick form and we'll send you a custom estimate for your space. No commitment needed.</p>
-                  <button className="cd-btn-primary cwc-btn" onClick={() => router.push('/book')}>
-                    Get a Quote →
-                  </button>
+                  <p>Fill out a quick form and we'll send you a custom estimate. No commitment needed.</p>
+                  <button className="cd-btn-primary cwc-btn" onClick={() => router.push('/book')}>Get a Quote →</button>
+                </div>
+              </div>
+            ) : isDone ? (
+              /* ── Completed banner ── */
+              <div className="cd-welcome-card">
+                <div className="cwc-bg" />
+                <div className="cwc-content">
+                  <div className="cwc-icon">🏁</div>
+                  <h2>Job Complete!</h2>
+                  <p>Your cleaning has been marked complete. Hope everything looks sparkling! Need another clean?</p>
+                  <button className="cd-btn-primary cwc-btn" onClick={() => router.push('/book')}>Book Again →</button>
                 </div>
               </div>
             ) : (
@@ -188,24 +205,36 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Quick action tiles */}
+            {/* Tiles — only show Chat & My Quote when not done */}
             <div className="cd-tiles">
-              <div className="cd-tile" onClick={() => setActiveTab('messages')} style={{opacity: request ? 1 : .45, pointerEvents: request ? 'auto' : 'none'}}>
-                <div className="ct-icon-wrap ct-blue">💬</div>
-                <div className="ct-text">
-                  <div className="ct-title">Messages</div>
-                  <div className="ct-sub">{request ? 'Chat with us' : 'Available after quote'}</div>
-                </div>
-                <div className="ct-arrow">›</div>
-              </div>
-              <div className="cd-tile" onClick={() => setActiveTab('request')} style={{opacity: request ? 1 : .45, pointerEvents: request ? 'auto' : 'none'}}>
-                <div className="ct-icon-wrap ct-pink">📋</div>
-                <div className="ct-text">
-                  <div className="ct-title">My Quote</div>
-                  <div className="ct-sub">{request ? 'View details' : 'No quote yet'}</div>
-                </div>
-                <div className="ct-arrow">›</div>
-              </div>
+              {!isDone && (
+                <>
+                  <div
+                    className="cd-tile"
+                    onClick={() => setActiveTab('messages')}
+                    style={{opacity: request ? 1 : .45, pointerEvents: request ? 'auto' : 'none'}}
+                  >
+                    <div className="ct-icon-wrap ct-blue">💬</div>
+                    <div className="ct-text">
+                      <div className="ct-title">Messages</div>
+                      <div className="ct-sub">{request ? 'Chat with us' : 'Available after quote'}</div>
+                    </div>
+                    <div className="ct-arrow">›</div>
+                  </div>
+                  <div
+                    className="cd-tile"
+                    onClick={() => setActiveTab('request')}
+                    style={{opacity: request ? 1 : .45, pointerEvents: request ? 'auto' : 'none'}}
+                  >
+                    <div className="ct-icon-wrap ct-pink">📋</div>
+                    <div className="ct-text">
+                      <div className="ct-title">My Quote</div>
+                      <div className="ct-sub">{request ? 'View details' : 'No quote yet'}</div>
+                    </div>
+                    <div className="ct-arrow">›</div>
+                  </div>
+                </>
+              )}
               <div className="cd-tile" onClick={() => router.push('/book')}>
                 <div className="ct-icon-wrap ct-green">💰</div>
                 <div className="ct-text">
@@ -226,8 +255,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ── MESSAGES TAB ── */}
-        {activeTab === 'messages' && (
+        {/* ── MESSAGES TAB (hidden when done) ── */}
+        {safeTab === 'messages' && !isDone && (
           <div className="cd-tab-panel">
             {!request ? (
               <div className="cd-empty-state">
@@ -248,8 +277,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ── MY QUOTE TAB ── */}
-        {activeTab === 'request' && (
+        {/* ── MY QUOTE TAB (hidden when done) ── */}
+        {safeTab === 'request' && !isDone && (
           <div className="cd-tab-panel">
             {!request ? (
               <div className="cd-empty-state">
@@ -275,15 +304,15 @@ export default function DashboardPage() {
                   </div>
                   <div className="cdc-grid">
                     {[
-                      ['🏠 Building', request.buildingType || 'Not specified'],
-                      ['📅 Date', request.date || 'TBD'],
-                      ['🕐 Time', request.time || 'TBD'],
-                      ['📍 Address', request.address],
-                      ['🔁 Frequency', request.frequency],
-                      ['🛁 Bathrooms', request.bathrooms],
-                      ['🛏️ Rooms', request.rooms],
-                      ['✨ Add-Ons', request.addons || 'None'],
-                      ['🐾 Pets', request.pets === 'yes' ? 'Yes' : 'No'],
+                      ['🏠 Building',   request.buildingType || 'Not specified'],
+                      ['📅 Date',       request.date   || 'TBD'],
+                      ['🕐 Time',       request.time   || 'TBD'],
+                      ['📍 Address',    request.address],
+                      ['🔁 Frequency',  request.frequency],
+                      ['🛁 Bathrooms',  request.bathrooms],
+                      ['🛏️ Rooms',     request.rooms],
+                      ['✨ Add-Ons',    request.addons || 'None'],
+                      ['🐾 Pets',       request.pets === 'yes' ? 'Yes' : 'No'],
                     ].map(([k, v]) => (
                       <div className="cdc-row" key={k}>
                         <span className="cdc-key">{k}</span>
@@ -291,7 +320,11 @@ export default function DashboardPage() {
                       </div>
                     ))}
                   </div>
-                  <button className="cd-btn-primary" style={{width:'100%', marginTop:'16px'}} onClick={() => setActiveTab('messages')}>
+                  <button
+                    className="cd-btn-primary"
+                    style={{width:'100%', marginTop:'16px'}}
+                    onClick={() => setActiveTab('messages')}
+                  >
                     💬 Send a Message
                   </button>
                 </div>
@@ -301,7 +334,7 @@ export default function DashboardPage() {
         )}
 
         {/* ── SETTINGS TAB ── */}
-        {activeTab === 'settings' && (
+        {safeTab === 'settings' && (
           <div className="cd-tab-panel">
             <div className="cd-section-header">
               <h3>Account Settings</h3>
@@ -311,7 +344,6 @@ export default function DashboardPage() {
             {settingsMsg && <div className="cd-alert cd-alert-success">✅ {settingsMsg}</div>}
             {settingsErr && <div className="cd-alert cd-alert-error">⚠️ {settingsErr}</div>}
 
-            {/* Profile */}
             <div className="cd-settings-card">
               <div className="csc-section-title">Profile</div>
               <div className="cd-settings-avatar">
@@ -338,27 +370,16 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Password — only for email users */}
             {!isGoogleUser ? (
               <div className="cd-settings-card">
                 <div className="csc-section-title">Change Password</div>
                 <div className="cd-settings-field">
                   <label>Current Password</label>
-                  <input
-                    type="password"
-                    value={currentPass}
-                    onChange={e => setCurrentPass(e.target.value)}
-                    placeholder="Enter current password"
-                  />
+                  <input type="password" value={currentPass} onChange={e => setCurrentPass(e.target.value)} placeholder="Enter current password" />
                 </div>
                 <div className="cd-settings-field">
                   <label>New Password</label>
-                  <input
-                    type="password"
-                    value={newPass}
-                    onChange={e => setNewPass(e.target.value)}
-                    placeholder="At least 6 characters"
-                  />
+                  <input type="password" value={newPass} onChange={e => setNewPass(e.target.value)} placeholder="At least 6 characters" />
                 </div>
                 <button className="cd-btn-primary" onClick={savePassword} disabled={settingsBusy}>
                   {settingsBusy ? 'Updating...' : 'Update Password'}
@@ -367,17 +388,14 @@ export default function DashboardPage() {
             ) : (
               <div className="cd-settings-card cd-settings-muted">
                 <div className="csc-section-title">Password</div>
-                <p>You signed in with Google. Password changes are managed through your Google account.</p>
+                <p>You signed in with Google. Manage your password through your Google account.</p>
               </div>
             )}
 
-            {/* Danger zone */}
             <div className="cd-settings-card cd-danger-card">
               <div className="csc-section-title">Sign Out</div>
-              <p>This will sign you out of your account on this device.</p>
-              <button className="cd-btn-danger" onClick={() => { signOut(auth); router.push('/'); }}>
-                Sign Out
-              </button>
+              <p>This will sign you out on this device.</p>
+              <button className="cd-btn-danger" onClick={() => { signOut(auth); router.push('/'); }}>Sign Out</button>
             </div>
           </div>
         )}
