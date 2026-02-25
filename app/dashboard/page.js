@@ -58,7 +58,6 @@ export default function DashboardPage() {
   const [settingsErr,  setSettingsErr]  = useState('');
   const [settingsBusy, setSettingsBusy] = useState(false);
 
-  const [unreadCount, setUnreadCount] = useState(0);
   const [verifyBanner, setVerifyBanner] = useState(false);
   const [verifySent, setVerifySent] = useState(false);
 

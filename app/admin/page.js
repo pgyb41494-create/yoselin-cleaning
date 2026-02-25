@@ -5,9 +5,8 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, orderBy, query } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL } from '../../lib/firebase';
 import { useUnreadCount } from '../../lib/useUnreadCount';
-import { sendBookingConfirmation } from '../../lib/email';
-import Chat from '../../components/Chat';
 import { notifyBookingConfirmed } from '../../lib/notifications';
+import Chat from '../../components/Chat';
 import BookingWizard from '../../components/BookingWizard';
 
 function generateTimes() {
@@ -365,7 +364,7 @@ export default function AdminPage() {
                             <strong>{r.name}</strong>
                             {r.createdByAdmin && <span style={{ fontSize: '.65rem', color: '#60a5fa', fontWeight: '700', background: 'rgba(96,165,250,.15)', padding: '2px 6px', borderRadius: '4px' }}>ADMIN</span>}
                             {(unreadMap[r.id] || 0) > 0 && (
-                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444', display: 'inline-block', flexShrink: 0 }} title={${unreadMap[r.id]} unread message(s)}></span>
+                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444', display: 'inline-block', flexShrink: 0 }} title={`${unreadMap[r.id]} unread message(s)`}></span>
                             )}
                           </div>
                         </td>
