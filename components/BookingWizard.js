@@ -1,7 +1,9 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../lib/firebase';
+import { notifyNewBooking } from '../lib/notifications';
 
 const BPRICES = { half: 15, small: 50, medium: 65, large: 80 };
 const RPRICES = { bed_small: 25, bed_medium: 30, bed_large: 35, liv_medium: 15, liv_large: 35, office: 10, kit_small: 45, kit_medium: 55, kit_large: 70, laundry: 10, basement: 75 };
@@ -61,6 +63,8 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   const [firstTime, setFirstTime] = useState('no');
   const [senior, setSenior] = useState('no');
   const [submitting, setSubmitting] = useState(false);
+  const [photoFiles, setPhotoFiles] = useState([]);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const [availability, setAvailability] = useState([]);
 
   const [form, setForm] = useState({
@@ -118,6 +122,21 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   const handleSubmit = async () => {
     if (!form.firstName.trim()) { alert('Please enter a name.'); return; }
     setSubmitting(true);
+    // Upload photos to Firebase Storage
+    let photoUrls = [];
+    if (photoFiles.length > 0) {
+      setPhotoUploading(true);
+      try {
+        for (const file of photoFiles) {
+          const path = `bookings/${user?.uid || 'admin'}/${Date.now()}_${file.name}`;
+          const snap = await uploadBytes(storageRef(storage, path), file);
+          photoUrls.push(await getDownloadURL(snap.ref));
+        }
+      } catch (e) {
+        console.warn('Photo upload failed:', e);
+      }
+      setPhotoUploading(false);
+    }
     const bathDesc = Object.keys(baths).filter(k => baths[k] > 0).map(k => baths[k] + ' ' + BNAMES[k]).join(', ') || 'None';
     const roomDesc = Object.keys(rooms).filter(k => rooms[k] > 0).map(k => rooms[k] + ' ' + RNAMES[k]).join(', ') || 'None';
     const req = {
@@ -145,11 +164,12 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       submittedAt: new Date().toLocaleString(),
       createdAt: serverTimestamp(),
       createdByAdmin: adminMode,
+      photoUrls,
     };
     const docRef = await addDoc(collection(db, 'requests'), req);
     await addDoc(collection(db, 'chats', docRef.id, 'messages'), {
       text: "Hi " + form.firstName + "! Thank you for reaching out to Yoselin's Cleaning Service. I've received your request and will get back to you within 24 hours to confirm your appointment!",
-      sender: 'admin', senderName: 'Yoselin', createdAt: serverTimestamp(),
+      sender: 'admin', senderName: 'Owner', createdAt: serverTimestamp(),
     });
     // ── Remove the booked time slot so no one else can pick it ──
     if (form.date && form.time && form.date !== 'N/A' && form.time !== 'N/A') {
@@ -168,9 +188,19 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
         console.warn('Could not remove availability slot:', e);
       }
     }
+    // Email admin about new booking (if EmailJS is configured)
+    notifyNewBooking({
+      clientName: req.name,
+      clientEmail: req.email,
+      date: req.date,
+      address: req.address,
+      estimate: req.estimate,
+    }).catch(() => {});
     setSubmitting(false);
     if (onDone) onDone(docRef.id);
   };
+
+  const removePhoto = (i) => setPhotoFiles(prev => prev.filter((_, j) => j !== i));
 
   const stepLabels = ['Contact', 'Rooms', 'Add-Ons', 'Frequency', 'Review'];
 
@@ -451,6 +481,46 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
           <div>
             <div className="page-title">Review and Submit</div>
             <div className="page-sub">Add notes and submit</div>
+
+            {/* ── Photo Upload ── */}
+            <div className="wcard">
+              <div className="card-header">
+                <div className="card-icon">📷</div>
+                <div>
+                  <div className="card-title">Photos <span className="opt" style={{fontFamily:'DM Sans,sans-serif',fontWeight:400,fontSize:'.78rem',color:'#6b7280'}}>(optional)</span></div>
+                  <div className="card-sub">Upload photos of your space to help us prepare</div>
+                </div>
+              </div>
+              <div className="card-body">
+                <label className="photo-upload-area" htmlFor="bw-photo-input" style={{cursor:'pointer'}}>
+                  <div className="pua-icon">📷</div>
+                  <div className="pua-text">Tap to add photos</div>
+                  <div className="pua-sub">Up to 5 images · JPG or PNG</div>
+                  <input
+                    id="bw-photo-input"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={e => {
+                      const files = Array.from(e.target.files).slice(0, 5);
+                      setPhotoFiles(files);
+                    }}
+                  />
+                </label>
+                {photoFiles.length > 0 && (
+                  <div className="photo-preview-row">
+                    {photoFiles.map((f, i) => (
+                      <div key={i} className="photo-thumb">
+                        <img src={URL.createObjectURL(f)} alt={`photo ${i + 1}`} />
+                        <button type="button" className="photo-remove" onClick={() => removePhoto(i)}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="wcard">
               <div className="card-header">
                 <div className="card-icon">N</div>
@@ -517,7 +587,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
             <div className="nav-btns">
               <button className="btn-back" onClick={() => goTo(3)}>Back</button>
               <button className="btn-next" onClick={handleSubmit} disabled={submitting}>
-                {submitting ? 'Submitting...' : 'Submit Request - $' + price.final}
+                {photoUploading ? 'Uploading photos...' : submitting ? 'Submitting...' : "Submit Request - $" + price.final}
               </button>
             </div>
           </div>
@@ -526,3 +596,5 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     </div>
   );
 }
+
+
