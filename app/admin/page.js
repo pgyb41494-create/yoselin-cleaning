@@ -17,7 +17,7 @@ export default function AdminPage() {
   const [showQuoteBuilder, setShowQuoteBuilder] = useState(false);
 
   // Manual quote form
-  const [qForm, setQForm] = useState({ name: '', email: '', phone: '', address: '', date: '', time: '', service: 'Standard Clean', estimate: '', notes: '' });
+  const [qForm, setQForm] = useState({ name: '', email: '', phone: '', address: '', date: '', time: '', service: 'Standard Clean', buildingType: '', estimate: '', notes: '' });
   const [qBusy, setQBusy] = useState(false);
   const [qDone, setQDone] = useState(false);
 
@@ -77,6 +77,7 @@ export default function AdminPage() {
       bathrooms: '—', rooms: '—', addons: '—', pets: 'no',
       submittedAt: new Date().toLocaleString(),
       createdAt: serverTimestamp(),
+      buildingType: qForm.buildingType || 'Not specified',
       isManual: true,
     });
     await addDoc(collection(db, 'chats', ref.id, 'messages'), {
@@ -214,7 +215,7 @@ export default function AdminPage() {
             </div>
             {[
               ['Submitted', selected.submittedAt], ['Client', selected.name], ['Phone', selected.phone],
-              ['Email', selected.email], ['Address', selected.address], ['Date Requested', selected.date],
+              ['Email', selected.email], ['Building Type', selected.buildingType || '—'], ['Address', selected.address], ['Date Requested', selected.date],
               ['Time', selected.time], ['Bathrooms', selected.bathrooms], ['Rooms', selected.rooms],
               ['Add-Ons', selected.addons], ['Pets', selected.pets === 'yes' ? 'Yes' : 'No'],
               ['Other Requests', selected.otherRequests || '—'], ['Walk-Through', selected.walkthrough || 'No'],
@@ -257,6 +258,20 @@ export default function AdminPage() {
                   <div className="fg"><label>Phone</label><input type="tel" value={qForm.phone} onChange={e => setQ('phone', e.target.value)} placeholder="(555) 000-0000" /></div>
                 </div>
                 <div className="fg"><label>Email</label><input type="email" value={qForm.email} onChange={e => setQ('email', e.target.value)} placeholder="client@email.com" /></div>
+                <div className="fg">
+                  <label>Building Type</label>
+                  <div className="building-grid">
+                    {[
+                      {val:'House',icon:'🏠'},{val:'Apartment',icon:'🏢'},{val:'Condo',icon:'🏙️'},
+                      {val:'Party / Event',icon:'🎉'},{val:'Office',icon:'💼'},{val:'Bank',icon:'🏦'},{val:'Retail Store',icon:'🛍️'},
+                    ].map(b => (
+                      <div key={b.val} className={`building-tile ${qForm.buildingType===b.val?'selected':''}`} onClick={() => setQ('buildingType', b.val)}>
+                        <span className="bt-icon">{b.icon}</span>
+                        <span className="bt-label">{b.val}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
                 <div className="fg"><label>Address</label><input type="text" value={qForm.address} onChange={e => setQ('address', e.target.value)} placeholder="Street, City, ZIP" /></div>
                 <div className="row2">
                   <div className="fg"><label>Date</label><input type="text" value={qForm.date} onChange={e => setQ('date', e.target.value)} placeholder="e.g. March 10" /></div>
