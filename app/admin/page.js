@@ -1,4 +1,4 @@
-﻿'use client';
+﻿﻿'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -648,7 +648,7 @@ export default function AdminPage() {
 
             {/* Request fields */}
             {[
-              ['Submitted', selected.submittedAt], ['Client', selected.name], ['Phone', selected.phone],
+              ['Submitted', selected.submittedAt], ['Client', selected.name], ['Building Type', selected.buildingType || 'Not specified'], ['Phone', selected.phone],
               ['Email', selected.email], ['Address', selected.address],
               ['Date', selected.date], ['Time', selected.time],
               ['Bathrooms', selected.bathrooms], ['Rooms', selected.rooms],

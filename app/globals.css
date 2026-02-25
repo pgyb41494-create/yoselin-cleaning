@@ -13,8 +13,8 @@
   --border: #e2e8f0;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'DM Sans', sans-serif; background: #0d0d0d; color: var(--black); min-height: 100vh; }
-input, select, textarea, button { font-family: 'DM Sans', sans-serif; }
+body { font-family: 'DM Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif; background: #0d0d0d; color: var(--black); min-height: 100vh; }
+input, select, textarea, button { font-family: 'DM Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'; }
 
 /* Translate */
 #translateBtn { position: fixed; top: 14px; right: 16px; z-index: 9999; background: rgba(26,26,26,.92); backdrop-filter: blur(8px); border: 1.5px solid #333; border-radius: 99px; padding: 7px 14px; display: flex; align-items: center; gap: 7px; cursor: pointer; font-size: .78rem; color: #d1d5db; font-weight: 600; transition: all .2s; }
