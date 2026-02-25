@@ -40,7 +40,7 @@ export default function BookPage() {
   const [walkthrough, setWalkthrough] = useState(false);
   const [firstTime, setFirstTime] = useState('no');
   const [senior, setSenior] = useState('no');
-  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', email: '', address: '', date: '', time: '', pets: 'no', otherReqs: '', notes: '', referral: '', access: "I'll be home" });
+  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', email: '', address: '', date: '', time: '', pets: 'no', otherReqs: '', notes: '', referral: '', access: "I'll be home", buildingType: '' });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -110,6 +110,7 @@ export default function BookPage() {
       notes: form.notes || '',
       referral: form.referral || 'N/A',
       access: form.access,
+      buildingType: form.buildingType || 'Not specified',
       estimate: price.final,
       status: 'new',
       submittedAt: new Date().toLocaleString(),
@@ -181,6 +182,29 @@ export default function BookPage() {
               <div className="row2">
                 <div className="fg"><label>Phone Number</label><input type="tel" value={f.phone} onChange={e => setF('phone', e.target.value)} placeholder="(555) 000-0000" /></div>
                 <div className="fg"><label>Email</label><input type="email" value={f.email} onChange={e => setF('email', e.target.value)} placeholder="your@email.com" /></div>
+              </div>
+              <div className="fg">
+                <label>Building Type</label>
+                <div className="building-grid">
+                  {[
+                    { val: 'House', icon: '🏠' },
+                    { val: 'Apartment', icon: '🏢' },
+                    { val: 'Condo', icon: '🏙️' },
+                    { val: 'Party / Event', icon: '🎉' },
+                    { val: 'Office', icon: '💼' },
+                    { val: 'Bank', icon: '🏦' },
+                    { val: 'Retail Store', icon: '🛍️' },
+                  ].map(b => (
+                    <div
+                      key={b.val}
+                      className={`building-tile ${f.buildingType === b.val ? 'selected' : ''}`}
+                      onClick={() => setF('buildingType', b.val)}
+                    >
+                      <span className="bt-icon">{b.icon}</span>
+                      <span className="bt-label">{b.val}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
               <div className="fg"><label>Service Address</label><input type="text" value={f.address} onChange={e => setF('address', e.target.value)} placeholder="Street address, City, ZIP" /></div>
               <div className="row2">
