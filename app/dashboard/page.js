@@ -275,6 +275,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="cdc-grid">
                     {[
+                      ['🏠 Building', request.buildingType || 'Not specified'],
                       ['📅 Date', request.date || 'TBD'],
                       ['🕐 Time', request.time || 'TBD'],
                       ['📍 Address', request.address],
