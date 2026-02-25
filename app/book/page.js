@@ -18,7 +18,18 @@ export default function BookPage() {
       if (u.email === ADMIN_EMAIL) { router.push('/admin'); return; }
       const q = query(collection(db, 'requests'), where('userId', '==', u.uid));
       const snap = await getDocs(q);
-      if (!snap.empty) { router.push('/portal'); return; }
+      if (!snap.empty) {
+        // Allow rebooking only if their latest request is 'done'
+        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        const latest = docs[0];
+        if (latest.status !== 'done') {
+          // Has an active request — send to portal
+          router.push('/portal');
+          return;
+        }
+        // Status is done — allow new booking
+      }
       setUser(u);
       setLoading(false);
     });
