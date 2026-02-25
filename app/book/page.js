@@ -19,16 +19,13 @@ export default function BookPage() {
       const q = query(collection(db, 'requests'), where('userId', '==', u.uid));
       const snap = await getDocs(q);
       if (!snap.empty) {
-        // Allow rebooking only if their latest request is 'done'
         const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
         const latest = docs[0];
         if (latest.status !== 'done') {
-          // Has an active request — send to portal
           router.push('/portal');
           return;
         }
-        // Status is done — allow new booking
       }
       setUser(u);
       setLoading(false);
@@ -41,14 +38,14 @@ export default function BookPage() {
   if (submitted) return (
     <div className="sov show">
       <div className="sbox">
-        <div style={{fontSize:'2.8rem'}}>🎉</div>
+        <div style={{fontSize:'2.8rem'}}>:)</div>
         <h2>Request Sent!</h2>
         <p><strong>Yoselin will contact you within 24 hours</strong> to confirm your appointment.</p>
         <br />
         <p style={{fontSize:'.82rem',background:'#f3f4f6',borderRadius:'10px',padding:'12px'}}>
-          💡 Track your request in your portal.
+          Track your request in your portal.
         </p>
-        <button className="sclose" onClick={() => router.push('/portal')}>Go to My Portal →</button>
+        <button className="sclose" onClick={() => router.push('/portal')}>Go to My Portal</button>
       </div>
     </div>
   );
@@ -61,12 +58,11 @@ export default function BookPage() {
           {user?.photoURL && <img src={user.photoURL} className="nav-avatar" alt="" />}
           <button className="signout-btn" onClick={() => { signOut(auth); router.push('/'); }}>Sign Out</button>
         </div>
-        <div style={{fontSize:'2rem',marginBottom:'7px'}}>✨</div>
         <h1>Yoselin's<br /><span>Cleaning Service</span></h1>
-        <p>Professional • Reliable • Sparkling Clean</p>
+        <p>Professional - Reliable - Sparkling Clean</p>
         <div className="header-badges">
-          <span className="hbadge pink">✦ Licensed & Insured</span>
-          <span className="hbadge blue">⭐ 5-Star Rated</span>
+          <span className="hbadge pink">Licensed and Insured</span>
+          <span className="hbadge blue">5-Star Rated</span>
           <span className="hbadge">Free Estimates</span>
         </div>
       </div>
