@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import {
   GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  updateProfile, sendPasswordResetEmail, sendEmailVerification, sendEmailVerification,
+  updateProfile, sendPasswordResetEmail, sendEmailVerification,
 } from 'firebase/auth';
 import { auth, ADMIN_EMAIL } from '../lib/firebase';
 
