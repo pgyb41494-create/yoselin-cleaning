@@ -2,29 +2,27 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, orderBy, query, getDocs, where } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, orderBy, query } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL } from '../../lib/firebase';
 import Chat from '../../components/Chat';
 import BookingWizard from '../../components/BookingWizard';
 
-// Generate 30-min time slots from 6am to 8pm
 function generateTimes() {
   const times = [];
   for (let h = 6; h <= 20; h++) {
     const ampm = h < 12 ? 'am' : 'pm';
     const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
-    times.push(`${h12}:00${ampm}`);
-    if (h < 20) times.push(`${h12}:30${ampm}`);
+    times.push(h12 + ':00' + ampm);
+    if (h < 20) times.push(h12 + ':30' + ampm);
   }
   return times;
 }
 const ALL_TIMES = generateTimes();
 
-// Generate next 90 days
 function generateDays() {
   const days = [];
   const today = new Date();
-  today.setHours(0,0,0,0);
+  today.setHours(0, 0, 0, 0);
   for (let i = 0; i < 90; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
@@ -32,11 +30,11 @@ function generateDays() {
   }
   return days;
 }
-const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 function formatDateKey(date) {
-  return `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+  return MONTH_NAMES[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
 }
 
 export default function AdminPage() {
@@ -50,13 +48,11 @@ export default function AdminPage() {
   const [tab, setTab] = useState('requests');
   const [createDone, setCreateDone] = useState(false);
 
-  // Calendar state
   const allDays = generateDays();
   const [calDate, setCalDate] = useState(allDays[0]);
   const [weekStart, setWeekStart] = useState(0);
   const [pendingTimes, setPendingTimes] = useState({});
   const [saving, setSaving] = useState(false);
-  const calRef = useRef(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -79,26 +75,21 @@ export default function AdminPage() {
     return () => { unsubReqs(); unsubAvail(); };
   }, [user]);
 
-  // Get saved times for selected calendar date
   const dateKey = formatDateKey(calDate);
   const savedTimesForDate = availability.filter(s => s.date === dateKey).map(s => s.time);
+  const pendingForDate = pendingTimes[dateKey] || [];
 
-  // Toggle a pending time
   const toggleTime = (time) => {
     setPendingTimes(prev => {
-      const key = dateKey;
-      const cur = prev[key] || [];
+      const cur = prev[dateKey] || [];
       if (cur.includes(time)) {
-        return { ...prev, [key]: cur.filter(t => t !== time) };
+        return { ...prev, [dateKey]: cur.filter(t => t !== time) };
       } else {
-        return { ...prev, [key]: [...cur, time] };
+        return { ...prev, [dateKey]: [...cur, time] };
       }
     });
   };
 
-  const pendingForDate = pendingTimes[dateKey] || [];
-
-  // Save: add new times, remove unchecked saved times
   const saveSlots = async () => {
     setSaving(true);
     const toAdd = pendingForDate.filter(t => !savedTimesForDate.includes(t));
@@ -114,11 +105,9 @@ export default function AdminPage() {
     setSaving(false);
   };
 
-  // Init pendingTimes for a date from saved data
   const selectCalDate = (d) => {
     const key = formatDateKey(d);
     setCalDate(d);
-    // Init pending from saved if not already set
     setPendingTimes(prev => {
       if (prev[key] !== undefined) return prev;
       const saved = availability.filter(s => s.date === key).map(s => s.time);
@@ -126,7 +115,6 @@ export default function AdminPage() {
     });
   };
 
-  // When availability loads, sync pending for current date
   useEffect(() => {
     const key = formatDateKey(calDate);
     setPendingTimes(prev => {
@@ -136,10 +124,15 @@ export default function AdminPage() {
     });
   }, [availability]);
 
+  const isTimeOn = (t) => {
+    if (pendingTimes[dateKey] !== undefined) return pendingForDate.includes(t);
+    return savedTimesForDate.includes(t);
+  };
+
   const confirmReq = async (req) => {
     await updateDoc(doc(db, 'requests', req.id), { status: 'confirmed' });
     await addDoc(collection(db, 'chats', req.id, 'messages'), {
-      text: `Hi ${req.name.split(' ')[0]}! Your cleaning appointment has been confirmed for ${req.date}. Please reach out if you have any questions!`,
+      text: 'Hi ' + req.name.split(' ')[0] + '! Your cleaning appointment has been confirmed for ' + req.date + '. Please reach out if you have any questions!',
       sender: 'admin', senderName: 'Yoselin', createdAt: serverTimestamp(),
     });
     setSelected(r => r ? { ...r, status: 'confirmed' } : r);
@@ -155,19 +148,8 @@ export default function AdminPage() {
   const newCount = requests.filter(r => r.status === 'new').length;
   const avg = requests.length ? Math.round(requests.reduce((s, r) => s + (r.estimate || 0), 0) / requests.length) : 0;
   const pipeline = requests.reduce((s, r) => s + (r.estimate || 0), 0);
-
   const visibleDays = allDays.slice(weekStart, weekStart + 10);
-  const currentMonth = `${MONTH_NAMES[calDate.getMonth()]} ${calDate.getFullYear()}`;
-
-  // Check if a time is selected (pending or saved)
-  const isTimeOn = (t) => {
-    if (pendingForDate.length > 0 || pendingTimes[dateKey] !== undefined) {
-      return pendingForDate.includes(t);
-    }
-    return savedTimesForDate.includes(t);
-  };
-
-  // Dots: dates that have saved slots
+  const currentMonth = MONTH_NAMES[calDate.getMonth()] + ' ' + calDate.getFullYear();
   const datesWithSlots = new Set(availability.map(s => s.date));
 
   return (
@@ -186,12 +168,12 @@ export default function AdminPage() {
 
       {/* Tab Bar */}
       <div style={{ background: '#111', borderBottom: '1px solid #222', padding: '0 26px', display: 'flex' }}>
-        {[['requests','📋 Requests'],['availability','📅 Availability'],['create','✏️ Create Quote']].map(([t, label]) => (
+        {[['requests', 'Requests'], ['availability', 'Availability'], ['create', 'Create Quote']].map(([t, label]) => (
           <button key={t} onClick={() => { setTab(t); setCreateDone(false); }} style={{
             padding: '14px 20px', background: 'none', border: 'none',
             borderBottom: tab === t ? '3px solid #a855f7' : '3px solid transparent',
             fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.85rem',
-            color: tab === t ? '#a855f7' : '#6b7280', cursor: 'pointer', transition: 'color .15s',
+            color: tab === t ? '#a855f7' : '#6b7280', cursor: 'pointer',
           }}>{label}</button>
         ))}
       </div>
@@ -202,34 +184,24 @@ export default function AdminPage() {
         {tab === 'requests' && (
           <>
             <div className="stats-grid">
-              <div className="stat-card" style={{ background: '#111', border: '1px solid #222', color: 'white' }}>
-                <div className="stat-label" style={{ color: '#9ca3af' }}>TOTAL REQUESTS</div>
-                <div className="stat-val" style={{ color: 'white' }}>{requests.length}</div>
-              </div>
-              <div className="stat-card" style={{ background: '#111', border: '1px solid #222' }}>
-                <div className="stat-label" style={{ color: '#9ca3af' }}>NEW</div>
-                <div className="stat-val" style={{ color: 'white' }}>{newCount}</div>
-                <div className="stat-sub" style={{ color: '#9ca3af' }}>Awaiting response</div>
-              </div>
-              <div className="stat-card" style={{ background: '#111', border: '1px solid #222' }}>
-                <div className="stat-label" style={{ color: '#9ca3af' }}>AVG ESTIMATE</div>
-                <div className="stat-val" style={{ color: 'white' }}>${avg}</div>
-              </div>
-              <div className="stat-card" style={{ background: '#111', border: '1px solid #222' }}>
-                <div className="stat-label" style={{ color: '#9ca3af' }}>PIPELINE</div>
-                <div className="stat-val" style={{ color: 'white' }}>${pipeline}</div>
-              </div>
+              {[['TOTAL', requests.length, ''], ['NEW', newCount, 'Awaiting response'], ['AVG ESTIMATE', '$' + avg, ''], ['PIPELINE', '$' + pipeline, '']].map(([label, val, sub]) => (
+                <div key={label} className="stat-card" style={{ background: '#111', border: '1px solid #222' }}>
+                  <div className="stat-label" style={{ color: '#9ca3af' }}>{label}</div>
+                  <div className="stat-val" style={{ color: 'white' }}>{val}</div>
+                  {sub && <div className="stat-sub" style={{ color: '#9ca3af' }}>{sub}</div>}
+                </div>
+              ))}
             </div>
-            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', fontWeight: '700', marginBottom: '13px', color: 'white' }}>📋 All Requests</div>
+            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', fontWeight: '700', marginBottom: '13px', color: 'white' }}>All Requests</div>
             <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #222', overflow: 'hidden', overflowX: 'auto' }}>
               {requests.length === 0 ? (
-                <div className="empty-state" style={{ color: '#9ca3af' }}><div style={{ fontSize: '2.4rem', marginBottom: '10px' }}>📭</div>No requests yet.</div>
+                <div className="empty-state" style={{ color: '#9ca3af' }}>No requests yet.</div>
               ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      {['Submitted','Client','Email','Date','Estimate','Status',''].map(h => (
-                        <th key={h} style={{ background: '#0d0d0d', color: '#9ca3af', padding: '12px 15px', textAlign: 'left', fontSize: '.75rem', fontWeight: '700', letterSpacing: '.4px' }}>{h}</th>
+                      {['Submitted', 'Client', 'Email', 'Date', 'Estimate', 'Status', ''].map(h => (
+                        <th key={h} style={{ background: '#0d0d0d', color: '#9ca3af', padding: '12px 15px', textAlign: 'left', fontSize: '.75rem', fontWeight: '700' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -244,7 +216,11 @@ export default function AdminPage() {
                         <td style={{ padding: '12px 15px', fontSize: '.83rem', color: '#d1d5db' }}>{r.email}</td>
                         <td style={{ padding: '12px 15px', fontSize: '.83rem', color: '#d1d5db' }}>{r.date}</td>
                         <td style={{ padding: '12px 15px', fontSize: '.83rem' }}><strong style={{ color: '#60a5fa' }}>${r.estimate}</strong></td>
-                        <td style={{ padding: '12px 15px' }}><span className={`badge badge-${r.status}`}>{r.status==='new'?'🆕 New':r.status==='confirmed'?'✅ Confirmed':'🏁 Done'}</span></td>
+                        <td style={{ padding: '12px 15px' }}>
+                          <span className={'badge badge-' + r.status}>
+                            {r.status === 'new' ? 'New' : r.status === 'confirmed' ? 'Confirmed' : 'Done'}
+                          </span>
+                        </td>
                         <td style={{ padding: '12px 15px' }}><button className="view-btn" onClick={() => setSelected(r)}>View</button></td>
                       </tr>
                     ))}
@@ -258,112 +234,78 @@ export default function AdminPage() {
         {/* AVAILABILITY TAB */}
         {tab === 'availability' && (
           <div>
-            {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-              <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white' }}>
-                Choose a time
-              </div>
+              <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white' }}>Choose a Time</div>
               <div style={{ color: '#9ca3af', fontSize: '.85rem', fontWeight: '600' }}>{currentMonth}</div>
             </div>
             <p style={{ color: '#6b7280', fontSize: '.8rem', marginBottom: '22px' }}>
-              Select a date then toggle the times you are available. Customers will see these as dropdown options.
+              Select a date then toggle available times. Customers will see these as options when booking.
             </p>
 
-            {/* Calendar strip */}
             <div style={{ background: '#111', borderRadius: '20px', border: '1px solid #1f1f1f', padding: '22px', marginBottom: '20px' }}>
+              {/* Day strip */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <button
-                  onClick={() => setWeekStart(Math.max(0, weekStart - 10))}
-                  disabled={weekStart === 0}
-                  style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #333', background: weekStart === 0 ? 'transparent' : '#1f1f1f', color: weekStart === 0 ? '#333' : '#d1d5db', cursor: weekStart === 0 ? 'default' : 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >‹</button>
-                <div style={{ display: 'flex', gap: '8px', flex: 1, overflowX: 'auto' }} ref={calRef}>
+                <button onClick={() => setWeekStart(Math.max(0, weekStart - 10))} disabled={weekStart === 0}
+                  style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #333', background: weekStart === 0 ? 'transparent' : '#1f1f1f', color: weekStart === 0 ? '#333' : '#d1d5db', cursor: weekStart === 0 ? 'default' : 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {'<'}
+                </button>
+                <div style={{ display: 'flex', gap: '6px', flex: 1, overflowX: 'auto' }}>
                   {visibleDays.map((d, i) => {
                     const key = formatDateKey(d);
                     const isSelected = formatDateKey(d) === formatDateKey(calDate);
                     const hasSlots = datesWithSlots.has(key);
                     return (
-                      <button
-                        key={i}
-                        onClick={() => selectCalDate(d)}
-                        style={{
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-                          minWidth: '52px', padding: '10px 6px', borderRadius: '50px',
-                          border: 'none', cursor: 'pointer', transition: 'all .2s',
-                          background: isSelected ? 'white' : 'transparent',
-                          color: isSelected ? '#0d0d0d' : '#9ca3af',
-                          position: 'relative',
-                        }}
-                      >
-                        <span style={{ fontSize: '.68rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '.5px' }}>
-                          {DAY_NAMES[d.getDay()]}
-                        </span>
+                      <button key={i} onClick={() => selectCalDate(d)} style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+                        minWidth: '52px', padding: '10px 6px', borderRadius: '50px', border: 'none',
+                        cursor: 'pointer', background: isSelected ? 'white' : 'transparent',
+                        color: isSelected ? '#0d0d0d' : '#9ca3af',
+                      }}>
+                        <span style={{ fontSize: '.68rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '.5px' }}>{DAY_NAMES[d.getDay()]}</span>
                         <span style={{ fontSize: '1.15rem', fontWeight: '800', lineHeight: 1 }}>{d.getDate()}</span>
-                        {hasSlots && (
-                          <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: isSelected ? '#a855f7' : '#a855f7', display: 'block' }}></span>
-                        )}
-                        {!hasSlots && <span style={{ width: '5px', height: '5px', display: 'block' }}></span>}
+                        <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: hasSlots ? '#a855f7' : 'transparent', display: 'block' }}></span>
                       </button>
                     );
                   })}
                 </div>
-                <button
-                  onClick={() => setWeekStart(Math.min(allDays.length - 10, weekStart + 10))}
-                  disabled={weekStart + 10 >= allDays.length}
-                  style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #333', background: '#1f1f1f', color: '#d1d5db', cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >›</button>
+                <button onClick={() => setWeekStart(Math.min(allDays.length - 10, weekStart + 10))}
+                  style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #333', background: '#1f1f1f', color: '#d1d5db', cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {'>'}
+                </button>
               </div>
 
-              {/* Selected date label */}
-              <div style={{ fontSize: '.72rem', color: '#6b7280', fontWeight: '700', letterSpacing: '.5px', textAlign: 'right', marginBottom: '14px', textTransform: 'uppercase' }}>
-                {dateKey}
-              </div>
+              <div style={{ fontSize: '.72rem', color: '#6b7280', fontWeight: '700', letterSpacing: '.5px', textAlign: 'right', marginBottom: '14px', textTransform: 'uppercase' }}>{dateKey}</div>
 
               {/* Time grid */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(95px, 1fr))', gap: '8px' }}>
                 {ALL_TIMES.map(t => {
                   const on = isTimeOn(t);
                   return (
-                    <button
-                      key={t}
-                      onClick={() => toggleTime(t)}
-                      style={{
-                        padding: '10px 8px', borderRadius: '10px', border: on ? '2px solid transparent' : '1.5px solid #2a2a2a',
-                        background: on ? 'white' : '#0d0d0d',
-                        color: on ? '#0d0d0d' : '#9ca3af',
-                        fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.8rem',
-                        cursor: 'pointer', transition: 'all .15s', textAlign: 'center',
-                      }}
-                    >
-                      {t}
-                    </button>
+                    <button key={t} onClick={() => toggleTime(t)} style={{
+                      padding: '10px 8px', borderRadius: '10px',
+                      border: on ? '2px solid transparent' : '1.5px solid #2a2a2a',
+                      background: on ? 'white' : '#0d0d0d',
+                      color: on ? '#0d0d0d' : '#9ca3af',
+                      fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.8rem',
+                      cursor: 'pointer',
+                    }}>{t}</button>
                   );
                 })}
               </div>
 
-              {/* Save button */}
               <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                 <div style={{ fontSize: '.78rem', color: '#6b7280' }}>
                   {pendingForDate.length > 0
-                    ? <span style={{ color: '#a855f7' }}>{pendingForDate.length} time{pendingForDate.length !== 1 ? 's' : ''} selected for {dateKey}</span>
-                    : <span>No times selected for this date</span>
-                  }
+                    ? <span style={{ color: '#a855f7' }}>{pendingForDate.length} time{pendingForDate.length !== 1 ? 's' : ''} selected</span>
+                    : <span>No times selected for this date</span>}
                 </div>
-                <button
-                  onClick={saveSlots}
-                  disabled={saving}
-                  style={{
-                    padding: '11px 28px', background: 'linear-gradient(135deg, #1a6fd4, #db2777)', color: 'white',
-                    border: 'none', borderRadius: '99px', fontFamily: "'DM Sans', sans-serif",
-                    fontWeight: '700', fontSize: '.88rem', cursor: saving ? 'default' : 'pointer', opacity: saving ? .6 : 1, transition: 'opacity .2s'
-                  }}
-                >
+                <button onClick={saveSlots} disabled={saving} style={{ padding: '11px 28px', background: 'linear-gradient(135deg, #1a6fd4, #db2777)', color: 'white', border: 'none', borderRadius: '99px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: saving ? 'default' : 'pointer', opacity: saving ? .6 : 1 }}>
                   {saving ? 'Saving...' : 'Save Availability'}
                 </button>
               </div>
             </div>
 
-            {/* Summary of all saved slots */}
+            {/* All saved slots */}
             {availability.length > 0 && (
               <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #1f1f1f', overflow: 'hidden' }}>
                 <div style={{ padding: '14px 18px', borderBottom: '1px solid #1f1f1f', color: '#9ca3af', fontSize: '.75rem', fontWeight: '700', letterSpacing: '.4px', textTransform: 'uppercase' }}>
@@ -372,21 +314,15 @@ export default function AdminPage() {
                 <div style={{ padding: '14px 18px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {(() => {
                     const grouped = {};
-                    availability.forEach(s => {
-                      if (!grouped[s.date]) grouped[s.date] = [];
-                      grouped[s.date].push({ time: s.time, id: s.id });
-                    });
-                    return Object.entries(grouped).sort(([a],[b]) => a.localeCompare(b)).map(([date, slots]) => (
+                    availability.forEach(s => { if (!grouped[s.date]) grouped[s.date] = []; grouped[s.date].push(s); });
+                    return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([date, slots]) => (
                       <div key={date} style={{ background: '#0d0d0d', borderRadius: '12px', border: '1px solid #222', padding: '10px 14px', minWidth: '160px' }}>
                         <div style={{ fontSize: '.72rem', fontWeight: '700', color: '#a855f7', marginBottom: '7px', textTransform: 'uppercase', letterSpacing: '.3px' }}>{date}</div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
                           {slots.map(s => (
                             <span key={s.id} style={{ background: '#1a1a1a', color: '#d1d5db', fontSize: '.72rem', fontWeight: '700', padding: '3px 9px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                               {s.time}
-                              <button
-                                onClick={() => deleteDoc(doc(db, 'availability', s.id))}
-                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.75rem', padding: '0', lineHeight: 1 }}
-                              >×</button>
+                              <button onClick={() => deleteDoc(doc(db, 'availability', s.id))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.75rem', padding: '0', lineHeight: 1 }}>x</button>
                             </span>
                           ))}
                         </div>
@@ -404,21 +340,20 @@ export default function AdminPage() {
           <>
             {createDone ? (
               <div style={{ background: '#111', borderRadius: '18px', border: '1px solid #222', padding: '48px 24px', textAlign: 'center', maxWidth: '480px', margin: '0 auto' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '14px' }}>✅</div>
                 <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: '700', marginBottom: '8px', color: 'white' }}>Quote Created!</h2>
                 <p style={{ color: '#9ca3af', fontSize: '.87rem', marginBottom: '24px' }}>The new request has been added to your requests list.</p>
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <button className="act-btn act-confirm" onClick={() => { setTab('requests'); setCreateDone(false); }} style={{ flex: 'none', padding: '12px 24px' }}>View Requests →</button>
+                  <button className="act-btn act-confirm" onClick={() => { setTab('requests'); setCreateDone(false); }} style={{ flex: 'none', padding: '12px 24px' }}>View Requests</button>
                   <button className="act-btn act-chat" onClick={() => setCreateDone(false)} style={{ flex: 'none', padding: '12px 24px' }}>Create Another</button>
                 </div>
               </div>
             ) : (
               <>
-                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', fontWeight: '700', marginBottom: '4px', color: 'white' }}>✏️ Create a Quote</div>
+                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', fontWeight: '700', marginBottom: '4px', color: 'white' }}>Create a Quote</div>
                 <p style={{ fontSize: '.85rem', color: '#9ca3af', marginBottom: '20px' }}>Fill out the booking form on behalf of a client.</p>
                 <div style={{ background: '#111', borderRadius: '18px', border: '1px solid #222', overflow: 'hidden' }}>
                   <div style={{ background: 'linear-gradient(135deg, #1a6fd4, #db2777)', padding: '18px 24px' }}>
-                    <div style={{ fontFamily: 'Playfair Display, serif', color: 'white', fontSize: '1.1rem', fontWeight: '700' }}>✨ New Client Quote</div>
+                    <div style={{ fontFamily: 'Playfair Display, serif', color: 'white', fontSize: '1.1rem', fontWeight: '700' }}>New Client Quote</div>
                     <div style={{ color: 'rgba(255,255,255,.75)', fontSize: '.78rem', marginTop: '3px' }}>Same form your customers use</div>
                   </div>
                   <BookingWizard user={null} adminMode={true} onDone={() => setCreateDone(true)} />
@@ -435,7 +370,7 @@ export default function AdminPage() {
           <div className="modal">
             <div className="modal-head">
               <h3>Request Details</h3>
-              <button className="modal-close" onClick={() => setSelected(null)}>✕</button>
+              <button className="modal-close" onClick={() => setSelected(null)}>X</button>
             </div>
             <div className="price-box">
               <div className="price-label">ESTIMATED TOTAL</div>
@@ -446,21 +381,21 @@ export default function AdminPage() {
               ['Email', selected.email], ['Address', selected.address], ['Date Requested', selected.date],
               ['Time', selected.time], ['Bathrooms', selected.bathrooms], ['Rooms', selected.rooms],
               ['Add-Ons', selected.addons], ['Pets', selected.pets === 'yes' ? 'Yes' : 'No'],
-              ['Other Requests', selected.otherRequests || '—'], ['Walk-Through', selected.walkthrough || 'No'],
+              ['Other Requests', selected.otherRequests || '-'], ['Walk-Through', selected.walkthrough || 'No'],
               ['Frequency', selected.frequency], ['First-Time?', selected.firstTime === 'yes' ? 'Yes (10% disc)' : 'No'],
               ['Senior?', selected.senior === 'yes' ? 'Yes (10% disc)' : 'No'],
-              ['Home Access', selected.access], ['Referral', selected.referral || '—'], ['Notes', selected.notes || '—'],
+              ['Home Access', selected.access], ['Referral', selected.referral || '-'], ['Notes', selected.notes || '-'],
             ].map(([k, v]) => (
               <div key={k} className="detail-row"><span className="dk">{k}</span><span className="dv">{v}</span></div>
             ))}
             <div className="modal-actions">
               {selected.status === 'new' && (
-                <button className="act-btn act-confirm" onClick={() => confirmReq(selected)}>✅ Confirm Appointment</button>
+                <button className="act-btn act-confirm" onClick={() => confirmReq(selected)}>Confirm Appointment</button>
               )}
               {selected.status === 'confirmed' && (
-                <button className="act-btn act-done" onClick={() => markDone(selected)}>🏁 Mark Done</button>
+                <button className="act-btn act-done" onClick={() => markDone(selected)}>Mark Done</button>
               )}
-              <button className="act-btn act-chat" onClick={() => { setChatReq(selected); setSelected(null); }}>💬 Chat with Client</button>
+              <button className="act-btn act-chat" onClick={() => { setChatReq(selected); setSelected(null); }}>Chat with Client</button>
             </div>
           </div>
         </div>
