@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { collection, addDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 const BPRICES = { half: 15, small: 50, medium: 65, large: 80 };
@@ -151,6 +151,23 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       text: "Hi " + form.firstName + "! Thank you for reaching out to Yoselin's Cleaning Service. I've received your request and will get back to you within 24 hours to confirm your appointment!",
       sender: 'admin', senderName: 'Yoselin', createdAt: serverTimestamp(),
     });
+    // ── Remove the booked time slot so no one else can pick it ──
+    if (form.date && form.time && form.date !== 'N/A' && form.time !== 'N/A') {
+      try {
+        const slotQuery = query(
+          collection(db, 'availability'),
+          where('date', '==', form.date),
+          where('time', '==', form.time)
+        );
+        const slotSnap = await getDocs(slotQuery);
+        slotSnap.forEach(async (slotDoc) => {
+          await deleteDoc(doc(db, 'availability', slotDoc.id));
+        });
+      } catch (e) {
+        // Non-critical — booking still goes through
+        console.warn('Could not remove availability slot:', e);
+      }
+    }
     setSubmitting(false);
     if (onDone) onDone(docRef.id);
   };
