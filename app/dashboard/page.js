@@ -1,9 +1,10 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { collection, query, where, onSnapshot, addDoc, getDocs, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendEmailVerification } from 'firebase/auth';
+import { collection, query, where, onSnapshot, addDoc, getDocs, deleteDoc, doc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL } from '../../lib/firebase';
+import { useUnreadCount } from '../../lib/useUnreadCount';
 import Chat from '../../components/Chat';
 
 // ── Loyalty tiers ─────────────────────────────────────
@@ -56,6 +57,10 @@ export default function DashboardPage() {
   const [settingsMsg,  setSettingsMsg]  = useState('');
   const [settingsErr,  setSettingsErr]  = useState('');
   const [settingsBusy, setSettingsBusy] = useState(false);
+
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [verifyBanner, setVerifyBanner] = useState(false);
+  const [verifySent, setVerifySent] = useState(false);
 
   // Live countdown re-render every minute
   const [, setTick] = useState(0);
@@ -164,6 +169,7 @@ export default function DashboardPage() {
   );
 
   // ── Derived ───────────────────────────────────────────
+  const unreadCount = useUnreadCount(request?.id, 'customer');
   const firstName    = user?.displayName?.split(' ')[0] || 'there';
   const isDone       = request?.status === 'done';
   const isConfirmed  = request?.status === 'confirmed';
@@ -177,7 +183,7 @@ export default function DashboardPage() {
   const tabs = [
     { id: 'home',     label: 'Home',     icon: '🏠' },
     ...(!isDone ? [
-      { id: 'messages', label: 'Messages', icon: '💬' },
+      { id: 'messages', label: 'Messages', icon: '💬', badge: unreadCount },
       { id: 'request',  label: 'My Quote', icon: '📋' },
     ] : []),
     { id: 'settings', label: 'Settings',  icon: '⚙️' },
@@ -259,6 +265,24 @@ export default function DashboardPage() {
           </button>
         ))}
       </div>
+
+      {/* ── Email verification banner ── */}
+      {verifyBanner && (
+        <div style={{background:'rgba(245,158,11,.1)',borderBottom:'2px solid rgba(245,158,11,.3)',padding:'12px 20px',display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'8px'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+            <span style={{fontSize:'1.1rem'}}>📬</span>
+            <div>
+              <div style={{fontWeight:700,color:'#f59e0b',fontSize:'.85rem'}}>Please verify your email</div>
+              <div style={{fontSize:'.76rem',color:'#9ca3af'}}>Check your inbox for a verification link to secure your account.</div>
+            </div>
+          </div>
+          <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
+            {verifySent && <span style={{fontSize:'.75rem',color:'#10b981',fontWeight:700}}>✅ Sent!</span>}
+            <button onClick={resendVerification} style={{padding:'6px 14px',background:'rgba(245,158,11,.2)',border:'1px solid rgba(245,158,11,.4)',color:'#f59e0b',borderRadius:'8px',fontSize:'.78rem',fontWeight:700,cursor:'pointer'}}>Resend Link</button>
+            <button onClick={() => setVerifyBanner(false)} style={{background:'none',border:'none',color:'#6b7280',cursor:'pointer',fontSize:'.85rem'}}>✕</button>
+          </div>
+        </div>
+      )}
 
       <div className="cd-body">
 
@@ -629,3 +653,9 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+
+
+
+
+
