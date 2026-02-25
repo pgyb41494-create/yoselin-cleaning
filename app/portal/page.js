@@ -62,7 +62,7 @@ export default function PortalPage() {
   const statusLabel = request?.status === 'new' ? '🆕 Pending Review' : request?.status === 'confirmed' ? '✅ Confirmed' : '🏁 Completed';
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f1f4f9' }}>
+    <div style={{ minHeight: '100vh', background: '#0d0d0d' }}>
       <nav className="nav">
         <div className="nav-brand">Yoselin's <span>Cleaning</span></div>
         <div className="nav-user">
