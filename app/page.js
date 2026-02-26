@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -8,33 +8,42 @@ import {
 } from 'firebase/auth';
 import { auth, ADMIN_EMAIL } from '../lib/firebase';
 
+const STAR = '\u2B50';
+const SPARKLE = '\u2728';
+const PIN = '\uD83D\uDCCD';
+const CAM = '\uD83D\uDCF8';
+const HOUSE = '\uD83C\uDFE0';
+const OFFICE = '\uD83C\uDFE2';
+const TRUCK = '\uD83D\uDE9A';
+const MAIL = '\uD83D\uDCE7';
+const CHECK = '\u2705';
+const EYE_OPEN = '\uD83D\uDC41';
+const EYE_SHUT = '\uD83D\uDE48';
+const WARN = '\u26A0\uFE0F';
+const COPY = '\u00A9';
+
 const reviews = [
-  { name: 'Maria G.', stars: 5, text: 'Yoselin did an amazing job! My house has never looked this clean. She even organized my pantry without me asking. Highly recommend!', date: 'Jan 2025' },
-  { name: 'Ashley R.', stars: 5, text: 'Super professional and thorough. I booked a deep clean and she went above and beyond. Will definitely be booking again every month!', date: 'Feb 2025' },
-  { name: 'Carlos M.', stars: 5, text: 'Best cleaning service I have ever used. On time, very detailed, and left everything sparkling. The booking process was so easy too.', date: 'Feb 2025' },
-  { name: 'Tiffany W.', stars: 5, text: 'I was nervous about letting someone in my home but Yoselin made me feel so comfortable. Trustworthy, kind, and incredibly thorough.', date: 'Mar 2025' },
+  { name: 'Maria G.',   stars: 5, text: 'Yoselin did an amazing job! My house has never looked this clean. She even organized my pantry without me asking. Highly recommend!', date: 'Jan 2025' },
+  { name: 'Ashley R.',  stars: 5, text: 'Super professional and thorough. I booked a deep clean and she went above and beyond. Will definitely be booking again every month!',  date: 'Feb 2025' },
+  { name: 'Carlos M.',  stars: 5, text: 'Best cleaning service I have ever used. On time, very detailed, and left everything sparkling. The booking process was so easy too.',   date: 'Feb 2025' },
+  { name: 'Tiffany W.', stars: 5, text: 'I was nervous about letting someone in my home but Yoselin made me feel so comfortable. Trustworthy, kind, and incredibly thorough.',  date: 'Mar 2025' },
 ];
 
 export default function HomePage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [authMode, setAuthMode] = useState(null); // null | 'login' | 'signup'
-  const [tabOpen, setTabOpen] = useState(false);
-
-  // form fields
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPass, setShowPass] = useState(false);
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
-  const [verifyPending, setVerifyPending] = useState(false);
-  const [verifySent, setVerifySent] = useState(false);
-  const [verifyError, setVerifyError] = useState('');
-  const [verifyResent, setVerifyResent] = useState(false);
-
-  const [authError, setAuthError] = useState(false);
+  const [loading,       setLoading]       = useState(true);
+  const [authMode,      setAuthMode]      = useState(null);
+  const [tabOpen,       setTabOpen]       = useState(false);
+  const [name,          setName]          = useState('');
+  const [email,         setEmail]         = useState('');
+  const [password,      setPassword]      = useState('');
+  const [showPass,      setShowPass]      = useState(false);
+  const [error,         setError]         = useState('');
+  const [busy,          setBusy]          = useState(false);
+  const [resetSent,     setResetSent]     = useState(false);
+  const [verifyError,   setVerifyError]   = useState('');
+  const [verifyResent,  setVerifyResent]  = useState(false);
+  const [authError,     setAuthError]     = useState(false);
 
   useEffect(() => {
     let timeout;
@@ -43,7 +52,7 @@ export default function HomePage() {
         clearTimeout(timeout);
         if (user) {
           if (user.email === ADMIN_EMAIL) { router.push('/admin'); }
-          else if (user.emailVerified) { router.push('/dashboard'); }
+          else if (user.emailVerified)    { router.push('/dashboard'); }
           else { setLoading(false); setAuthMode('verify'); }
         } else {
           setLoading(false);
@@ -51,79 +60,62 @@ export default function HomePage() {
       });
       timeout = setTimeout(() => { setLoading(false); setAuthError(true); }, 8000);
       return () => { unsub(); clearTimeout(timeout); };
-    } catch (e) {
-      setLoading(false);
-      setAuthError(true);
-    }
+    } catch { setLoading(false); setAuthError(true); }
   }, [router]);
 
   const redirect = (user) => {
     if (user.email === ADMIN_EMAIL) router.push('/admin');
-    else if (!user.emailVerified) { setAuthMode('verify'); setBusy(false); }
+    else if (!user.emailVerified)   { setAuthMode('verify'); setBusy(false); }
     else router.push('/dashboard');
   };
 
   const handleGoogleSignIn = async () => {
     setError(''); setBusy(true);
-    try {
-      const result = await signInWithPopup(auth, new GoogleAuthProvider());
-      redirect(result.user);
-    } catch {
-      setError('Google sign-in failed. Please try again.');
-      setBusy(false);
-    }
+    try { const r = await signInWithPopup(auth, new GoogleAuthProvider()); redirect(r.user); }
+    catch { setError('Google sign-in failed. Please try again.'); setBusy(false); }
   };
 
   const handleLogin = async () => {
     setError(''); setBusy(true);
     if (!email || !password) { setError('Please fill in all fields.'); setBusy(false); return; }
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      redirect(result.user);
-    } catch (e) {
-      const msg = e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found'
-        ? 'Incorrect email or password.' : 'Login failed. Please try again.';
-      setError(msg); setBusy(false);
+    try { const r = await signInWithEmailAndPassword(auth, email, password); redirect(r.user); }
+    catch (e) {
+      setError(
+        e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found'
+          ? 'Incorrect email or password.' : 'Login failed. Please try again.'
+      );
+      setBusy(false);
     }
   };
 
   const handleSignup = async () => {
     setError(''); setBusy(true);
-    if (!name.trim()) { setError('Please enter your name.'); setBusy(false); return; }
-    if (!email || !password) { setError('Please fill in all fields.'); setBusy(false); return; }
-    if (password.length < 6) { setError('Password must be at least 6 characters.'); setBusy(false); return; }
+    if (!name.trim())         { setError('Please enter your name.');               setBusy(false); return; }
+    if (!email || !password)  { setError('Please fill in all fields.');            setBusy(false); return; }
+    if (password.length < 6)  { setError('Password must be at least 6 characters.'); setBusy(false); return; }
     try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(result.user, { displayName: name.trim() });
-      await sendEmailVerification(result.user);
-      redirect(result.user);
+      const r = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(r.user, { displayName: name.trim() });
+      await sendEmailVerification(r.user);
+      redirect(r.user);
     } catch (e) {
-      const msg = e.code === 'auth/email-already-in-use'
-        ? 'An account with this email already exists. Try logging in.' : 'Sign up failed. Please try again.';
-      setError(msg); setBusy(false);
+      setError(e.code === 'auth/email-already-in-use'
+        ? 'An account with this email already exists. Try logging in.'
+        : 'Sign up failed. Please try again.'
+      );
+      setBusy(false);
     }
   };
 
   const handleReset = async () => {
     if (!email) { setError('Enter your email above first.'); return; }
     setError(''); setBusy(true);
-    try {
-      await sendPasswordResetEmail(auth, email);
-      setResetSent(true); setBusy(false);
-    } catch {
-      setError('Could not send reset email.'); setBusy(false);
-    }
-  };
-
-  const handleResendVerification = async () => {
-    if (!auth.currentUser) return;
-    setBusy(true);
-    try { await sendEmailVerification(auth.currentUser); setVerifySent(true); } catch {}  
-    setBusy(false);
+    try { await sendPasswordResetEmail(auth, email); setResetSent(true); setBusy(false); }
+    catch { setError('Could not send reset email.'); setBusy(false); }
   };
 
   const closeModal = () => {
-    if (authMode === 'verify') return; // don't close verify  user must act
+    if (authMode === 'verify') return;
     setAuthMode(null); setError(''); setName(''); setEmail(''); setPassword(''); setResetSent(false);
   };
 
@@ -131,21 +123,16 @@ export default function HomePage() {
     setBusy(true); setVerifyError('');
     try {
       await auth.currentUser.reload();
-      if (auth.currentUser.emailVerified) {
-        router.push('/dashboard');
-      } else {
-        setVerifyError("Email not verified yet. Please check your inbox and click the link.");
-      }
+      if (auth.currentUser.emailVerified) { router.push('/dashboard'); }
+      else { setVerifyError('Email not verified yet. Please check your inbox and click the link.'); }
     } catch { setVerifyError('Something went wrong. Please try again.'); }
     setBusy(false);
   };
 
   const resendVerification = async () => {
     setBusy(true); setVerifyError(''); setVerifyResent(false);
-    try {
-      await sendEmailVerification(auth.currentUser);
-      setVerifyResent(true);
-    } catch { setVerifyError('Could not resend. Try again in a minute.'); }
+    try { await sendEmailVerification(auth.currentUser); setVerifyResent(true); }
+    catch { setVerifyError('Could not resend. Try again in a minute.'); }
     setBusy(false);
   };
 
@@ -157,11 +144,11 @@ export default function HomePage() {
       {/* AD BLOCKER WARNING */}
       {authError && (
         <div style={{background:'#fef3c7',borderBottom:'2px solid #f59e0b',padding:'10px 20px',textAlign:'center',fontSize:'.85rem',color:'#92400e',fontWeight:600}}>
-  \u26A0\uFE0F  An ad blocker may be interfering with login. Please disable it for this site if you have trouble signing in.
+          {WARN} An ad blocker may be interfering with login. Please disable it for this site if you have trouble signing in.
         </div>
       )}
 
-      {/*  NAVBAR  */}
+      {/* NAVBAR */}
       <nav className="hp-nav">
         <div className="hp-tab-wrap">
           <button className="hp-tab-btn" onClick={() => setTabOpen(!tabOpen)}>
@@ -169,22 +156,27 @@ export default function HomePage() {
           </button>
           {tabOpen && (
             <div className="hp-tab-dropdown">
-              <a href="#pics" onClick={() => setTabOpen(false)}>\uD83D\uDCF8 Pics</a>
-              <a href="#reviews" onClick={() => setTabOpen(false)}>\u2B50 Reviews</a>
+              <a href="#pics"    onClick={() => setTabOpen(false)}>{CAM} Pics</a>
+              <a href="#reviews" onClick={() => setTabOpen(false)}>{STAR} Reviews</a>
             </div>
           )}
         </div>
-        <div className="hp-nav-brand">\u2728 Yoselins Cleaning</div>
+
+        {/* LOGO */}
+        <div className="hp-nav-brand">
+          <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '48px', objectFit: 'contain' }} />
+        </div>
+
         <button className="hp-nav-login" onClick={() => setAuthMode('login')}>Login</button>
       </nav>
 
-      {/*  HERO  */}
+      {/* HERO */}
       <section className="hp-hero">
-        <p className="hp-hero-tagline">\u2728 Ready To Make Your Place Shine</p>
+        <p className="hp-hero-tagline">{SPARKLE} Ready To Make Your Place Shine</p>
         <h1 className="hp-hero-title">Professional Cleaning<br /><span>You Can Trust</span></h1>
         <p className="hp-hero-intro">
           We bring the sparkle back to your home or office. Detail-focused, reliable, and always on time.
-          Based in Fairfield, Ohio  serving the surrounding area.
+          Based in Fairfield, Ohio serving the surrounding area.
         </p>
         <div className="hp-hero-btns">
           <button className="hp-btn-primary" onClick={() => setAuthMode('signup')}>Create Account</button>
@@ -192,24 +184,24 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/*  SERVICES  */}
+      {/* SERVICES */}
       <section className="hp-services" id="services">
         <div className="hp-section-label">What We Offer</div>
         <div className="hp-services-grid">
           <div className="hp-service-card">
-            <div className="hsc-icon">\uD83C\uDFE0</div>
+            <div className="hsc-icon">{HOUSE}</div>
             <h3>Residential</h3>
             <p>Full home cleaning tailored to your schedule. Weekly, bi-weekly, or one-time deep cleans.</p>
             <div className="hsc-price">From $120</div>
           </div>
           <div className="hp-service-card">
-            <div className="hsc-icon">\uD83C\uDFE2</div>
+            <div className="hsc-icon">{OFFICE}</div>
             <h3>Light Commercial</h3>
             <p>Offices, studios, and small businesses. Flexible scheduling before or after hours.</p>
             <div className="hsc-price">From $150</div>
           </div>
           <div className="hp-service-card">
-            <div className="hsc-icon">\uD83D\uDE9A</div>
+            <div className="hsc-icon">{TRUCK}</div>
             <h3>Move Out / In</h3>
             <p>Leave your old place spotless or start fresh in your new home. Landlord-ready results.</p>
             <div className="hsc-price">From $250</div>
@@ -217,14 +209,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/*  PICS / REVIEWS  */}
+      {/* PICS / REVIEWS */}
       <section className="hp-gallery" id="pics">
         <div className="hp-section-label">Pics / Reviews</div>
         <div className="hp-photos-row">
           {['Before & After', 'Kitchen Deep Clean', 'Bathroom Detail', 'Living Room', 'Office Space'].map((label, i) => (
             <div className="hp-photo" key={i}>
               <div className="hp-photo-inner">
-                <span className="hp-photo-icon">\uD83D\uDCF8</span>
+                <span className="hp-photo-icon">{CAM}</span>
                 <span className="hp-photo-label">{label}</span>
               </div>
             </div>
@@ -233,7 +225,7 @@ export default function HomePage() {
         <div className="hp-reviews-grid" id="reviews">
           {reviews.map(r => (
             <div className="hp-review-card" key={r.name}>
-              <div className="hrc-stars">{'\u2B50'.repeat(r.stars)}</div>
+              <div className="hrc-stars">{STAR.repeat(r.stars)}</div>
               <p className="hrc-text">"{r.text}"</p>
               <div className="hrc-footer">
                 <div className="hrc-avatar">{r.name[0]}</div>
@@ -247,12 +239,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/*  LOCATION  */}
+      {/* LOCATION */}
       <section className="hp-location" id="schedule">
         <div className="hp-section-label">Locations</div>
         <div className="hp-location-stack">
           <div className="hp-location-box">
-            <span className="hp-loc-pin">\uD83D\uDCCD</span>
+            <span className="hp-loc-pin">{PIN}</span>
             <div>
               <strong>Based In Fairfield, Ohio</strong>
               <p>Serving Fairfield and surrounding cities in the Cincinnati area</p>
@@ -264,10 +256,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/*  FOOTER  */}
+      {/* FOOTER */}
       <footer className="hp-footer">
         <div className="hp-footer-links">
-          <a href="#">Policy</a>
+          <a href="/policy">Policy</a>
           <a href="#">Careers</a>
         </div>
         <div className="hp-footer-contact">
@@ -275,27 +267,29 @@ export default function HomePage() {
           <a href="tel:5133709082">513-370-9082</a>
           <a href="tel:5132576942">513-257-6942</a>
         </div>
-        <div className="hp-footer-brand">\u2728 Yoselins Cleaning</div>
-        <p className="hp-footer-copy">\u00A9 2025 Yoselins Cleaning. All rights reserved.</p>
+        <div className="hp-footer-brand">
+          <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '36px', objectFit: 'contain', marginBottom: '4px' }} />
+        </div>
+        <p className="hp-footer-copy">{COPY} 2025 Yoselins Cleaning. All rights reserved.</p>
       </footer>
 
-      {/*  VERIFY EMAIL MODAL  */}
+      {/* VERIFY EMAIL MODAL */}
       {authMode === 'verify' && (
         <div className="am-overlay">
           <div className="am-modal" style={{textAlign:'center'}}>
-            <div className="am-logo">\uD83D\uDCE7</div>
+            <div className="am-logo">{MAIL}</div>
             <h2 className="am-title">Check Your Email</h2>
             <p className="am-sub" style={{marginBottom:'6px'}}>
               We sent a verification link to<br />
               <strong style={{color:'white'}}>{auth.currentUser?.email}</strong>
             </p>
-            <p style={{color:'#6b7280',fontSize:'.76rem',marginBottom:'22px'}}>Click the link in the email, then press the button below.</p>
-
-            {verifyError && <p className="am-error" style={{marginBottom:'12px'}}>{verifyError}</p>}
-            {verifyResent && <p style={{color:'#10b981',fontSize:'.8rem',marginBottom:'12px'}}>\u2705 Email resent! Check your inbox.</p>}
-
+            <p style={{color:'#6b7280',fontSize:'.76rem',marginBottom:'22px'}}>
+              Click the link in the email, then press the button below.
+            </p>
+            {verifyError   && <p className="am-error" style={{marginBottom:'12px'}}>{verifyError}</p>}
+            {verifyResent  && <p style={{color:'#10b981',fontSize:'.8rem',marginBottom:'12px'}}>{CHECK} Email resent! Check your inbox.</p>}
             <button className="am-submit" onClick={checkVerification} disabled={busy} style={{marginBottom:'10px'}}>
-              {busy ? 'Checking...' : "I've Verified My Email "}
+              {busy ? 'Checking...' : "I've Verified My Email"}
             </button>
             <button className="am-link-btn" onClick={resendVerification} disabled={busy}>
               Resend verification email
@@ -307,16 +301,14 @@ export default function HomePage() {
         </div>
       )}
 
-      {/*  AUTH MODAL  */}
+      {/* AUTH MODAL */}
       {authMode && authMode !== 'verify' && (
         <div className="am-overlay" onClick={(e) => e.target.classList.contains('am-overlay') && closeModal()}>
           <div className="am-modal">
-
-            {/* Close */}
-            <button className="am-close" onClick={closeModal}></button>
-
-            {/* Logo */}
-            <div className="am-logo">\uD83D\uDCE7</div>
+            <button className="am-close" onClick={closeModal}>{'\u2715'}</button>
+            <div className="am-logo">
+              <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '60px', objectFit: 'contain' }} />
+            </div>
             <h2 className="am-title">
               {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
             </h2>
@@ -326,77 +318,49 @@ export default function HomePage() {
 
             {resetSent ? (
               <div className="am-reset-success">
-                <div style={{fontSize:'2rem',marginBottom:'8px'}}>\uD83D\uDCE7</div>
+                <div style={{fontSize:'2rem',marginBottom:'8px'}}>{MAIL}</div>
                 <p>Password reset email sent! Check your inbox.</p>
                 <button className="am-link-btn" onClick={() => setResetSent(false)}>Back to Login</button>
               </div>
             ) : (
               <>
-                {/* Name field  signup only */}
                 {authMode === 'signup' && (
                   <div className="am-field">
                     <label>Your Name</label>
-                    <input
-                      type="text"
-                      placeholder="First and last name"
-                      value={name}
-                      onChange={e => setName(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleSignup()}
-                    />
+                    <input type="text" placeholder="First and last name" value={name}
+                      onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSignup()} />
                   </div>
                 )}
-
                 <div className="am-field">
                   <label>Email</label>
-                  <input
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
+                  <input type="email" placeholder="your@email.com" value={email}
                     onChange={e => setEmail(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignup())}
-                  />
+                    onKeyDown={e => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignup())} />
                 </div>
-
                 <div className="am-field">
                   <label>Password</label>
                   <div className="am-pass-wrap">
-                    <input
-                      type={showPass ? 'text' : 'password'}
+                    <input type={showPass ? 'text' : 'password'}
                       placeholder={authMode === 'signup' ? 'At least 6 characters' : 'Your password'}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignup())}
-                    />
+                      value={password} onChange={e => setPassword(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignup())} />
                     <button className="am-eye" onClick={() => setShowPass(s => !s)}>
-                      {showPass ? '\uD83D\uDC41' : '\uD83D\uDE48'}
+                      {showPass ? EYE_OPEN : EYE_SHUT}
                     </button>
                   </div>
                 </div>
-
                 {error && <p className="am-error">{error}</p>}
-
-                <button
-                  className="am-submit"
-                  onClick={authMode === 'login' ? handleLogin : handleSignup}
-                  disabled={busy}
-                >
+                <button className="am-submit" onClick={authMode === 'login' ? handleLogin : handleSignup} disabled={busy}>
                   {busy ? '...' : authMode === 'login' ? 'Log In' : 'Create Account'}
                 </button>
-
-                {/* Forgot password */}
                 {authMode === 'login' && (
-                  <button className="am-link-btn" onClick={handleReset} disabled={busy}>
-                    Forgot password?
-                  </button>
+                  <button className="am-link-btn" onClick={handleReset} disabled={busy}>Forgot password?</button>
                 )}
-
                 <div className="am-divider"><span>or</span></div>
-
                 <button className="am-google" onClick={handleGoogleSignIn} disabled={busy}>
                   <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="" />
                   Continue with Google
                 </button>
-
                 <p className="am-switch">
                   {authMode === 'login' ? (
                     <>No account? <button onClick={() => { setAuthMode('signup'); setError(''); }}>Sign up</button></>
@@ -413,5 +377,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-
