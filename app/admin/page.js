@@ -284,7 +284,7 @@ export default function AdminPage() {
       {/* Nav */}
       <nav className="nav" style={{ background: '#0d0d0d', borderBottom: '1px solid #1f1f1f' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '62px', objectFit: 'contain' }} />
+          <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '100px', objectFit: 'contain' }} />
           <span className="nav-badge">ADMIN</span>
         </div>
         <div className="nav-user">
