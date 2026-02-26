@@ -175,7 +175,7 @@ export default function DashboardPage() {
 
       {/* NAV */}
       <nav style={{ background: '#0d0d0d', borderBottom: '1px solid #1f1f1f', padding: '0 24px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div className="nav-brand">Yoselin's <span>Cleaning</span></div>
+        <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '52px', objectFit: 'contain' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {user?.photoURL
             ? <img src={user.photoURL} className="nav-avatar" alt="" />
