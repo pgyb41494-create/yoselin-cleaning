@@ -40,7 +40,7 @@ export default function BookPage() {
       <div className="sbox">
         <div style={{fontSize:'2.8rem'}}>:)</div>
         <h2>Request Sent!</h2>
-        <p><strong>Yoselin will contact you within 24 hours</strong> to confirm your appointment.</p>
+        <p>👏 <strong>The owner will contact you within 24 hours</strong> to confirm your appointment.</p>
         <br />
         <p style={{fontSize:'.82rem',background:'#f3f4f6',borderRadius:'10px',padding:'12px'}}>
           Track your request in your portal.

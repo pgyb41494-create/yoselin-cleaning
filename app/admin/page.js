@@ -1,4 +1,4 @@
-ï»¿'use client';
+'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -107,6 +107,9 @@ export default function AdminPage() {
   const [weekStart, setWeekStart] = useState(0);
   const [pendingTimes, setPendingTimes] = useState({});
   const [saving, setSaving] = useState(false);
+  // Availability mini-calendar nav
+  const [availMonth, setAvailMonth] = useState(now.getMonth());
+  const [availYear, setAvailYear] = useState(now.getFullYear());
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -516,69 +519,88 @@ export default function AdminPage() {
         {/*  AVAILABILITY TAB  */}
         {tab === 'availability' && (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-              <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white' }}>Choose a Time</div>
-              <div style={{ color: '#9ca3af', fontSize: '.85rem', fontWeight: '600' }}>{currentMonth}</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white' }}>Manage Availability</div>
+              <div style={{ fontSize: '.78rem', color: '#6b7280' }}>Click a date, then toggle time slots</div>
             </div>
             <p style={{ color: '#6b7280', fontSize: '.8rem', marginBottom: '22px' }}>
-              Select a date then toggle available times. Customers will see these as options when booking.
+              Purple dots = dates with slots already set. Select a date then pick times. Save when done.
             </p>
-            <div style={{ background: '#111', borderRadius: '20px', border: '1px solid #1f1f1f', padding: '22px', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <button onClick={() => setWeekStart(Math.max(0, weekStart - 10))} disabled={weekStart === 0}
-                  style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #333', background: weekStart === 0 ? 'transparent' : '#1f1f1f', color: weekStart === 0 ? '#333' : '#d1d5db', cursor: weekStart === 0 ? 'default' : 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {'<'}
-                </button>
-                <div style={{ display: 'flex', gap: '6px', flex: 1, overflowX: 'auto' }}>
-                  {visibleDays.map((d, i) => {
-                    const key = formatDateKey(d);
-                    const isSelected = formatDateKey(d) === formatDateKey(calDate);
-                    const hasSlots = datesWithSlots.has(key);
-                    return (
-                      <button key={i} onClick={() => selectCalDate(d)} style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-                        minWidth: '52px', padding: '10px 6px', borderRadius: '50px', border: 'none',
-                        cursor: 'pointer', background: isSelected ? 'white' : 'transparent',
-                        color: isSelected ? '#0d0d0d' : '#9ca3af',
-                      }}>
-                        <span style={{ fontSize: '.68rem', fontWeight: '600', textTransform: 'uppercase' }}>{DAY_NAMES[d.getDay()]}</span>
-                        <span style={{ fontSize: '1.15rem', fontWeight: '800', lineHeight: 1 }}>{d.getDate()}</span>
-                        <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: hasSlots ? '#a855f7' : 'transparent', display: 'block' }}></span>
-                      </button>
-                    );
-                  })}
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 1fr) minmax(300px, 2fr)', gap: '18px', alignItems: 'start' }}>
+              {/* Mini Calendar */}
+              <div style={{ background: '#111', borderRadius: '20px', border: '1px solid #1f1f1f', padding: '18px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                  <button onClick={() => { if (availMonth === 0) { setAvailMonth(11); setAvailYear(y => y-1); } else setAvailMonth(m => m-1); }} style={{ background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', padding: '5px 11px', cursor: 'pointer', fontWeight: '700', fontSize: '.9rem' }}>{'<'}</button>
+                  <div style={{ fontWeight: '700', color: 'white', fontSize: '.88rem' }}>{MONTH_NAMES[availMonth]} {availYear}</div>
+                  <button onClick={() => { if (availMonth === 11) { setAvailMonth(0); setAvailYear(y => y+1); } else setAvailMonth(m => m+1); }} style={{ background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', padding: '5px 11px', cursor: 'pointer', fontWeight: '700', fontSize: '.9rem' }}>{'>'}</button>
                 </div>
-                <button onClick={() => setWeekStart(Math.min(allDays.length - 10, weekStart + 10))}
-                  style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #333', background: '#1f1f1f', color: '#d1d5db', cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {'>'}
-                </button>
-              </div>
-              <div style={{ fontSize: '.72rem', color: '#6b7280', fontWeight: '700', letterSpacing: '.5px', textAlign: 'right', marginBottom: '14px', textTransform: 'uppercase' }}>{dateKey}</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(95px, 1fr))', gap: '8px' }}>
-                {ALL_TIMES.map(t => {
-                  const on = isTimeOn(t);
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '6px' }}>
+                  {DAY_NAMES.map(d => (<div key={d} style={{ textAlign: 'center', fontSize: '.6rem', fontWeight: '700', color: '#555', textTransform: 'uppercase', padding: '3px 0' }}>{d}</div>))}
+                </div>
+                {(() => {
+                  const firstDay = new Date(availYear, availMonth, 1).getDay();
+                  const daysInMonth = getDaysInMonth(availYear, availMonth);
+                  const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
                   return (
-                    <button key={t} onClick={() => toggleTime(t)} style={{
-                      padding: '10px 8px', borderRadius: '10px',
-                      border: on ? '2px solid transparent' : '1.5px solid #2a2a2a',
-                      background: on ? 'white' : '#0d0d0d', color: on ? '#0d0d0d' : '#9ca3af',
-                      fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.8rem', cursor: 'pointer',
-                    }}>{t}</button>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px' }}>
+                      {Array.from({ length: firstDay }).map((_, i) => <div key={'e'+i} />)}
+                      {Array.from({ length: daysInMonth }).map((_, i) => {
+                        const day = i + 1;
+                        const d = new Date(availYear, availMonth, day);
+                        const key = formatDateKey(d);
+                        const hasSlots = datesWithSlots.has(key);
+                        const isSelected = formatDateKey(d) === formatDateKey(calDate);
+                        const isPast = d < todayMidnight;
+                        return (
+                          <button key={day} onClick={() => !isPast && selectCalDate(d)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', aspectRatio: '1', borderRadius: '8px', padding: '4px 2px', border: isSelected ? '2px solid #a855f7' : '1px solid transparent', background: isSelected ? 'rgba(168,85,247,.18)' : 'transparent', color: isPast ? '#333' : isSelected ? '#d8b4fe' : '#d1d5db', cursor: isPast ? 'default' : 'pointer', fontWeight: '700', fontSize: '.78rem', position: 'relative', transition: 'all .12s' }}>
+                            {day}
+                            {hasSlots && !isPast && <span style={{ position: 'absolute', bottom: '2px', width: '4px', height: '4px', borderRadius: '50%', background: '#a855f7', display: 'block' }} />}
+                          </button>
+                        );
+                      })}
+                    </div>
                   );
-                })}
-              </div>
-              <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-                <div style={{ fontSize: '.78rem', color: pendingForDate.length > 0 ? '#a855f7' : '#6b7280' }}>
-                  {pendingForDate.length > 0 ? pendingForDate.length + ' time(s) selected' : 'No times selected for this date'}
+                })()}
+                <div style={{ marginTop: '12px', display: 'flex', gap: '14px', fontSize: '.68rem', color: '#555', flexWrap: 'wrap', borderTop: '1px solid #1f1f1f', paddingTop: '10px' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#a855f7', display: 'inline-block' }}></span>Has slots</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#a855f7' }}><span style={{ width: '10px', height: '10px', borderRadius: '3px', border: '2px solid #a855f7', display: 'inline-block' }}></span>Selected</span>
                 </div>
-                <button onClick={saveSlots} disabled={saving} style={{ padding: '11px 28px', background: 'linear-gradient(135deg, #1a6fd4, #db2777)', color: 'white', border: 'none', borderRadius: '99px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: saving ? 'default' : 'pointer', opacity: saving ? .6 : 1 }}>
-                  {saving ? 'Saving...' : 'Save Availability'}
+              </div>
+
+              {/* Time Slots Panel */}
+              <div style={{ background: '#111', borderRadius: '20px', border: '1px solid #1f1f1f', padding: '18px' }}>
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ fontWeight: '700', color: 'white', fontSize: '.95rem' }}>{dateKey}</div>
+                  <div style={{ fontSize: '.75rem', color: pendingForDate.length > 0 ? '#a855f7' : '#555', marginTop: '3px' }}>{pendingForDate.length > 0 ? pendingForDate.length + ' slot(s) selected' : 'No slots selected'}</div>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '16px' }}>
+                  {[{label:'Morning',times:ALL_TIMES.slice(0,12)},{label:'Afternoon',times:ALL_TIMES.slice(12,22)},{label:'Evening',times:ALL_TIMES.slice(22)},{label:'All Day',times:ALL_TIMES},{label:'Clear',times:[]}].map(({ label, times }) => (
+                    <button key={label} onClick={() => setPendingTimes(prev => ({ ...prev, [dateKey]: times }))} style={{ padding: '5px 12px', borderRadius: '99px', border: '1px solid #2a2a2a', background: '#1a1a1a', color: '#d1d5db', fontSize: '.74rem', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}>{label}</button>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '340px', overflowY: 'auto', paddingRight: '4px' }}>
+                  {[{label:'Morning',sub:'6am – 11:30am',times:ALL_TIMES.slice(0,12)},{label:'Afternoon',sub:'12pm – 4:30pm',times:ALL_TIMES.slice(12,22)},{label:'Evening',sub:'5pm – 8pm',times:ALL_TIMES.slice(22)}].map(({ label, sub, times }) => (
+                    <div key={label}>
+                      <div style={{ fontSize: '.68rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '7px' }}>{label} <span style={{ fontWeight: '500', textTransform: 'none', letterSpacing: 0, color: '#444' }}>{sub}</span></div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {times.map(t => {
+                          const on = isTimeOn(t);
+                          return (<button key={t} onClick={() => toggleTime(t)} style={{ padding: '6px 11px', borderRadius: '8px', border: on ? '2px solid #a855f7' : '1px solid #2a2a2a', background: on ? 'rgba(168,85,247,.22)' : '#0d0d0d', color: on ? '#d8b4fe' : '#6b7280', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.75rem', cursor: 'pointer', transition: 'all .12s' }}>{t}</button>);
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={saveSlots} disabled={saving} style={{ marginTop: '18px', width: '100%', padding: '12px', background: 'linear-gradient(135deg, #1a6fd4, #db2777)', color: 'white', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.9rem', cursor: saving ? 'default' : 'pointer', opacity: saving ? .6 : 1 }}>
+                  {saving ? 'Saving...' : 'Save Availability for ' + MONTH_NAMES[calDate.getMonth()] + ' ' + calDate.getDate()}
                 </button>
               </div>
             </div>
+
             {availability.length > 0 && (
-              <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #1f1f1f', overflow: 'hidden' }}>
-                <div style={{ padding: '14px 18px', borderBottom: '1px solid #1f1f1f', color: '#9ca3af', fontSize: '.75rem', fontWeight: '700', letterSpacing: '.4px', textTransform: 'uppercase' }}>All Saved Availability</div>
+              <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #1f1f1f', overflow: 'hidden', marginTop: '20px' }}>
+                <div style={{ padding: '14px 18px', borderBottom: '1px solid #1f1f1f', color: '#9ca3af', fontSize: '.75rem', fontWeight: '700', letterSpacing: '.4px', textTransform: 'uppercase' }}>All Saved Slots</div>
                 <div style={{ padding: '14px 18px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {(() => {
                     const grouped = {};
@@ -603,7 +625,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/*  CREATE QUOTE TAB  */}
+                {/*  CREATE QUOTE TAB  */}
         {tab === 'create' && (
           <>
             {createDone ? (

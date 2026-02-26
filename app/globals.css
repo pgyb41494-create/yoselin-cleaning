@@ -494,7 +494,7 @@ tr:hover td { background: var(--soft); }
 .hrc-text { color: #d1d5db; font-size: .84rem; line-height: 1.65; margin-bottom: 14px; }
 .hrc-footer { display: flex; align-items: center; gap: 10px; padding-top: 12px; border-top: 1px solid #2a2a2a; }
 .hrc-avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--blue), var(--pink-deep)); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .88rem; flex-shrink: 0; }
-.hrc-name { font-weight: 700; color: var(--black); font-size: .84rem; }
+.hrc-name { font-weight: 700; color: white; font-size: .84rem; }
 .hrc-date { font-size: .72rem; color: #9ca3af; }
 
 /* ═══ LOCATION ═══ */
@@ -688,7 +688,7 @@ tr:hover td { background: var(--soft); }
 .ad-tabs { display: flex; gap: 0; }
 .ad-tab { padding: 14px 20px; background: none; border: none; border-bottom: 3px solid transparent; font-size: .85rem; font-weight: 700; color: #9ca3af; cursor: pointer; transition: all .2s; display: flex; align-items: center; gap: 8px; }
 .ad-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
-.ad-tab:hover:not(.active) { color: #374151; }
+.ad-tab:hover:not(.active) { color: #d1d5db; }
 .ad-tab-badge { background: var(--pink-deep); color: white; font-size: .65rem; font-weight: 700; padding: 2px 7px; border-radius: 99px; }
 .ad-body { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; }
 .ad-empty { text-align: center; padding: 64px 20px; }
@@ -939,3 +939,11 @@ tr:hover td { background: #222; }
   .chat-panel { border-radius: 0; }
   .chat-msgs { height: 320px !important; }
 }
+
+/* --- AVAILABILITY GRID RESPONSIVE --- */
+@media (max-width: 700px) {
+  .avail-grid { grid-template-columns: 1fr !important; }
+}
+
+/* bath-sum dark override */
+.bath-sum { background: #1a1a1a !important; color: #9ca3af !important; border-color: #2a2a2a !important; }
