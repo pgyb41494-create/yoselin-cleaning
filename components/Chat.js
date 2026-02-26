@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect, useRef } from 'react';
 import {
   collection, addDoc, onSnapshot, orderBy, query,
@@ -12,7 +12,7 @@ export default function Chat({
   currentUser,
   senderRole,
   clientName,
-  clientEmail,   // ← admin passes this so we can email the customer
+  clientEmail,   //  admin passes this so we can email the customer
   onClose,
   inline = false,
 }) {
@@ -20,7 +20,7 @@ export default function Chat({
   const [text, setText] = useState('');
   const bottomRef = useRef(null);
 
-  /* ── Listen to messages ── */
+  /*  Listen to messages  */
   useEffect(() => {
     if (!requestId) return;
     const q = query(
@@ -33,21 +33,21 @@ export default function Chat({
     return () => unsub();
   }, [requestId]);
 
-  /* ── Auto-scroll ── */
+  /*  Auto-scroll  */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  /* ── Mark messages as read when chat is opened / messages update ──
-       Customer opens chat → reset unreadByCustomer to 0
-       Admin    opens chat → reset unreadByAdmin    to 0          */
+  /*  Mark messages as read when chat is opened / messages update 
+       Customer opens chat  reset unreadByCustomer to 0
+       Admin    opens chat  reset unreadByAdmin    to 0          */
   useEffect(() => {
     if (!requestId) return;
     const field = senderRole === 'admin' ? 'unreadByAdmin' : 'unreadByCustomer';
     setDoc(doc(db, 'chatUnread', requestId), { [field]: 0 }, { merge: true }).catch(() => {});
   }, [requestId, senderRole, messages.length]);
 
-  /* ── Send message ── */
+  /*  Send message  */
   const send = async () => {
     const t = text.trim();
     if (!t) return;
@@ -79,7 +79,7 @@ export default function Chat({
         messageText: t,
       });
     } else {
-      // admin → customer
+      // admin  customer
       notifyCustomerNewMessage({
         clientEmail: clientEmail,
         clientName: clientName?.split(' ')[0] || 'there',
@@ -88,10 +88,10 @@ export default function Chat({
     }
   };
 
-  /* ── Shared message renderer ── */
+  /*  Shared message renderer  */
   const renderMessages = () =>
     messages.length === 0 ? (
-      <div className="chat-empty">No messages yet. Say hello! 👋</div>
+      <div className="chat-empty">No messages yet. Say hello! </div>
     ) : (
       messages.map(m => {
         const isMe = m.sender === senderRole;
@@ -111,7 +111,7 @@ export default function Chat({
       })
     );
 
-  /* ── INLINE mode (embedded in dashboard tab) ── */
+  /*  INLINE mode (embedded in dashboard tab)  */
   if (inline) {
     return (
       <div className="chat-inline">
@@ -136,13 +136,13 @@ export default function Chat({
     );
   }
 
-  /* ── OVERLAY mode (admin panel) ── */
+  /*  OVERLAY mode (admin panel)  */
   return (
     <div className="chat-overlay show">
       <div className="chat-panel">
         <div className="chat-head">
           <div className="chat-head-info">
-            <div className="chat-avatar">✨</div>
+            <div className="chat-avatar"></div>
             <div>
               <div className="chat-name">
                 {senderRole === 'admin' ? `Chat with ${clientName || 'Client'}` : 'Messages'}
@@ -150,7 +150,7 @@ export default function Chat({
               <div className="chat-status">Yoselin's Cleaning Service</div>
             </div>
           </div>
-          {onClose && <button className="chat-close" onClick={onClose}>✕</button>}
+          {onClose && <button className="chat-close" onClick={onClose}></button>}
         </div>
 
         <div className="chat-msgs">

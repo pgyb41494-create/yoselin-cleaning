@@ -1,4 +1,4 @@
-﻿﻿'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -174,7 +174,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       text: "Hi " + form.firstName + "! Thank you for reaching out to Yoselin's Cleaning Service. I've received your request and will get back to you within 24 hours to confirm your appointment!",
       sender: 'admin', senderName: 'Owner', createdAt: serverTimestamp(),
     });
-    // ── Remove the booked time slot so no one else can pick it ──
+    //  Remove the booked time slot so no one else can pick it 
     if (form.date && form.time && form.date !== 'N/A' && form.time !== 'N/A') {
       try {
         const slotQuery = query(
@@ -187,7 +187,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
           await deleteDoc(doc(db, 'availability', slotDoc.id));
         });
       } catch (e) {
-        // Non-critical � booking still goes through
+        // Non-critical  booking still goes through
         console.warn('Could not remove availability slot:', e);
       }
     }
@@ -494,10 +494,10 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
             <div className="page-title">Review and Submit</div>
             <div className="page-sub">Add notes and submit</div>
 
-            {/* ── Photo Upload ── */}
+            {/*  Photo Upload  */}
             <div className="wcard">
               <div className="card-header">
-                <div className="card-icon">��</div>
+                <div className="card-icon"></div>
                 <div>
                   <div className="card-title">Photos <span className="opt" style={{fontFamily:'DM Sans,sans-serif',fontWeight:400,fontSize:'.78rem',color:'#6b7280'}}>(optional)</span></div>
                   <div className="card-sub">Upload photos of your space to help us prepare</div>
@@ -505,9 +505,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               </div>
               <div className="card-body">
                 <label className="photo-upload-area" htmlFor="bw-photo-input" style={{cursor:'pointer'}}>
-                  <div className="pua-icon">��</div>
+                  <div className="pua-icon"></div>
                   <div className="pua-text">Tap to add photos</div>
-                  <div className="pua-sub">Up to 5 images � JPG or PNG</div>
+                  <div className="pua-sub">Up to 5 images  JPG or PNG</div>
                   <input
                     id="bw-photo-input"
                     type="file"
@@ -525,7 +525,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                     {photoFiles.map((f, i) => (
                       <div key={i} className="photo-thumb">
                         <img src={URL.createObjectURL(f)} alt={`photo ${i + 1}`} />
-                        <button type="button" className="photo-remove" onClick={() => removePhoto(i)}>✕</button>
+                        <button type="button" className="photo-remove" onClick={() => removePhoto(i)}></button>
                       </div>
                     ))}
                   </div>
