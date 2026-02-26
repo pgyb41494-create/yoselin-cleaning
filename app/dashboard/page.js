@@ -174,8 +174,8 @@ export default function DashboardPage() {
     <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
 
       {/* NAV */}
-      <nav style={{ background: '#0d0d0d', borderBottom: '1px solid #1f1f1f', padding: '0 24px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '70px', objectFit: 'contain' }} />
+      <nav style={{ background: '#0d0d0d', borderBottom: '1px solid #1f1f1f', padding: '0 24px', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '110px', objectFit: 'contain' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {user?.photoURL
             ? <img src={user.photoURL} className="nav-avatar" alt="" />
