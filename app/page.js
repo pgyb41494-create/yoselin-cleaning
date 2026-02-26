@@ -164,7 +164,7 @@ export default function HomePage() {
 
         {/* LOGO */}
         <div className="hp-nav-brand">
-          <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '48px', objectFit: 'contain' }} />
+          <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '72px', objectFit: 'contain' }} />
         </div>
 
         <button className="hp-nav-login" onClick={() => setAuthMode('login')}>Login</button>
@@ -268,7 +268,7 @@ export default function HomePage() {
           <a href="tel:5132576942">513-257-6942</a>
         </div>
         <div className="hp-footer-brand">
-          <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '36px', objectFit: 'contain', marginBottom: '4px' }} />
+          <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '56px', objectFit: 'contain', marginBottom: '6px' }} />
         </div>
         <p className="hp-footer-copy">{COPY} 2025 Yoselins Cleaning. All rights reserved.</p>
       </footer>
@@ -307,7 +307,7 @@ export default function HomePage() {
           <div className="am-modal">
             <button className="am-close" onClick={closeModal}>{'\u2715'}</button>
             <div className="am-logo">
-              <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '60px', objectFit: 'contain' }} />
+              <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '80px', objectFit: 'contain' }} />
             </div>
             <h2 className="am-title">
               {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
