@@ -6,12 +6,38 @@ import { collection, query, where, onSnapshot, addDoc, getDocs, serverTimestamp 
 import { auth, db, ADMIN_EMAIL } from '../../lib/firebase';
 import Chat from '../../components/Chat';
 
+// Unicode emoji constants - safe for Windows file encoding
+const E = {
+  star:    '\u2B50',
+  sparkle: '\u2728',
+  trophy:  '\uD83C\uDFC6',
+  gold:    '\uD83E\uDD47',
+  silver:  '\uD83E\uDD48',
+  sprout:  '\uD83C\uDF31',
+  wave:    '\uD83D\uDC4B',
+  check:   '\u2705',
+  clock:   '\u23F3',
+  party:   '\uD83C\uDF89',
+  fire:    '\uD83D\uDD25',
+  clean:   '\uD83E\uDDF9',
+  msg:     '\uD83D\uDCAC',
+  doc:     '\uD83D\uDCCB',
+  home:    '\uD83C\uDFE0',
+  gear:    '\u2699\uFE0F',
+  pin:     '\uD83D\uDCCD',
+  cal:     '\uD83D\uDCC5',
+  time:    '\uD83D\uDD52',
+  arrow:   '\u2192',
+  info:    '\u2139\uFE0F',
+  heart:   '\u2764\uFE0F',
+};
+
 function getLoyaltyTier(count) {
-  if (count >= 8) return { label: 'VIP Client',       color: '#7c3aed', bg: 'rgba(124,58,237,.15)', next: null,        nextAt: null };
-  if (count >= 5) return { label: 'Gold Client',      color: '#f59e0b', bg: 'rgba(245,158,11,.15)', next: 'VIP',       nextAt: 8 };
-  if (count >= 3) return { label: 'Regular Client',   color: '#9ca3af', bg: 'rgba(156,163,175,.15)',next: 'Gold',      nextAt: 5 };
-  if (count >= 1) return { label: 'Returning Client', color: '#10b981', bg: 'rgba(16,185,129,.15)', next: 'Regular',   nextAt: 3 };
-  return                  { label: 'New Client',       color: '#60a5fa', bg: 'rgba(96,165,250,.15)', next: 'Returning', nextAt: 1 };
+  if (count >= 8) return { label: 'VIP Client',       icon: E.trophy,  color: '#7c3aed', bg: 'rgba(124,58,237,.15)', next: null,        nextAt: null };
+  if (count >= 5) return { label: 'Gold Client',      icon: E.gold,    color: '#f59e0b', bg: 'rgba(245,158,11,.15)', next: 'VIP',       nextAt: 8 };
+  if (count >= 3) return { label: 'Regular Client',   icon: E.silver,  color: '#9ca3af', bg: 'rgba(156,163,175,.15)',next: 'Gold',      nextAt: 5 };
+  if (count >= 1) return { label: 'Returning Client', icon: E.sparkle, color: '#10b981', bg: 'rgba(16,185,129,.15)', next: 'Regular',   nextAt: 3 };
+  return                  { label: 'New Client',       icon: E.sprout,  color: '#60a5fa', bg: 'rgba(96,165,250,.15)', next: 'Returning', nextAt: 1 };
 }
 
 function getCountdown(dateStr) {
@@ -38,7 +64,6 @@ export default function DashboardPage() {
   const [activeTab,  setActiveTab]  = useState('home');
   const unsubReqRef = useRef(null);
 
-  // Review
   const [reviewStars,   setReviewStars]   = useState(5);
   const [reviewText,    setReviewText]    = useState('');
   const [reviewBusy,    setReviewBusy]    = useState(false);
@@ -46,7 +71,6 @@ export default function DashboardPage() {
   const [alreadyReview, setAlreadyReview] = useState(false);
   const [hoverStar,     setHoverStar]     = useState(0);
 
-  // Settings
   const [settingsName, setSettingsName] = useState('');
   const [currentPass,  setCurrentPass]  = useState('');
   const [newPass,      setNewPass]      = useState('');
@@ -66,7 +90,6 @@ export default function DashboardPage() {
       if (u.email === ADMIN_EMAIL) { router.push('/admin'); return; }
       setUser(u);
       setSettingsName(u.displayName || '');
-
       const q = query(collection(db, 'requests'), where('userId', '==', u.uid));
       const unsubReq = onSnapshot(q, (snap) => {
         const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -74,23 +97,16 @@ export default function DashboardPage() {
         setRequests(docs);
         setLoading(false);
       }, () => setLoading(false));
-
       unsubReqRef.current = unsubReq;
     });
-
-    return () => {
-      unsubAuth();
-      if (unsubReqRef.current) unsubReqRef.current();
-    };
+    return () => { unsubAuth(); if (unsubReqRef.current) unsubReqRef.current(); };
   }, [router]);
 
   useEffect(() => {
     if (!user || !requests[0]) return;
     const req = requests[0];
-    getDocs(query(collection(db, 'reviews'),
-      where('userId', '==', user.uid),
-      where('requestId', '==', req.id)
-    )).then(snap => { if (!snap.empty) setAlreadyReview(true); });
+    getDocs(query(collection(db, 'reviews'), where('userId', '==', user.uid), where('requestId', '==', req.id)))
+      .then(snap => { if (!snap.empty) setAlreadyReview(true); });
   }, [user, requests]);
 
   const submitReview = async () => {
@@ -104,18 +120,14 @@ export default function DashboardPage() {
       date: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
       createdAt: serverTimestamp(),
     });
-    setReviewBusy(false);
-    setReviewDone(true);
-    setAlreadyReview(true);
+    setReviewBusy(false); setReviewDone(true); setAlreadyReview(true);
   };
 
   const saveName = async () => {
     if (!settingsName.trim()) { setSettingsErr('Name cannot be empty.'); return; }
     setSettingsBusy(true); setSettingsErr(''); setSettingsMsg('');
-    try {
-      await updateProfile(user, { displayName: settingsName.trim() });
-      setSettingsMsg('Name updated!');
-    } catch { setSettingsErr('Failed to update name.'); }
+    try { await updateProfile(user, { displayName: settingsName.trim() }); setSettingsMsg('Name updated!'); }
+    catch { setSettingsErr('Failed to update name.'); }
     setSettingsBusy(false);
   };
 
@@ -127,8 +139,7 @@ export default function DashboardPage() {
       const cred = EmailAuthProvider.credential(user.email, currentPass);
       await reauthenticateWithCredential(user, cred);
       await updatePassword(user, newPass);
-      setSettingsMsg('Password updated!');
-      setCurrentPass(''); setNewPass('');
+      setSettingsMsg('Password updated!'); setCurrentPass(''); setNewPass('');
     } catch (e) {
       setSettingsErr(e.code === 'auth/wrong-password' ? 'Current password is incorrect.' : 'Failed to update password.');
     }
@@ -142,7 +153,7 @@ export default function DashboardPage() {
   const isDone      = latest?.status === 'done';
   const isConfirmed = latest?.status === 'confirmed';
   const isNew       = latest?.status === 'new';
-  const statusLabel = isNew ? 'Pending Review' : isConfirmed ? 'Confirmed' : 'Completed';
+  const statusLabel = isNew ? 'Pending Review' : isConfirmed ? 'Confirmed ' + E.check : 'Completed ' + E.party;
   const statusColor = isNew ? '#f59e0b' : isConfirmed ? '#10b981' : '#6b7280';
   const firstName   = user?.displayName?.split(' ')[0] || 'there';
   const loyalty     = getLoyaltyTier(allDone);
@@ -150,12 +161,12 @@ export default function DashboardPage() {
   const isGoogleUser = user?.providerData?.[0]?.providerId === 'google.com';
 
   const TABS = [
-    { id: 'home',     label: 'Home'     },
+    { id: 'home',     label: E.home + ' Home'      },
     ...(latest && !isDone ? [
-      { id: 'messages', label: 'Messages' },
-      { id: 'request',  label: 'My Quote' },
+      { id: 'messages', label: E.msg  + ' Messages'  },
+      { id: 'request',  label: E.doc  + ' My Quote'  },
     ] : []),
-    { id: 'settings', label: 'Settings' },
+    { id: 'settings', label: E.gear + ' Settings'  },
   ];
   const safeTab = TABS.find(t => t.id === activeTab) ? activeTab : 'home';
 
@@ -180,29 +191,26 @@ export default function DashboardPage() {
         <div style={{ maxWidth: '760px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
           <div>
             <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: '900', color: 'white', marginBottom: '4px' }}>
-              Hey, {firstName}!
+              Hey, {firstName}! {E.wave}
             </h1>
             <p style={{ color: '#6b7280', fontSize: '.85rem' }}>
-              {isDone ? 'Your cleaning is complete - thank you!' :
-               isConfirmed ? 'Your appointment is confirmed!' :
-               latest ? 'We are reviewing your request.' :
-               'Welcome to your cleaning portal.'}
+              {isDone      ? 'Your cleaning is complete ' + E.party + ' thank you!' :
+               isConfirmed ? E.check + ' Your appointment is confirmed!' :
+               latest      ? E.clock + ' We are reviewing your request.' :
+               E.sparkle + ' Welcome to your cleaning portal.'}
             </p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-            {/* Loyalty badge */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '7px', background: loyalty.bg, border: '1px solid ' + loyalty.color + '44', borderRadius: '99px', padding: '6px 13px' }}>
+              <span>{loyalty.icon}</span>
               <span style={{ fontSize: '.73rem', fontWeight: '700', color: loyalty.color }}>{loyalty.label}</span>
-              {allDone > 0 && <span style={{ fontSize: '.68rem', color: loyalty.color, opacity: .7 }}>{allDone} job{allDone !== 1 ? 's' : ''}</span>}
+              {allDone > 0 && <span style={{ fontSize: '.68rem', color: loyalty.color, opacity: .7 }}>{E.clean} {allDone} job{allDone !== 1 ? 's' : ''}</span>}
             </div>
-            {/* Status chip */}
             {latest && (
-              <div style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '12px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div>
-                  <div style={{ fontSize: '.68rem', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '2px' }}>Your Booking</div>
-                  <div style={{ fontSize: '.85rem', fontWeight: '700', color: statusColor }}>{statusLabel}</div>
-                  <div style={{ fontSize: '.75rem', color: '#9ca3af' }}>${latest.estimate} estimate</div>
-                </div>
+              <div style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '12px', padding: '10px 14px' }}>
+                <div style={{ fontSize: '.68rem', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '2px' }}>Your Booking</div>
+                <div style={{ fontSize: '.85rem', fontWeight: '700', color: statusColor }}>{statusLabel}</div>
+                <div style={{ fontSize: '.75rem', color: '#9ca3af' }}>${latest.estimate} estimate</div>
               </div>
             )}
           </div>
@@ -213,12 +221,12 @@ export default function DashboardPage() {
       <div style={{ background: '#141414', borderBottom: '1.5px solid #2a2a2a', display: 'flex', padding: '0 8px', overflowX: 'auto' }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
-            flex: 1, minWidth: '70px', padding: '13px 8px 11px',
+            flex: 1, minWidth: '80px', padding: '13px 8px 11px',
             background: 'none', border: 'none',
             borderBottom: safeTab === t.id ? '3px solid #60a5fa' : '3px solid transparent',
             fontSize: '.82rem', fontWeight: '700',
             color: safeTab === t.id ? '#60a5fa' : '#6b7280',
-            cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+            cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap',
           }}>{t.label}</button>
         ))}
       </div>
@@ -238,7 +246,7 @@ export default function DashboardPage() {
               }}>
                 <div style={{ width: '54px', height: '54px', borderRadius: '50%', flexShrink: 0, background: countdown.urgent ? 'rgba(16,185,129,.18)' : 'rgba(26,111,212,.18)', border: '2px solid ' + (countdown.urgent ? '#10b981' : '#1a6fd4'), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                   {countdown.days <= 1
-                    ? <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>:)</span>
+                    ? <span style={{ fontSize: '1.5rem' }}>{E.fire}</span>
                     : <>
                         <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: '900', fontSize: '1.4rem', color: 'white', lineHeight: 1 }}>{countdown.days}</span>
                         <span style={{ fontSize: '.55rem', color: '#9ca3af', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px' }}>days</span>
@@ -247,13 +255,13 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <div style={{ fontSize: '.7rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '2px' }}>
-                    {countdown.urgent ? 'Coming Up!' : 'Upcoming Cleaning'}
+                    {countdown.urgent ? E.fire + ' Coming Up!' : E.cal + ' Upcoming Cleaning'}
                   </div>
                   <div style={{ fontSize: '1rem', fontWeight: '800', color: 'white', marginBottom: '2px' }}>
                     {countdown.days === 0 ? 'Your cleaning is TODAY!' : countdown.days === 1 ? 'Your cleaning is TOMORROW!' : 'Cleaning in ' + countdown.days + ' days'}
                   </div>
                   <div style={{ fontSize: '.8rem', color: '#9ca3af' }}>
-                    {latest.date}{latest.time && latest.time !== 'N/A' ? ' at ' + latest.time : ''}
+                    {E.cal} {latest.date}{latest.time && latest.time !== 'N/A' ? ' ' + E.time + ' ' + latest.time : ''}
                   </div>
                 </div>
               </div>
@@ -262,26 +270,28 @@ export default function DashboardPage() {
             {/* Main card */}
             {!latest ? (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '18px', padding: '40px 24px', textAlign: 'center' }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>{E.sparkle}</div>
                 <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white', marginBottom: '8px' }}>Get Your Free Quote</h2>
                 <p style={{ color: '#9ca3af', fontSize: '.85rem', marginBottom: '24px', lineHeight: '1.6' }}>Fill out a quick form and get a custom estimate. No commitment needed.</p>
                 <button onClick={() => router.push('/book')} style={{ padding: '13px 32px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.95rem', cursor: 'pointer' }}>
-                  Get a Quote
+                  Get a Quote {E.arrow}
                 </button>
               </div>
             ) : isDone ? (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '18px', padding: '36px 24px', textAlign: 'center' }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>{E.party}</div>
                 <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white', marginBottom: '8px' }}>Job Complete!</h2>
                 <p style={{ color: '#9ca3af', fontSize: '.85rem', marginBottom: '24px', lineHeight: '1.6' }}>Your cleaning has been marked complete. Hope everything is sparkling!</p>
                 <button onClick={() => router.push('/book')} style={{ padding: '13px 32px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.95rem', cursor: 'pointer' }}>
-                  Book Again
+                  Book Again {E.arrow}
                 </button>
               </div>
             ) : (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '18px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 <div>
                   <div style={{ fontSize: '.7rem', color: '#6b7280', fontWeight: '700', letterSpacing: '.5px', textTransform: 'uppercase', marginBottom: '5px' }}>Booking #{latest.id.slice(-6).toUpperCase()}</div>
-                  <div style={{ color: '#d1d5db', fontSize: '.85rem', marginBottom: '3px' }}>{latest.date || 'TBD'} at {latest.time || 'TBD'}</div>
-                  <div style={{ color: '#6b7280', fontSize: '.8rem' }}>{latest.address}</div>
+                  <div style={{ color: '#d1d5db', fontSize: '.85rem', marginBottom: '3px' }}>{E.cal} {latest.date || 'TBD'} &nbsp;{E.time} {latest.time || 'TBD'}</div>
+                  <div style={{ color: '#6b7280', fontSize: '.8rem' }}>{E.pin} {latest.address}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.8rem', fontWeight: '900', background: 'linear-gradient(135deg,#f472b6,#4a9eff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>${latest.estimate}</div>
@@ -290,22 +300,20 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Status progress bar */}
+            {/* Status progress */}
             {latest && !isDone && (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '18px 20px' }}>
-                <div style={{ fontSize: '.72rem', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '14px' }}>Booking Progress</div>
+                <div style={{ fontSize: '.72rem', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '14px' }}>{E.info} Booking Progress</div>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   {[{ label: 'Submitted', done: true }, { label: 'In Review', done: isConfirmed }, { label: 'Confirmed', done: isConfirmed }, { label: 'Complete', done: false }].map((s, i, arr) => (
                     <div key={s.label} style={{ display: 'flex', alignItems: 'center', flex: i < arr.length - 1 ? 1 : 'none' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
                         <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: s.done ? '#db2777' : '#2a2a2a', border: '2px solid ' + (s.done ? '#db2777' : '#3a3a3a'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.72rem', color: s.done ? 'white' : '#555', fontWeight: '700' }}>
-                          {s.done ? 'v' : i + 1}
+                          {s.done ? '\u2713' : i + 1}
                         </div>
                         <span style={{ fontSize: '.6rem', color: s.done ? '#d1d5db' : '#555', fontWeight: '600', textAlign: 'center', width: '52px' }}>{s.label}</span>
                       </div>
-                      {i < arr.length - 1 && (
-                        <div style={{ flex: 1, height: '2px', background: s.done && arr[i + 1].done ? '#db2777' : '#2a2a2a', margin: '0 2px', marginBottom: '18px' }} />
-                      )}
+                      {i < arr.length - 1 && <div style={{ flex: 1, height: '2px', background: s.done && arr[i + 1].done ? '#db2777' : '#2a2a2a', margin: '0 2px', marginBottom: '18px' }} />}
                     </div>
                   ))}
                 </div>
@@ -315,28 +323,29 @@ export default function DashboardPage() {
             {/* Review card */}
             {isDone && !alreadyReview && (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', borderBottom: '1px solid #2a2a2a', fontWeight: '700', color: 'white', fontSize: '.92rem' }}>Leave a Review</div>
+                <div style={{ padding: '14px 20px', borderBottom: '1px solid #2a2a2a', fontWeight: '700', color: 'white', fontSize: '.92rem' }}>{E.star} Leave a Review</div>
                 <div style={{ padding: '18px 20px' }}>
                   {reviewDone ? (
                     <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                      <div style={{ fontSize: '2.4rem', marginBottom: '10px' }}>{E.heart}</div>
                       <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: '700', color: 'white', fontSize: '1.05rem', marginBottom: '5px' }}>Thank you for your review!</div>
                       <div style={{ color: '#9ca3af', fontSize: '.83rem' }}>It will appear on our homepage.</div>
                     </div>
                   ) : (
                     <>
-                      <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
+                      <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', alignItems: 'center' }}>
                         {[1, 2, 3, 4, 5].map(s => (
                           <button key={s} onMouseEnter={() => setHoverStar(s)} onMouseLeave={() => setHoverStar(0)} onClick={() => setReviewStars(s)}
-                            style={{ fontSize: '1.8rem', background: 'none', border: 'none', cursor: 'pointer', opacity: s <= (hoverStar || reviewStars) ? 1 : 0.2, transition: 'all .12s', lineHeight: 1, padding: '2px' }}>
-                            *
+                            style={{ fontSize: '1.8rem', background: 'none', border: 'none', cursor: 'pointer', opacity: s <= (hoverStar || reviewStars) ? 1 : 0.25, transition: 'all .12s', lineHeight: 1, padding: '2px' }}>
+                            {E.star}
                           </button>
                         ))}
-                        <span style={{ color: '#9ca3af', fontSize: '.82rem', alignSelf: 'center', marginLeft: '6px' }}>{reviewStars} star{reviewStars !== 1 ? 's' : ''}</span>
+                        <span style={{ color: '#9ca3af', fontSize: '.82rem', marginLeft: '6px' }}>{reviewStars} star{reviewStars !== 1 ? 's' : ''}</span>
                       </div>
                       <textarea value={reviewText} onChange={e => setReviewText(e.target.value)} placeholder="Tell others about your experience..." rows={3}
                         style={{ width: '100%', padding: '12px 14px', background: '#1f1f1f', border: '1.5px solid #2a2a2a', borderRadius: '12px', color: 'white', fontSize: '.87rem', fontFamily: "'DM Sans', sans-serif", outline: 'none', resize: 'vertical', marginBottom: '12px' }} />
                       <button onClick={submitReview} disabled={reviewBusy || !reviewText.trim()} style={{ width: '100%', padding: '13px', background: reviewText.trim() ? 'linear-gradient(135deg,#f59e0b,#db2777)' : '#1f1f1f', color: reviewText.trim() ? 'white' : '#4b5563', border: 'none', borderRadius: '12px', fontSize: '.92rem', fontWeight: '700', cursor: reviewText.trim() ? 'pointer' : 'not-allowed', fontFamily: "'DM Sans', sans-serif" }}>
-                        {reviewBusy ? 'Submitting...' : 'Submit Review'}
+                        {reviewBusy ? 'Submitting...' : E.star + ' Submit Review'}
                       </button>
                     </>
                   )}
@@ -345,7 +354,8 @@ export default function DashboardPage() {
             )}
 
             {isDone && alreadyReview && !reviewDone && (
-              <div style={{ background: 'rgba(16,185,129,.07)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '12px', padding: '13px 18px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ background: 'rgba(16,185,129,.07)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '12px', padding: '13px 18px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '1.2rem' }}>{E.check}</span>
                 <div style={{ fontWeight: '700', color: '#10b981', fontSize: '.87rem' }}>Review Submitted - Thank you!</div>
               </div>
             )}
@@ -355,7 +365,10 @@ export default function DashboardPage() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <div>
                   <div style={{ fontSize: '.68rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>Loyalty Status</div>
-                  <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: '700', color: loyalty.color, fontSize: '.95rem' }}>{loyalty.label}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                    <span style={{ fontSize: '1.3rem' }}>{loyalty.icon}</span>
+                    <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: '700', color: loyalty.color, fontSize: '.95rem' }}>{loyalty.label}</span>
+                  </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.8rem', fontWeight: '900', color: 'white', lineHeight: 1 }}>{allDone}</div>
@@ -368,35 +381,35 @@ export default function DashboardPage() {
                     <div style={{ height: '100%', width: Math.min(100, (allDone / loyalty.nextAt) * 100) + '%', background: 'linear-gradient(90deg,' + loyalty.color + ',' + loyalty.color + '99)', borderRadius: '99px', transition: 'width .5s' }} />
                   </div>
                   <div style={{ fontSize: '.7rem', color: '#6b7280', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>{allDone} / {loyalty.nextAt}</span>
-                    <span>{loyalty.nextAt - allDone} more to {loyalty.next}</span>
+                    <span>{allDone} / {loyalty.nextAt} jobs</span>
+                    <span>{loyalty.nextAt - allDone} more to reach <strong style={{ color: 'white' }}>{loyalty.next}</strong></span>
                   </div>
                 </>
               ) : (
-                <div style={{ fontSize: '.78rem', color: loyalty.color, fontWeight: '700', textAlign: 'center' }}>Highest tier - thank you for your loyalty!</div>
+                <div style={{ fontSize: '.78rem', color: loyalty.color, fontWeight: '700', textAlign: 'center' }}>{E.trophy} Highest tier - thank you for your loyalty!</div>
               )}
             </div>
 
-            {/* Quick action tiles */}
+            {/* Quick tiles */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               {latest && !isDone && (
                 <div onClick={() => setActiveTab('messages')} style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(26,111,212,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.8rem', fontWeight: '700', color: '#60a5fa' }}>MSG</div>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(26,111,212,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>{E.msg}</div>
                   <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>Messages</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>Chat with us</div></div>
                 </div>
               )}
               {latest && !isDone && (
                 <div onClick={() => setActiveTab('request')} style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(219,39,119,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.8rem', fontWeight: '700', color: '#f472b6' }}>QTE</div>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(219,39,119,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>{E.doc}</div>
                   <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>My Quote</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>View details</div></div>
                 </div>
               )}
               <div onClick={() => router.push('/book')} style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(16,185,129,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.8rem', fontWeight: '700', color: '#34d399' }}>NEW</div>
+                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(16,185,129,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>{E.sparkle}</div>
                 <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>{latest ? 'New Quote' : 'Get a Quote'}</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>Instant estimate</div></div>
               </div>
               <div onClick={() => setActiveTab('settings')} style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(156,163,175,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.8rem', fontWeight: '700', color: '#9ca3af' }}>SET</div>
+                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(156,163,175,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>{E.gear}</div>
                 <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>Settings</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>Update your info</div></div>
               </div>
             </div>
@@ -406,7 +419,7 @@ export default function DashboardPage() {
         {/* MESSAGES TAB */}
         {safeTab === 'messages' && latest && !isDone && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>Messages</div>
+            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>{E.msg} Messages</div>
             <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
               <Chat requestId={latest.id} currentUser={user} senderRole="customer" onClose={null} inline={true} />
             </div>
@@ -416,7 +429,7 @@ export default function DashboardPage() {
         {/* MY QUOTE TAB */}
         {safeTab === 'request' && latest && !isDone && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>Quote Details</div>
+            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>{E.doc} Quote Details</div>
             <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
               <div style={{ background: '#0d0d0d', padding: '18px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
@@ -428,24 +441,24 @@ export default function DashboardPage() {
               </div>
               <div style={{ padding: '8px 22px' }}>
                 {[
-                  ['Date',       latest.date || 'TBD'],
-                  ['Time',       latest.time || 'TBD'],
-                  ['Address',    latest.address],
-                  ['Frequency',  latest.frequency],
-                  ['Bathrooms',  latest.bathrooms],
-                  ['Rooms',      latest.rooms],
-                  ['Add-Ons',    latest.addons || 'None'],
-                  ['Pets',       latest.pets === 'yes' ? 'Yes' : 'No'],
+                  [E.cal + ' Date',       latest.date || 'TBD'],
+                  [E.time + ' Time',      latest.time || 'TBD'],
+                  [E.pin + ' Address',    latest.address],
+                  ['\uD83D\uDD04 Frequency',  latest.frequency],
+                  ['\uD83D\uDEC0 Bathrooms',  latest.bathrooms],
+                  ['\uD83C\uDFE0 Rooms',      latest.rooms],
+                  [E.sparkle + ' Add-Ons', latest.addons || 'None'],
+                  ['\uD83D\uDC3E Pets',        latest.pets === 'yes' ? 'Yes' : 'No'],
                 ].map(([k, v]) => (
                   <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', padding: '10px 0', borderBottom: '1px solid #2a2a2a' }}>
-                    <span style={{ fontSize: '.78rem', color: '#6b7280', fontWeight: '600', minWidth: '100px' }}>{k}</span>
+                    <span style={{ fontSize: '.78rem', color: '#6b7280', fontWeight: '600', minWidth: '110px' }}>{k}</span>
                     <span style={{ fontSize: '.82rem', fontWeight: '600', color: '#d1d5db', textAlign: 'right' }}>{v}</span>
                   </div>
                 ))}
               </div>
               <div style={{ padding: '16px 22px' }}>
                 <button onClick={() => setActiveTab('messages')} style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.92rem', cursor: 'pointer' }}>
-                  Send a Message
+                  {E.msg} Send a Message
                 </button>
               </div>
             </div>
@@ -455,10 +468,9 @@ export default function DashboardPage() {
         {/* SETTINGS TAB */}
         {safeTab === 'settings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>Account Settings</div>
-
-            {settingsMsg && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: '#d1fae5', color: '#065f46' }}>{settingsMsg}</div>}
-            {settingsErr && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: '#fee2e2', color: '#dc2626' }}>{settingsErr}</div>}
+            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>{E.gear} Account Settings</div>
+            {settingsMsg && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: 'rgba(16,185,129,.12)', color: '#10b981', border: '1px solid rgba(16,185,129,.2)' }}>{E.check} {settingsMsg}</div>}
+            {settingsErr && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: 'rgba(239,68,68,.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,.2)' }}>! {settingsErr}</div>}
 
             <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '20px' }}>
               <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '16px' }}>Profile</div>
@@ -485,10 +497,10 @@ export default function DashboardPage() {
             {!isGoogleUser && (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '20px' }}>
                 <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '16px' }}>Change Password</div>
-                {[['Current Password', currentPass, setCurrentPass], ['New Password', newPass, setNewPass]].map(([label, val, setter]) => (
+                {[['Current Password', currentPass, setCurrentPass, ''], ['New Password', newPass, setNewPass, 'At least 6 characters']].map(([label, val, setter, ph]) => (
                   <div key={label} style={{ marginBottom: '12px' }}>
                     <label style={{ display: 'block', fontSize: '.8rem', fontWeight: '700', color: '#d1d5db', marginBottom: '6px' }}>{label}</label>
-                    <input type="password" value={val} onChange={e => setter(e.target.value)} placeholder={label === 'New Password' ? 'At least 6 characters' : ''}
+                    <input type="password" value={val} onChange={e => setter(e.target.value)} placeholder={ph}
                       style={{ width: '100%', padding: '10px 13px', background: '#1f1f1f', border: '1.5px solid #2a2a2a', borderRadius: '10px', color: 'white', fontSize: '.87rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
                   </div>
                 ))}
@@ -508,7 +520,7 @@ export default function DashboardPage() {
             <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '20px' }}>
               <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '8px' }}>Sign Out</div>
               <p style={{ color: '#9ca3af', fontSize: '.84rem', marginBottom: '14px' }}>This will sign you out on this device.</p>
-              <button onClick={() => { signOut(auth); router.push('/'); }} style={{ padding: '11px 22px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>
+              <button onClick={() => { signOut(auth); router.push('/'); }} style={{ padding: '11px 22px', background: 'rgba(239,68,68,.1)', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>
                 Sign Out
               </button>
             </div>
