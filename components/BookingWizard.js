@@ -5,64 +5,63 @@ import { db } from '../lib/firebase';
 
 const BPRICES = { half: 15, small: 50, medium: 65, large: 80 };
 const RPRICES = { bed_small: 25, bed_medium: 30, bed_large: 35, liv_medium: 15, liv_large: 35, office: 10, kit_small: 45, kit_medium: 55, kit_large: 70, laundry: 10, basement: 75 };
-const RNAMES = { bed_small: 'Small Bedroom', bed_medium: 'Medium Bedroom', bed_large: 'Large/Master Bedroom', liv_medium: 'Medium Living Room', liv_large: 'Large Living Room', office: 'Office/Study', kit_small: 'Small Kitchen', kit_medium: 'Medium Kitchen', kit_large: 'Large Kitchen', laundry: 'Laundry Room', basement: 'Basement' };
-const BNAMES = { half: 'Half Bath', small: 'Small Full Bath', medium: 'Medium Full Bath', large: 'Large/Master Bath' };
+const RNAMES  = { bed_small: 'Small Bedroom', bed_medium: 'Medium Bedroom', bed_large: 'Large/Master Bedroom', liv_medium: 'Medium Living Room', liv_large: 'Large Living Room', office: 'Office/Study', kit_small: 'Small Kitchen', kit_medium: 'Medium Kitchen', kit_large: 'Large Kitchen', laundry: 'Laundry Room', basement: 'Basement' };
+const BNAMES  = { half: 'Half Bath', small: 'Small Full Bath', medium: 'Medium Full Bath', large: 'Large/Master Bath' };
 
 const EXTRAS = [
-  { id: 'cabinets',  name: 'Inside Cabinets',    price: 16 },
-  { id: 'pantry',    name: 'Inside Pantry',       price: 20 },
-  { id: 'oven',      name: 'Inside Oven',         price: 16 },
-  { id: 'fridge',    name: 'Inside Fridge',       price: 16 },
-  { id: 'baseboard', name: 'Baseboard Cleaning',  price: 5  },
-  { id: 'windows',   name: 'Window Trim',         price: 5, hasQty: true },
+  { id: 'cabinets',  name: 'Inside Cabinets',   price: 16 },
+  { id: 'pantry',    name: 'Inside Pantry',      price: 20 },
+  { id: 'oven',      name: 'Inside Oven',        price: 16 },
+  { id: 'fridge',    name: 'Inside Fridge',      price: 16 },
+  { id: 'baseboard', name: 'Baseboard Cleaning', price: 5  },
+  { id: 'windows',   name: 'Window Trim',        price: 5, hasQty: true },
 ];
 
+// pct kept for discount calculation — labels intentionally omitted
 const FREQS = [
-  { val: 'once',     label: 'One-Time',     tag: 'No discount', pct: 0     },
-  { val: 'biweekly', label: 'Bi-Weekly',    tag: 'Save 15%',    pct: 0.15  },
-  { val: 'weekly',   label: 'Weekly',       tag: 'Save 17.5%',  pct: 0.175 },
-  { val: 'monthly',  label: '2-3x / Month', tag: 'Save 12.5%',  pct: 0.125 },
+  { val: 'once',     label: 'One-Time',     pct: 0     },
+  { val: 'biweekly', label: 'Bi-Weekly',    pct: 0.15  },
+  { val: 'weekly',   label: 'Weekly',       pct: 0.175 },
+  { val: 'monthly',  label: '2-3x / Month', pct: 0.125 },
 ];
 
 const BEDROOMS = [
-  { key: 'bed_small',  name: 'Small Bedroom',       desc: 'Guest room or compact space'   },
-  { key: 'bed_medium', name: 'Medium Bedroom',      desc: 'Standard bedroom with closet'  },
-  { key: 'bed_large',  name: 'Large/Master Bedroom',desc: 'Spacious with en-suite'        },
-  { key: 'liv_medium', name: 'Medium Living Room',  desc: 'Standard family room'          },
-  { key: 'liv_large',  name: 'Large Living Room',   desc: 'Open-concept space'            },
-  { key: 'office',     name: 'Office/Study',        desc: 'Home office or reading room'   },
+  { key: 'bed_small',  name: 'Small Bedroom',        desc: 'Guest room or compact space'   },
+  { key: 'bed_medium', name: 'Medium Bedroom',       desc: 'Standard bedroom with closet'  },
+  { key: 'bed_large',  name: 'Large/Master Bedroom', desc: 'Spacious with en-suite'        },
+  { key: 'liv_medium', name: 'Medium Living Room',   desc: 'Standard family room'          },
+  { key: 'liv_large',  name: 'Large Living Room',    desc: 'Open-concept space'            },
+  { key: 'office',     name: 'Office/Study',         desc: 'Home office or reading room'   },
 ];
-
 const BATHROOMS = [
-  { key: 'half',   name: 'Half Bathroom',         desc: 'Toilet + sink only'          },
-  { key: 'small',  name: 'Small Full Bathroom',   desc: 'Shower or tub'               },
-  { key: 'medium', name: 'Medium Full Bathroom',  desc: 'Standard with tub + shower'  },
-  { key: 'large',  name: 'Large/Master Bathroom', desc: 'Large shower, spacious'      },
+  { key: 'half',   name: 'Half Bathroom',         desc: 'Toilet + sink only'         },
+  { key: 'small',  name: 'Small Full Bathroom',   desc: 'Shower or tub'              },
+  { key: 'medium', name: 'Medium Full Bathroom',  desc: 'Standard with tub + shower' },
+  { key: 'large',  name: 'Large/Master Bathroom', desc: 'Large shower, spacious'     },
 ];
-
 const KITCHEN = [
-  { key: 'kit_small',  name: 'Small Kitchen',   desc: 'Compact kitchenette'         },
-  { key: 'kit_medium', name: 'Medium Kitchen',  desc: 'Standard with dining'        },
-  { key: 'kit_large',  name: 'Large Kitchen',   desc: "Open-concept or chef's kitchen" },
-  { key: 'laundry',    name: 'Laundry Room',    desc: 'Washer/dryer area'           },
-  { key: 'basement',   name: 'Basement',        desc: 'Finished or unfinished'      },
+  { key: 'kit_small',  name: 'Small Kitchen',  desc: 'Compact kitchenette'             },
+  { key: 'kit_medium', name: 'Medium Kitchen', desc: 'Standard with dining'            },
+  { key: 'kit_large',  name: 'Large Kitchen',  desc: "Open-concept or chef's kitchen"  },
+  { key: 'laundry',    name: 'Laundry Room',   desc: 'Washer/dryer area'               },
+  { key: 'basement',   name: 'Basement',       desc: 'Finished or unfinished'          },
 ];
 
 const initBaths = () => ({ half: 0, small: 0, medium: 0, large: 0 });
 const initRooms = () => ({ bed_small: 0, bed_medium: 0, bed_large: 0, liv_medium: 0, liv_large: 0, office: 0, kit_small: 0, kit_medium: 0, kit_large: 0, laundry: 0, basement: 0 });
 
 export default function BookingWizard({ user, onDone, adminMode = false }) {
-  const [step,        setStep]        = useState(0);
-  const [baths,       setBaths]       = useState(initBaths());
-  const [rooms,       setRooms]       = useState(initRooms());
-  const [extras,      setExtras]      = useState({});
-  const [windowQty,   setWindowQty]   = useState(1);
-  const [freq,        setFreq]        = useState('once');
-  const [walkthrough, setWalkthrough] = useState(false);
-  const [firstTime,   setFirstTime]   = useState('no');
-  const [senior,      setSenior]      = useState('no');
-  const [submitting,  setSubmitting]  = useState(false);
-  const [availability,setAvailability]= useState([]);
+  const [step,         setStep]         = useState(0);
+  const [baths,        setBaths]        = useState(initBaths());
+  const [rooms,        setRooms]        = useState(initRooms());
+  const [extras,       setExtras]       = useState({});
+  const [windowQty,    setWindowQty]    = useState(1);
+  const [freq,         setFreq]         = useState('once');
+  const [walkthrough,  setWalkthrough]  = useState(false);
+  const [firstTime,    setFirstTime]    = useState('no');
+  const [senior,       setSenior]       = useState('no');
+  const [submitting,   setSubmitting]   = useState(false);
+  const [availability, setAvailability] = useState([]);
 
   const addressInputRef = useRef(null);
   const autocompleteRef = useRef(null);
@@ -84,15 +83,13 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     return () => unsub();
   }, []);
 
-  // Google Maps Places autocomplete
   useEffect(() => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey) return;
     if (window.__gmapsLoaded) { initAutocomplete(); return; }
     const script = document.createElement('script');
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    script.async = true;
-    script.defer = true;
+    script.async = true; script.defer = true;
     script.onload = () => { window.__gmapsLoaded = true; initAutocomplete(); };
     document.head.appendChild(script);
   }, []);
@@ -101,14 +98,11 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     if (!addressInputRef.current || autocompleteRef.current) return;
     if (!window.google?.maps?.places) return;
     const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
-      types: ['address'],
-      componentRestrictions: { country: 'us' },
+      types: ['address'], componentRestrictions: { country: 'us' },
     });
     ac.addListener('place_changed', () => {
       const place = ac.getPlace();
-      if (place?.formatted_address) {
-        setF('address', place.formatted_address);
-      }
+      if (place?.formatted_address) setF('address', place.formatted_address);
     });
     autocompleteRef.current = ac;
   }, []);
@@ -136,29 +130,31 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       }
     });
     const sub = base + extTotal;
-    const discounts = [];
     const fq = FREQS.find(f => f.val === freq);
-    if (fq && fq.pct > 0)       discounts.push({ k: fq.label + ' discount', pct: fq.pct });
-    if (firstTime === 'yes')     discounts.push({ k: 'First-Time 10%',       pct: 0.10   });
-    if (senior === 'yes')        discounts.push({ k: 'Senior 10%',           pct: 0.10   });
-    const discAmt = discounts.reduce((s, d) => s + sub * d.pct, 0);
+    let discAmt = fq && fq.pct > 0 ? sub * fq.pct : 0;
+    if (firstTime === 'yes') discAmt += sub * 0.10;
+    if (senior    === 'yes') discAmt += sub * 0.10;
+    const hasDiscount = discAmt > 0;
     const final = Math.max(0, Math.round(sub - discAmt));
-    return { final, sub, discounts, lines, extraNames };
+    return { final, sub: Math.round(sub), hasDiscount, lines, extraNames };
   };
 
   const price = calcPrice();
 
+  const availDates   = [...new Set(availability.map(s => s.date))];
+  const timesForDate = availability.filter(s => s.date === form.date).map(s => s.time);
+
   const goTo = (s) => {
-    if (s === 1 && !form.firstName.trim()) {
-      alert('Please enter your first name.');
-      return;
+    // Step 0 validation
+    if (s >= 1) {
+      if (!form.firstName.trim()) { alert('Please enter your first name.'); return; }
+      if (!form.phone.trim())     { alert('Please enter your phone number.'); return; }
+      if (!form.date)             { alert('Please choose a preferred date.'); return; }
     }
-    if (s === 2) {
+    // Step 1 validation
+    if (s >= 2) {
       const hasRoom = Object.values(rooms).some(v => v > 0) || Object.values(baths).some(v => v > 0);
-      if (!hasRoom) {
-        alert('Please select at least one room or bathroom before continuing.');
-        return;
-      }
+      if (!hasRoom) { alert('Please select at least one room or bathroom before continuing.'); return; }
     }
     setStep(s);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -166,18 +162,19 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
   const handleSubmit = async () => {
     if (!form.firstName.trim()) { alert('Please enter a name.'); return; }
+    if (!form.phone.trim())     { alert('Please enter a phone number.'); return; }
     setSubmitting(true);
     const bathDesc = Object.keys(baths).filter(k => baths[k] > 0).map(k => baths[k] + ' ' + BNAMES[k]).join(', ') || 'None';
     const roomDesc = Object.keys(rooms).filter(k => rooms[k] > 0).map(k => rooms[k] + ' ' + RNAMES[k]).join(', ') || 'None';
     const req = {
-      userId:         user?.uid || 'admin-created',
-      userEmail:      user?.email || form.email,
+      userId:         user?.uid    || 'admin-created',
+      userEmail:      user?.email  || form.email,
       name:           (form.firstName + ' ' + form.lastName).trim(),
-      phone:          form.phone    || 'N/A',
-      email:          form.email    || user?.email || 'N/A',
-      address:        form.address  || 'N/A',
-      date:           form.date     || 'N/A',
-      time:           form.time     || 'N/A',
+      phone:          form.phone   || 'N/A',
+      email:          form.email   || user?.email || 'N/A',
+      address:        form.address || 'N/A',
+      date:           form.date    || 'N/A',
+      time:           form.time    || 'N/A',
       bathrooms:      bathDesc,
       rooms:          roomDesc,
       addons:         price.extraNames.join(', ') || 'None',
@@ -186,7 +183,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       walkthrough:    walkthrough ? 'Yes' : 'No',
       frequency:      freq,
       firstTime, senior,
-      notes:          form.notes    || '',
+      notes:          form.notes   || '',
       referral:       form.referral || 'N/A',
       access:         form.access,
       estimate:       price.final,
@@ -200,7 +197,6 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       text: 'Hi ' + form.firstName + "! Thank you for reaching out. I've received your request and will get back to you within 24 hours to confirm your appointment!",
       sender: 'admin', senderName: 'Owner', createdAt: serverTimestamp(),
     });
-    // Remove booked slot so no one else can pick it
     if (form.date && form.time && form.date !== 'N/A' && form.time !== 'N/A') {
       try {
         const slotSnap = await getDocs(query(collection(db, 'availability'), where('date', '==', form.date), where('time', '==', form.time)));
@@ -221,9 +217,6 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     </div>
   );
 
-  const availDates   = [...new Set(availability.map(s => s.date))];
-  const timesForDate = availability.filter(s => s.date === form.date).map(s => s.time);
-
   const RoomRow = ({ name, desc, val, onInc, onDec }) => (
     <div className="bath-row">
       <div style={{ flex: 1 }}>
@@ -241,7 +234,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
         <div className="steps-row">
           {stepLabels.map((label, i) => (
             <div key={i} className={'step-dot ' + (i < step ? 'done' : i === step ? 'active' : '')}>
-              <div className="dot-circle">{i < step ? '\u2713' : i + 1}</div>
+              <div className="dot-circle">{i < step ? '✓' : i + 1}</div>
               <div className="dot-label">{label}</div>
             </div>
           ))}
@@ -250,7 +243,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
       <div className="wizard-body">
 
-        {/* -- STEP 0: CONTACT -- */}
+        {/* ── STEP 0: CONTACT ── */}
         {step === 0 && (
           <div>
             <div className="page-title">{adminMode ? 'Client Information' : 'Your Information'}</div>
@@ -259,7 +252,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               <div className="card-body">
                 <div className="row2">
                   <div className="fg">
-                    <label>First Name</label>
+                    <label>First Name <span style={{ color: '#ef4444' }}>*</span></label>
                     <input type="text" value={form.firstName} onChange={e => setF('firstName', e.target.value)} placeholder="e.g. Maria" />
                   </div>
                   <div className="fg">
@@ -269,7 +262,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                 </div>
                 <div className="row2">
                   <div className="fg">
-                    <label>Phone Number</label>
+                    <label>Phone Number <span style={{ color: '#ef4444' }}>*</span></label>
                     <input type="tel" value={form.phone} onChange={e => setF('phone', e.target.value)} placeholder="(555) 000-0000" />
                   </div>
                   <div className="fg">
@@ -291,7 +284,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                 </div>
                 <div className="row2">
                   <div className="fg">
-                    <label>Preferred Date</label>
+                    <label>Preferred Date <span style={{ color: '#ef4444' }}>*</span></label>
                     {availDates.length > 0 ? (
                       <select value={form.date} onChange={e => { setF('date', e.target.value); setF('time', ''); }}>
                         <option value="">Select an available date</option>
@@ -331,13 +324,27 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                 </div>
               </div>
             </div>
+
+            {/* Walk-through toggle on step 0 */}
+            <div
+              className={'wt-toggle ' + (walkthrough ? 'active' : '')}
+              onClick={() => setWalkthrough(w => !w)}
+              style={{ marginTop: '12px' }}
+            >
+              <div className="wt-info">
+                <div className="wt-title">Request a Walk-Through</div>
+                <div className="wt-desc">We will visit before cleaning to give you an exact quote</div>
+              </div>
+              <div className="wt-check">{walkthrough ? '✓' : ''}</div>
+            </div>
+
             <div className="nav-btns">
               <button className="btn-next" onClick={() => goTo(1)}>Next: Rooms</button>
             </div>
           </div>
         )}
 
-        {/* -- STEP 1: ROOMS -- */}
+        {/* ── STEP 1: ROOMS ── */}
         {step === 1 && (
           <div>
             <div className="page-title">Rooms</div>
@@ -401,7 +408,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
           </div>
         )}
 
-        {/* -- STEP 2: ADD-ONS -- */}
+        {/* ── STEP 2: ADD-ONS ── */}
         {step === 2 && (
           <div>
             <div className="page-title">Add-On Services</div>
@@ -427,7 +434,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                           display: 'flex', alignItems: 'center', gap: '10px',
                         }}>
                           <span style={{ fontSize: '.78rem', color: '#d1d5db', fontWeight: '700', flex: 1 }}>
-                            \uD83E\uDEDF How many windows?
+                            How many windows?
                           </span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <button type="button" className="qbtn"
@@ -462,50 +469,49 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
           </div>
         )}
 
-        {/* -- STEP 3: FREQUENCY -- */}
+        {/* ── STEP 3: FREQUENCY ── */}
         {step === 3 && (
           <div>
-            <div className="page-title">Frequency and Discounts</div>
-            <div className="page-sub">More frequent = more savings!</div>
+            <div className="page-title">Cleaning Frequency</div>
+            <div className="page-sub">How often would you like us to clean?</div>
             <div className="wcard">
               <div className="card-body">
                 <label style={{ display: 'block', fontWeight: '700', fontSize: '.82rem', color: '#111827', marginBottom: '12px' }}>
-                  Cleaning Frequency
+                  Frequency
                 </label>
+                {/* Frequency pills — no discount tags shown */}
                 <div className="fpills" style={{ marginBottom: '18px' }}>
                   {FREQS.map(fq => (
-                    <div key={fq.val} className={'fpill ' + (freq === fq.val ? 'active' : '')} onClick={() => setFreq(fq.val)}>
+                    <div
+                      key={fq.val}
+                      className={'fpill ' + (freq === fq.val ? 'active' : '')}
+                      onClick={() => setFreq(fq.val)}
+                    >
                       {fq.label}
-                      <span className="ftag">{fq.tag}</span>
                     </div>
                   ))}
                 </div>
                 <div className="divider"></div>
+                {/* First-time / senior — simple Yes/No, no percentage labels */}
                 <div className="row2">
                   <div className="fg">
                     <label>First time with us?</label>
                     <select value={firstTime} onChange={e => setFirstTime(e.target.value)}>
-                      <option value="no">No, returning client</option>
-                      <option value="yes">Yes - First time, 10% off</option>
+                      <option value="no">No</option>
+                      <option value="yes">Yes</option>
                     </select>
                   </div>
                   <div className="fg">
                     <label>Senior discount?</label>
                     <select value={senior} onChange={e => setSenior(e.target.value)}>
                       <option value="no">No</option>
-                      <option value="yes">Yes - 10% senior discount</option>
+                      <option value="yes">Yes</option>
                     </select>
                   </div>
                 </div>
               </div>
             </div>
-            <div className={'wt-toggle ' + (walkthrough ? 'active' : '')} onClick={() => setWalkthrough(w => !w)}>
-              <div className="wt-info">
-                <div className="wt-title">Request a Walk-Through</div>
-                <div className="wt-desc">We'll visit before cleaning to give an exact quote</div>
-              </div>
-              <div className="wt-check">{walkthrough ? '\u2713' : ''}</div>
-            </div>
+
             <div className="nav-btns" style={{ marginTop: '18px' }}>
               <button className="btn-back" onClick={() => goTo(2)}>Back</button>
               <button className="btn-next" onClick={() => goTo(4)}>Next: Review</button>
@@ -513,11 +519,11 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
           </div>
         )}
 
-        {/* -- STEP 4: REVIEW -- */}
+        {/* ── STEP 4: REVIEW ── */}
         {step === 4 && (
           <div>
             <div className="page-title">Review and Submit</div>
-            <div className="page-sub">Add notes and submit</div>
+            <div className="page-sub">Add any notes and submit your request</div>
             <div className="wcard">
               <div className="card-header">
                 <div className="card-icon">N</div>
@@ -554,7 +560,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               </div>
             </div>
 
-            {/* Price bar ??? discounts applied silently, only final shown */}
+            {/* Price bar — shows final with discount applied, no breakdown of what % */}
             <div className="pbar">
               <div className="pbar-top">
                 <div>
@@ -562,12 +568,12 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                   <div className="pamount">${price.final}</div>
                   <div className="prange">
                     {price.final > 0
-                      ? 'Est. range: $' + Math.round(price.final * .95) + ' - $' + Math.round(price.final * 1.1)
+                      ? 'Est. range: $' + Math.round(price.final * .95) + ' \u2013 $' + Math.round(price.final * 1.1)
                       : 'Select rooms to calculate'}
                   </div>
-                  {price.discounts.length > 0 && (
-                    <div style={{ marginTop: '6px', fontSize: '.74rem', color: '#10b981', fontWeight: '700' }}>
-                      \u2705 Discounts applied
+                  {price.hasDiscount && (
+                    <div style={{ marginTop: '6px', fontSize: '.76rem', color: '#10b981', fontWeight: '700' }}>
+                      Discount applied!
                     </div>
                   )}
                 </div>
@@ -581,11 +587,12 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
             <div className="nav-btns">
               <button className="btn-back" onClick={() => goTo(3)}>Back</button>
               <button className="btn-next" onClick={handleSubmit} disabled={submitting}>
-                {submitting ? 'Submitting...' : 'Submit Request - $' + price.final}
+                {submitting ? 'Submitting...' : 'Submit Request  \u2014  $' + price.final}
               </button>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
