@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   collection, addDoc, onSnapshot, orderBy, query,
   serverTimestamp, doc, setDoc, increment as fsIncrement,
@@ -14,10 +14,6 @@ function injectAnimations() {
   const style = document.createElement('style');
   style.id = ANIM_ID;
   style.textContent = `
-    @keyframes msgSlideIn {
-      from { opacity: 0; transform: translateY(12px) scale(0.95); }
-      to   { opacity: 1; transform: translateY(0)  scale(1);    }
-    }
     @keyframes msgSlideInLeft {
       from { opacity: 0; transform: translateX(-14px) scale(0.96); }
       to   { opacity: 1; transform: translateX(0)     scale(1);    }
@@ -47,15 +43,10 @@ function injectAnimations() {
       from { transform: translateY(100%); opacity: 0.6; }
       to   { transform: translateY(0);    opacity: 1;   }
     }
-    @keyframes overlayFadeIn {
-      from { background: rgba(0,0,0,0); }
-      to   { background: rgba(0,0,0,0.65); }
-    }
     .chat-msg-animate-left  { animation: msgSlideInLeft  0.28s cubic-bezier(.22,.68,0,1.2) both; }
     .chat-msg-animate-right { animation: msgSlideInRight 0.28s cubic-bezier(.22,.68,0,1.2) both; }
     .chat-send-anim { animation: sendPop 0.22s ease both; }
     .chat-panel-anim { animation: panelSlideUp 0.32s cubic-bezier(.22,.68,0,1.1) both; }
-    .chat-overlay-anim { animation: overlayFadeIn 0.25s ease both; }
     .typing-dot {
       width: 7px; height: 7px; border-radius: 50%; background: #9ca3af; display: inline-block;
       animation: typingDot 1.2s infinite ease-in-out;
@@ -72,16 +63,14 @@ function injectAnimations() {
   document.head.appendChild(style);
 }
 
-/* ── Toast notification (top-right) ── */
+/* ── Toast notification ── */
 function Toast({ toast, onDismiss }) {
   const [hiding, setHiding] = useState(false);
-
   useEffect(() => {
     const t1 = setTimeout(() => setHiding(true), 3800);
     const t2 = setTimeout(() => onDismiss(), 4300);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [onDismiss]);
-
   return (
     <div
       onClick={() => { setHiding(true); setTimeout(onDismiss, 400); }}
@@ -91,13 +80,10 @@ function Toast({ toast, onDismiss }) {
         borderRadius: '16px', padding: '12px 16px', maxWidth: '300px',
         boxShadow: '0 8px 32px rgba(0,0,0,.55)',
         cursor: 'pointer', userSelect: 'none',
-        animation: hiding
-          ? 'toastSlideOut 0.4s ease forwards'
-          : 'toastSlideIn 0.35s cubic-bezier(.22,.68,0,1.15) forwards',
+        animation: hiding ? 'toastSlideOut 0.4s ease forwards' : 'toastSlideIn 0.35s cubic-bezier(.22,.68,0,1.15) forwards',
         display: 'flex', alignItems: 'flex-start', gap: '10px',
       }}
     >
-      {/* Avatar */}
       <div style={{
         width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
         background: 'linear-gradient(135deg,#f472b6,#4a9eff)',
@@ -107,41 +93,26 @@ function Toast({ toast, onDismiss }) {
         {toast.senderName?.[0]?.toUpperCase() || 'Y'}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
-          <div style={{ fontWeight: '700', color: 'white', fontSize: '.82rem' }}>
-            {toast.senderName}
-          </div>
-          <div style={{ fontSize: '.68rem', color: '#555', marginLeft: '8px', whiteSpace: 'nowrap' }}>now</div>
-        </div>
+        <div style={{ fontWeight: '700', color: 'white', fontSize: '.82rem', marginBottom: '3px' }}>{toast.senderName}</div>
         <div style={{
           fontSize: '.78rem', color: '#9ca3af', lineHeight: 1.4,
           overflow: 'hidden', textOverflow: 'ellipsis',
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-        }}>
-          {toast.text}
-        </div>
-        <div style={{ marginTop: '6px', fontSize: '.68rem', color: '#555', fontWeight: '600', letterSpacing: '.3px' }}>
-          TAP TO VIEW
-        </div>
+        }}>{toast.text}</div>
       </div>
-      {/* Dismiss X */}
       <button
         onClick={e => { e.stopPropagation(); setHiding(true); setTimeout(onDismiss, 400); }}
         style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', fontSize: '.85rem', padding: '0', lineHeight: 1, flexShrink: 0 }}
-      >
-        x
-      </button>
+      >✕</button>
     </div>
   );
 }
 
-/* ── Typing indicator bubble ── */
+/* ── Typing indicator ── */
 function TypingIndicator() {
   return (
-    <div className="msg-wrap" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-      <div className="msg-sender" style={{ fontSize: '.68rem', color: '#9ca3af', fontWeight: 700, marginBottom: '3px' }}>
-        Yoselin
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+      <div style={{ fontSize: '.68rem', color: '#9ca3af', fontWeight: 700, marginBottom: '3px' }}>Owner</div>
       <div style={{
         background: '#1f1f2e', border: '1px solid #2a2a2a',
         borderRadius: '18px', borderBottomLeftRadius: '5px',
@@ -191,13 +162,11 @@ export default function Chat({
       setMessages(msgs);
 
       if (isFirstLoad.current) {
-        // Seed seen IDs silently on first load
         snap.docs.forEach(d => seenIdsRef.current.add(d.id));
         isFirstLoad.current = false;
         return;
       }
 
-      // Detect truly new messages
       const incoming = [];
       snap.docs.forEach(d => {
         if (!seenIdsRef.current.has(d.id)) {
@@ -207,23 +176,19 @@ export default function Chat({
       });
 
       if (incoming.length > 0) {
-        // Animate new bubbles
         setNewMsgIds(prev => {
           const next = new Set(prev);
           incoming.forEach(m => next.add(m.id));
           return next;
         });
-        // Trigger typing indicator briefly then show message
         const fromOther = incoming.filter(m => m.sender !== senderRole);
         if (fromOther.length > 0) {
           setIsTyping(true);
           setTimeout(() => setIsTyping(false), 900);
-          // Toast notification
           fromOther.forEach(m => {
             setToasts(t => [...t, { id: m.id, senderName: m.senderName || clientName || 'New message', text: m.text }]);
           });
         }
-        // Clean up animation class after it plays
         setTimeout(() => {
           setNewMsgIds(prev => {
             const next = new Set(prev);
@@ -248,8 +213,8 @@ export default function Chat({
     setDoc(doc(db, 'chatUnread', requestId), { [field]: 0 }, { merge: true }).catch(() => {});
   }, [requestId, senderRole, messages.length]);
 
-  /* Send message */
-  const send = async () => {
+  /* Send message — useCallback so it never changes reference */
+  const send = useCallback(async () => {
     const t = text.trim();
     if (!t || sending) return;
     setSending(true);
@@ -276,16 +241,17 @@ export default function Chat({
       notifyCustomerNewMessage({ clientEmail, clientName: clientName?.split(' ')[0] || 'there', messageText: t });
     }
     setSending(false);
-    inputRef.current?.focus();
-  };
+    // Keep focus on input after send (important for mobile)
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, [text, sending, requestId, senderRole, currentUser, clientEmail, clientName]);
 
-  const dismissToast = id => setToasts(t => t.filter(x => x.id !== id));
+  const dismissToast = useCallback(id => setToasts(t => t.filter(x => x.id !== id)), []);
 
-  /* Message renderer */
+  /* Message list renderer */
   const renderMessages = () =>
     messages.length === 0 ? (
-      <div className="chat-empty" style={{ color: '#6b7280', textAlign: 'center', padding: '40px 20px', fontSize: '.85rem' }}>
-        No messages yet. Say hello!
+      <div style={{ color: '#6b7280', textAlign: 'center', padding: '40px 20px', fontSize: '.85rem' }}>
+        No messages yet. Say hello! 👋
       </div>
     ) : (
       messages.map((m, idx) => {
@@ -296,30 +262,30 @@ export default function Chat({
         return (
           <div
             key={m.id}
-            className={`msg-wrap ${isMe ? 'mine' : ''} ${animClass}`}
+            className={animClass}
             style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}
           >
             {showSender && (
-              <div className="msg-sender" style={{ fontSize: '.68rem', fontWeight: 700, color: '#6b7280', marginBottom: '3px' }}>
+              <div style={{ fontSize: '.68rem', fontWeight: 700, color: '#6b7280', marginBottom: '3px' }}>
                 {m.senderName}
               </div>
             )}
             <div
-              className={`bubble ${isMe ? 'bubble-customer' : 'bubble-admin'}`}
               style={{
-                background: isMe
-                  ? 'linear-gradient(135deg,#1a6fd4,#db2777)'
-                  : '#1f1f2e',
+                maxWidth: '78%', padding: '11px 15px', borderRadius: '18px',
+                borderBottomRightRadius: isMe ? '5px' : '18px',
+                borderBottomLeftRadius: isMe ? '18px' : '5px',
+                background: isMe ? 'linear-gradient(135deg,#1a6fd4,#db2777)' : '#1f1f2e',
                 color: 'white',
                 border: isMe ? 'none' : '1px solid #2a2a2a',
-                transition: 'box-shadow .2s',
+                fontSize: '.87rem', lineHeight: 1.45, wordBreak: 'break-word',
               }}
             >
               {m.text}
-              <div className="bubble-time" style={{ fontSize: '.62rem', opacity: 0.55, marginTop: '5px', textAlign: 'right' }}>
+              <div style={{ fontSize: '.62rem', opacity: 0.55, marginTop: '5px', textAlign: 'right' }}>
                 {m.createdAt?.toDate
                   ? m.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                  : '\u2022\u2022\u2022'}
+                  : '...'}
               </div>
             </div>
           </div>
@@ -327,94 +293,148 @@ export default function Chat({
       })
     );
 
-  /* Input + Send bar (shared) */
-  const InputBar = ({ style = {} }) => (
-    <div className="chat-input-wrap" style={{ display: 'flex', gap: '10px', ...style }}>
-      <input
-        ref={inputRef}
-        className="chat-input chat-input-glow"
-        value={text}
-        onChange={e => setText(e.target.value)}
-        onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
-        placeholder="Type a message..."
-        style={{ background: '#1f1f1f', borderColor: '#2a2a2a', color: 'white', transition: 'border-color .2s, box-shadow .2s' }}
-      />
-      <button
-        className={'chat-send' + (sendAnim ? ' chat-send-anim' : '')}
-        onClick={send}
-        disabled={sending || !text.trim()}
-        style={{
-          opacity: text.trim() ? 1 : 0.45,
-          transition: 'opacity .2s, transform .1s',
-          transform: text.trim() ? 'scale(1)' : 'scale(0.95)',
-        }}
-      >
-        {sending ? (
-          <span style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
-            <span className="typing-dot" style={{ background: 'white' }} />
-            <span className="typing-dot" style={{ background: 'white' }} />
-            <span className="typing-dot" style={{ background: 'white' }} />
-          </span>
-        ) : 'Send'}
-      </button>
-    </div>
-  );
-
-  /* INLINE mode */
+  /* ── INLINE mode (customer dashboard Messages tab) ── */
   if (inline) {
     return (
       <>
         {toasts.map(t => <Toast key={t.id} toast={t} onDismiss={() => dismissToast(t.id)} />)}
         <div className="chat-inline">
           <div
-            className="chat-msgs"
-            style={{ height: '400px', overflowY: 'auto', padding: '16px', background: '#0d0d0d', borderRadius: '14px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}
+            style={{
+              height: '400px', overflowY: 'auto', padding: '16px',
+              background: '#0d0d0d', borderRadius: '14px', marginBottom: '12px',
+              display: 'flex', flexDirection: 'column', gap: '10px',
+            }}
           >
             {renderMessages()}
             {isTyping && <TypingIndicator />}
             <div ref={bottomRef} />
           </div>
-          <InputBar style={{ background: '#111', borderRadius: '12px', border: '1.5px solid #2a2a2a', padding: '10px 14px' }} />
+
+          {/* Input — inlined directly, NOT as a sub-component, to prevent keyboard dismissal */}
+          <div style={{ display: 'flex', gap: '10px', background: '#111', borderRadius: '12px', border: '1.5px solid #2a2a2a', padding: '10px 14px' }}>
+            <input
+              ref={inputRef}
+              className="chat-input chat-input-glow"
+              value={text}
+              onChange={e => setText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+              placeholder="Type a message..."
+              autoComplete="off"
+              style={{ flex: 1, background: 'transparent', border: 'none', color: 'white', fontSize: '.88rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }}
+            />
+            <button
+              className={'chat-send' + (sendAnim ? ' chat-send-anim' : '')}
+              onClick={send}
+              disabled={sending || !text.trim()}
+              style={{ opacity: text.trim() ? 1 : 0.45, transition: 'opacity .2s' }}
+            >
+              {sending ? '...' : 'Send'}
+            </button>
+          </div>
         </div>
       </>
     );
   }
 
-  /* OVERLAY mode */
+  /* ── OVERLAY mode (admin panel) ── */
   return (
     <>
       {toasts.map(t => <Toast key={t.id} toast={t} onDismiss={() => dismissToast(t.id)} />)}
-      <div className="chat-overlay show chat-overlay-anim">
-        <div className="chat-panel chat-panel-anim">
-          <div className="chat-head" style={{ background: '#0d0d0d', borderBottom: '1px solid #1f1f1f' }}>
-            <div className="chat-head-info">
-              <div className="chat-avatar" style={{ background: 'linear-gradient(135deg,#f472b6,#4a9eff)', color: 'white', fontSize: '.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {senderRole === 'admin' ? (clientName?.[0]?.toUpperCase() || 'C') : 'Y'}
+      <div
+        style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)',
+          zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        }}
+        onClick={e => { if (e.target === e.currentTarget && onClose) onClose(); }}
+      >
+        <div
+          className="chat-panel-anim"
+          style={{
+            background: '#111', borderRadius: '24px 24px 0 0',
+            width: '100%', maxWidth: '600px', height: '80vh',
+            display: 'flex', flexDirection: 'column',
+            border: '1px solid #222', overflow: 'hidden',
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div style={{
+            background: '#0d0d0d', borderBottom: '1px solid #1f1f1f',
+            padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            flexShrink: 0,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0,
+                background: 'linear-gradient(135deg,#f472b6,#4a9eff)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '.9rem', fontWeight: 700, color: 'white',
+              }}>
+                {senderRole === 'admin' ? (clientName?.[0]?.toUpperCase() || 'C') : 'O'}
               </div>
               <div>
-                <div className="chat-name">
+                <div style={{ fontWeight: 700, color: 'white', fontSize: '.95rem' }}>
                   {senderRole === 'admin' ? `Chat with ${clientName || 'Client'}` : "Yoselin's Cleaning"}
                 </div>
-                <div className="chat-status" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 6px #10b981' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '.72rem', color: '#9ca3af', marginTop: '1px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
                   Online
                 </div>
               </div>
             </div>
-            {onClose && (
-              <button className="chat-close" onClick={onClose} style={{ transition: 'background .2s', fontSize: '.85rem' }}>
-                x
-              </button>
-            )}
+            {/* Close button */}
+            <button
+              onClick={() => { if (onClose) onClose(); }}
+              style={{
+                background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)',
+                color: 'white', width: '34px', height: '34px', borderRadius: '50%',
+                cursor: 'pointer', fontSize: '1rem', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                zIndex: 10,
+              }}
+            >✕</button>
           </div>
 
-          <div className="chat-msgs" style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: '#0a0a0a' }}>
+          {/* Messages */}
+          <div style={{
+            flex: 1, overflowY: 'auto', padding: '16px',
+            background: '#0a0a0a', display: 'flex', flexDirection: 'column', gap: '10px',
+          }}>
             {renderMessages()}
             {isTyping && <TypingIndicator />}
             <div ref={bottomRef} />
           </div>
 
-          <InputBar style={{ background: '#111', borderTop: '1px solid #1f1f1f', padding: '14px 16px' }} />
+          {/* Input — inlined directly, NOT as a sub-component */}
+          <div style={{
+            display: 'flex', gap: '10px', background: '#111',
+            borderTop: '1px solid #1f1f1f', padding: '14px 16px', flexShrink: 0,
+          }}>
+            <input
+              ref={inputRef}
+              className="chat-input chat-input-glow"
+              value={text}
+              onChange={e => setText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+              placeholder="Type a message..."
+              autoComplete="off"
+              style={{
+                flex: 1, background: '#1f1f1f', border: '1.5px solid #2a2a2a',
+                borderRadius: '12px', padding: '11px 14px',
+                color: 'white', fontSize: '.88rem', fontFamily: "'DM Sans', sans-serif",
+                outline: 'none', transition: 'border-color .2s, box-shadow .2s',
+              }}
+            />
+            <button
+              className={'chat-send' + (sendAnim ? ' chat-send-anim' : '')}
+              onClick={send}
+              disabled={sending || !text.trim()}
+              style={{ opacity: text.trim() ? 1 : 0.45, transition: 'opacity .2s', flexShrink: 0 }}
+            >
+              {sending ? '...' : 'Send'}
+            </button>
+          </div>
         </div>
       </div>
     </>
