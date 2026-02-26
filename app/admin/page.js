@@ -580,7 +580,7 @@ export default function AdminPage() {
                   ))}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '340px', overflowY: 'auto', paddingRight: '4px' }}>
-                  {[{label:'Morning',sub:'6am – 11:30am',times:ALL_TIMES.slice(0,12)},{label:'Afternoon',sub:'12pm – 4:30pm',times:ALL_TIMES.slice(12,22)},{label:'Evening',sub:'5pm – 8pm',times:ALL_TIMES.slice(22)}].map(({ label, sub, times }) => (
+                  {[{label:'Morning',sub:'6am - 11:30am',times:ALL_TIMES.slice(0,12)},{label:'Afternoon',sub:'12pm - 4:30pm',times:ALL_TIMES.slice(12,22)},{label:'Evening',sub:'5pm - 8pm',times:ALL_TIMES.slice(22)}].map(({ label, sub, times }) => (
                     <div key={label}>
                       <div style={{ fontSize: '.68rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '7px' }}>{label} <span style={{ fontWeight: '500', textTransform: 'none', letterSpacing: 0, color: '#444' }}>{sub}</span></div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
