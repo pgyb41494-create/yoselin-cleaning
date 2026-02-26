@@ -60,7 +60,7 @@ export default function ChatPanel({ requestId, clientName, senderRole, senderNam
 
   const headLabel = senderRole === 'admin'
     ? `${clientName}  Chat`
-    : 'Yoselin  Your Cleaner';
+    : '\u2728 Yoselin - Your Cleaner';
 
   return (
     <div style={s.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>

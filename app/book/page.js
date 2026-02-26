@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -52,7 +52,7 @@ export default function BookPage() {
 
   return (
     <div>
-      <div className="sparkle-bar"></div>
+      <div className="sparkle-bar">\u2728\u2728\u2728</div>
       <div className="guest-header">
         <div style={{position:'absolute',top:'15px',right:'16px',display:'flex',gap:'8px',alignItems:'center'}}>
           {user?.photoURL && <img src={user.photoURL} className="nav-avatar" alt="" />}
@@ -61,9 +61,9 @@ export default function BookPage() {
         <h1>Yoselin's<br /><span>Cleaning Service</span></h1>
         <p>Professional - Reliable - Sparkling Clean</p>
         <div className="header-badges">
-          <span className="hbadge pink">Licensed and Insured</span>
-          <span className="hbadge blue">5-Star Rated</span>
-          <span className="hbadge">Free Estimates</span>
+          <span className="hbadge pink">\u2705 Licensed and Insured</span>
+          <span className="hbadge blue">\u2B50 5-Star Rated</span>
+          <span className="hbadge">\uD83C\uDF81 Free Estimates</span>
         </div>
       </div>
       <BookingWizard user={user} onDone={() => setSubmitted(true)} />

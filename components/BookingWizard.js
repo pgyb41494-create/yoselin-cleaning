@@ -235,7 +235,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
         <div className="steps-row">
           {stepLabels.map((label, i) => (
             <div key={i} className={'step-dot ' + (i < step ? 'done' : i === step ? 'active' : '')}>
-              <div className="dot-circle">{i < step ? 'v' : i + 1}</div>
+              <div className="dot-circle">{i < step ? '\u2713' : i + 1}</div>
               <div className="dot-label">{label}</div>
             </div>
           ))}
@@ -340,7 +340,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
             <div className="wcard">
               <div className="card-header">
-                <div className="card-icon">B</div>
+                <div className="card-icon">\uD83D\uDECF</div>
                 <div><div className="card-title">Bedrooms and Living</div></div>
               </div>
               <div className="card-body">
@@ -357,7 +357,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
             <div className="wcard">
               <div className="card-header">
-                <div className="card-icon">Ba</div>
+                <div className="card-icon">\uD83D\uDEC0</div>
                 <div><div className="card-title">Bathrooms</div></div>
               </div>
               <div className="card-body">
@@ -374,7 +374,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
             <div className="wcard">
               <div className="card-header">
-                <div className="card-icon">K</div>
+                <div className="card-icon">\uD83C\uDF73</div>
                 <div><div className="card-title">Kitchen and Utility</div></div>
               </div>
               <div className="card-body">
@@ -479,7 +479,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                 <div className="wt-title">Request a Walk-Through</div>
                 <div className="wt-desc">We'll visit before cleaning to give an exact quote</div>
               </div>
-              <div className="wt-check">{walkthrough ? 'v' : ''}</div>
+              <div className="wt-check">{walkthrough ? '\u2713' : ''}</div>
             </div>
             <div className="nav-btns" style={{ marginTop: '18px' }}>
               <button className="btn-back" onClick={() => goTo(2)}>Back</button>
@@ -497,7 +497,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
             {/*  Photo Upload  */}
             <div className="wcard">
               <div className="card-header">
-                <div className="card-icon"></div>
+                <div className="card-icon">\uD83D\uDCF8</div>
                 <div>
                   <div className="card-title">Photos <span className="opt" style={{fontFamily:'DM Sans,sans-serif',fontWeight:400,fontSize:'.78rem',color:'#6b7280'}}>(optional)</span></div>
                   <div className="card-sub">Upload photos of your space to help us prepare</div>
@@ -505,7 +505,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               </div>
               <div className="card-body">
                 <label className="photo-upload-area" htmlFor="bw-photo-input" style={{cursor:'pointer'}}>
-                  <div className="pua-icon"></div>
+                  <div className="pua-icon">\uD83D\uDCF7</div>
                   <div className="pua-text">Tap to add photos</div>
                   <div className="pua-sub">Up to 5 images  JPG or PNG</div>
                   <input
@@ -535,7 +535,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
             <div className="wcard">
               <div className="card-header">
-                <div className="card-icon">N</div>
+                <div className="card-icon">\uD83D\uDCDD</div>
                 <div><div className="card-title">Special Requests</div></div>
               </div>
               <div className="card-body">
