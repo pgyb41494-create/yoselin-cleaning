@@ -142,6 +142,9 @@ export default function DashboardPage() {
     setSettingsBusy(false);
   };
 
+  // Must be called before any early return (Rules of Hooks)
+  const unreadFromAdmin = useUnreadCount(requests[0]?.id || null, 'customer');
+
   if (loading) return <div className="spinner-page"><div className="spinner"></div></div>;
 
   const latest       = requests[0] || null;
@@ -155,8 +158,6 @@ export default function DashboardPage() {
   const loyalty      = getLoyaltyTier(allDone);
   const countdown    = isConfirmed ? getCountdown(latest?.date) : null;
   const isGoogleUser = user?.providerData?.[0]?.providerId === 'google.com';
-
-  const unreadFromAdmin = useUnreadCount(latest?.id || null, 'customer');
 
   const TABS = [
     { id: 'home',     label: 'Home'     },
