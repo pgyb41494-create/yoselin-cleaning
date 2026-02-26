@@ -684,6 +684,18 @@ export default function AdminPage() {
               <div key={k} className="detail-row"><span className="dk">{k}</span><span className="dv">{v}</span></div>
             ))}
 
+            {/*  Reschedule Request Alert  */}
+            {selected.rescheduleRequested && (
+              <div style={{ margin: '0 0 12px', background: 'rgba(245,158,11,.1)', border: '1.5px solid rgba(245,158,11,.3)', borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '1.3rem' }}>{'!'}</span>
+                <div>
+                  <div style={{ fontWeight: '700', color: '#f59e0b', fontSize: '.85rem' }}>Client Requested a Reschedule</div>
+                  {selected.reschedulePreferredDates && <div style={{ fontSize: '.78rem', color: '#d1d5db', marginTop: '2px' }}>Preferred: {selected.reschedulePreferredDates}</div>}
+                  {selected.rescheduleReason && <div style={{ fontSize: '.75rem', color: '#9ca3af', marginTop: '1px' }}>Reason: {selected.rescheduleReason}</div>}
+                </div>
+              </div>
+            )}
+
             {/*  Reschedule section  */}
             <div style={{ margin: '16px 0', background: '#1f1f1f', borderRadius: '12px', padding: '14px 16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: reschedMode ? '12px' : '0' }}>

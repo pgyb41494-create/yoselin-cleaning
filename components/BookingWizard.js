@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -64,6 +64,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   const [submitting,  setSubmitting]  = useState(false);
   const [availability,setAvailability]= useState([]);
 
+  const addressInputRef = useRef(null);
+  const autocompleteRef = useRef(null);
+
   const [form, setForm] = useState({
     firstName: user?.displayName?.split(' ')[0] || '',
     lastName:  user?.displayName?.split(' ').slice(1).join(' ') || '',
@@ -79,6 +82,35 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       setAvailability(slots);
     });
     return () => unsub();
+  }, []);
+
+  // Google Maps Places autocomplete
+  useEffect(() => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) return;
+    if (window.__gmapsLoaded) { initAutocomplete(); return; }
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => { window.__gmapsLoaded = true; initAutocomplete(); };
+    document.head.appendChild(script);
+  }, []);
+
+  const initAutocomplete = useCallback(() => {
+    if (!addressInputRef.current || autocompleteRef.current) return;
+    if (!window.google?.maps?.places) return;
+    const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
+      types: ['address'],
+      componentRestrictions: { country: 'us' },
+    });
+    ac.addListener('place_changed', () => {
+      const place = ac.getPlace();
+      if (place?.formatted_address) {
+        setF('address', place.formatted_address);
+      }
+    });
+    autocompleteRef.current = ac;
   }, []);
 
   const setF = (k, v) => setForm(x => ({ ...x, [k]: v }));
@@ -218,7 +250,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
       <div className="wizard-body">
 
-        {/* ── STEP 0: CONTACT ── */}
+        {/* -- STEP 0: CONTACT -- */}
         {step === 0 && (
           <div>
             <div className="page-title">{adminMode ? 'Client Information' : 'Your Information'}</div>
@@ -247,7 +279,15 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                 </div>
                 <div className="fg">
                   <label>Service Address</label>
-                  <input type="text" value={form.address} onChange={e => setF('address', e.target.value)} placeholder="Street address, City, ZIP" />
+                  <input
+                    ref={addressInputRef}
+                    type="text"
+                    value={form.address}
+                    onChange={e => setF('address', e.target.value)}
+                    onFocus={() => { if (window.__gmapsLoaded && !autocompleteRef.current) initAutocomplete(); }}
+                    placeholder="Start typing your address..."
+                    autoComplete="off"
+                  />
                 </div>
                 <div className="row2">
                   <div className="fg">
@@ -297,7 +337,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
           </div>
         )}
 
-        {/* ── STEP 1: ROOMS ── */}
+        {/* -- STEP 1: ROOMS -- */}
         {step === 1 && (
           <div>
             <div className="page-title">Rooms</div>
@@ -361,7 +401,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
           </div>
         )}
 
-        {/* ── STEP 2: ADD-ONS ── */}
+        {/* -- STEP 2: ADD-ONS -- */}
         {step === 2 && (
           <div>
             <div className="page-title">Add-On Services</div>
@@ -422,7 +462,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
           </div>
         )}
 
-        {/* ── STEP 3: FREQUENCY ── */}
+        {/* -- STEP 3: FREQUENCY -- */}
         {step === 3 && (
           <div>
             <div className="page-title">Frequency and Discounts</div>
@@ -473,7 +513,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
           </div>
         )}
 
-        {/* ── STEP 4: REVIEW ── */}
+        {/* -- STEP 4: REVIEW -- */}
         {step === 4 && (
           <div>
             <div className="page-title">Review and Submit</div>
@@ -514,7 +554,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               </div>
             </div>
 
-            {/* Price bar — discounts applied silently, only final shown */}
+            {/* Price bar ??? discounts applied silently, only final shown */}
             <div className="pbar">
               <div className="pbar-top">
                 <div>

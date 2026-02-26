@@ -2,8 +2,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { collection, query, where, onSnapshot, addDoc, getDocs, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, getDocs, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL } from '../../lib/firebase';
+import { notifyAdminRescheduleRequest } from '../../lib/notifications';
 import Chat from '../../components/Chat';
 
 // Unicode emoji constants - safe for Windows file encoding
@@ -78,11 +79,47 @@ export default function DashboardPage() {
   const [settingsErr,  setSettingsErr]  = useState('');
   const [settingsBusy, setSettingsBusy] = useState(false);
 
+  // Reschedule request state
+  const [reschedOpen, setReschedOpen] = useState(false);
+  const [reschedDates, setReschedDates] = useState('');
+  const [reschedReason, setReschedReason] = useState('');
+  const [reschedBusy, setReschedBusy] = useState(false);
+  const [reschedDone, setReschedDone] = useState(false);
+
+  // Notification permission
+  const [notifPerm, setNotifPerm] = useState('default');
+  const prevStatusRef = useRef(null);
+
   const [, setTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 60000);
     return () => clearInterval(id);
   }, []);
+
+  // Request browser notification permission on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotifPerm(Notification.permission);
+    }
+  }, []);
+
+  // Fire browser notification when booking status changes to confirmed
+  useEffect(() => {
+    if (!requests.length) return;
+    const latest = requests[0];
+    const prev = prevStatusRef.current;
+    if (prev && prev !== latest.status && latest.status === 'confirmed') {
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        try {
+          new Notification('Booking Confirmed!', {
+            body: 'Your cleaning on ' + (latest.date || 'your scheduled date') + ' has been confirmed.',
+            icon: '/logo.png',
+          });
+        } catch (e) {}
+      }
+    }
+    prevStatusRef.current = latest.status;
+  }, [requests]);
 
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (u) => {
@@ -121,6 +158,29 @@ export default function DashboardPage() {
       createdAt: serverTimestamp(),
     });
     setReviewBusy(false); setReviewDone(true); setAlreadyReview(true);
+  };
+
+  const submitReschedule = async () => {
+    if (!reschedDates.trim() || !latest) return;
+    setReschedBusy(true);
+    // Write reschedule flag to Firestore so admin sees it
+    try {
+      await updateDoc(doc(db, 'requests', latest.id), {
+        rescheduleRequested: true,
+        reschedulePreferredDates: reschedDates.trim(),
+        rescheduleReason: reschedReason.trim() || '',
+      });
+    } catch (e) { console.warn('Could not save reschedule flag:', e); }
+    await notifyAdminRescheduleRequest({
+      clientName: user.displayName || user.email,
+      clientEmail: user.email,
+      requestId: latest.id,
+      preferredDates: reschedDates.trim(),
+      reason: reschedReason.trim(),
+    });
+    setReschedBusy(false);
+    setReschedDone(true);
+    setReschedOpen(false);
   };
 
   const saveName = async () => {
@@ -216,6 +276,22 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* NOTIFICATION PERMISSION BANNER */}
+      {notifPerm === 'default' && latest && (
+        <div style={{ background: 'rgba(26,111,212,.1)', border: '1px solid rgba(26,111,212,.3)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ fontSize: '.83rem', color: '#93c5fd', fontWeight: '600' }}>
+            Get notified the moment your booking is confirmed
+          </div>
+          <button onClick={async () => {
+            const perm = await Notification.requestPermission();
+            setNotifPerm(perm);
+          }} style={{ padding: '7px 18px', background: '#1a6fd4', color: 'white', border: 'none', borderRadius: '8px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            Enable Notifications
+          </button>
+          <button onClick={() => setNotifPerm('denied')} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '.78rem', padding: '4px' }}>Dismiss</button>
+        </div>
+      )}
 
       {/* TABS */}
       <div style={{ background: '#141414', borderBottom: '1.5px solid #2a2a2a', display: 'flex', padding: '0 8px', overflowX: 'auto' }}>
@@ -456,10 +532,44 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
-              <div style={{ padding: '16px 22px' }}>
+              <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <button onClick={() => setActiveTab('messages')} style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.92rem', cursor: 'pointer' }}>
                   {E.msg} Send a Message
                 </button>
+                {!reschedDone ? (
+                  !reschedOpen ? (
+                    <button onClick={() => setReschedOpen(true)} style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px solid #2a2a2a', color: '#9ca3af', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>
+                      {E.cal} Request a Reschedule
+                    </button>
+                  ) : (
+                    <div style={{ background: '#1a1a1a', borderRadius: '14px', padding: '16px', border: '1.5px solid #2a2a2a' }}>
+                      <div style={{ fontWeight: '700', color: 'white', fontSize: '.88rem', marginBottom: '12px' }}>{E.cal} Request a Reschedule</div>
+                      <div style={{ marginBottom: '10px' }}>
+                        <label style={{ display: 'block', fontSize: '.78rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>Preferred Dates / Times</label>
+                        <input type="text" value={reschedDates} onChange={e => setReschedDates(e.target.value)}
+                          placeholder="e.g. Any morning next week, or March 10-12"
+                          style={{ width: '100%', padding: '9px 12px', background: '#141414', border: '1.5px solid #333', borderRadius: '9px', color: 'white', fontSize: '.83rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
+                      </div>
+                      <div style={{ marginBottom: '12px' }}>
+                        <label style={{ display: 'block', fontSize: '.78rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>Reason (optional)</label>
+                        <input type="text" value={reschedReason} onChange={e => setReschedReason(e.target.value)}
+                          placeholder="e.g. Work conflict, family event..."
+                          style={{ width: '100%', padding: '9px 12px', background: '#141414', border: '1.5px solid #333', borderRadius: '9px', color: 'white', fontSize: '.83rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={submitReschedule} disabled={reschedBusy || !reschedDates.trim()} style={{ flex: 1, padding: '10px', background: reschedDates.trim() ? 'linear-gradient(135deg,#1a6fd4,#db2777)' : '#2a2a2a', color: reschedDates.trim() ? 'white' : '#555', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: reschedDates.trim() ? 'pointer' : 'not-allowed' }}>
+                          {reschedBusy ? 'Sending...' : 'Send Request'}
+                        </button>
+                        <button onClick={() => setReschedOpen(false)} style={{ padding: '10px 16px', background: 'transparent', border: '1.5px solid #2a2a2a', color: '#6b7280', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>Cancel</button>
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  <div style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.25)', borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '1.2rem' }}>{E.check}</span>
+                    <div style={{ fontWeight: '700', color: '#10b981', fontSize: '.85rem' }}>Reschedule request sent! We will be in touch soon.</div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
