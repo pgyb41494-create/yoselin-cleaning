@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useEffect, useRef, useState } from 'react';
 import {
   collection, addDoc, onSnapshot, query,
@@ -59,26 +59,26 @@ export default function ChatPanel({ requestId, clientName, senderRole, senderNam
   }
 
   const headLabel = senderRole === 'admin'
-    ? `${clientName} � Chat`
-    : 'Yoselin � Your Cleaner';
+    ? `${clientName}  Chat`
+    : 'Yoselin  Your Cleaner';
 
   return (
     <div style={s.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div style={s.panel}>
         <div style={s.head}>
           <div style={s.headInfo}>
-            <div style={s.avatar}>✨</div>
+            <div style={s.avatar}></div>
             <div>
               <div style={s.name}>{headLabel}</div>
               <div style={s.status}>Yoselin's Cleaning Service</div>
             </div>
           </div>
-          <button style={s.closeBtn} onClick={onClose}>✕</button>
+          <button style={s.closeBtn} onClick={onClose}></button>
         </div>
 
         <div style={s.msgs}>
           {messages.length === 0 && (
-            <div style={s.empty}>No messages yet. Say hello! ��</div>
+            <div style={s.empty}>No messages yet. Say hello! </div>
           )}
           {messages.map(msg => {
             const isMe = msg.sender === senderRole;

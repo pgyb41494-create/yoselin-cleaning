@@ -1,24 +1,24 @@
-'use client';
+﻿'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL } from '../../lib/firebase';
 
-// ─── Pricing ───────────────────────────────────────────
+//  Pricing 
 const bPrices = { half:15, small:50, medium:65, large:80 };
 const rPrices  = { bed_small:25, bed_medium:30, bed_large:35, liv_medium:15, liv_large:35, office:10, kit_small:45, kit_medium:55, kit_large:70, laundry:10, basement:75 };
 const bathLabels = { half:'Half Bath', small:'Small Bath', medium:'Medium Bath', large:'Large Bath' };
 const roomLabels = { bed_small:'Small Bedroom', bed_medium:'Medium Bedroom', bed_large:'Large Bedroom', liv_medium:'Medium Living', liv_large:'Large Living', office:'Office', kit_small:'Small Kitchen', kit_medium:'Medium Kitchen', kit_large:'Large Kitchen', laundry:'Laundry Room', basement:'Basement' };
 const ADDONS = [
-  { id:'cabinets',   price:16, label:'��️ Inside Cabinets' },
-  { id:'pantry',     price:20, label:'�� Inside Pantry' },
-  { id:'oven',       price:16, label:'�� Inside Oven' },
-  { id:'fridge',     price:16, label:'❄️ Inside Fridge' },
-  { id:'baseboards', price:5,  label:'�� Baseboard Cleaning' },
+  { id:'cabinets',   price:16, label:' Inside Cabinets' },
+  { id:'pantry',     price:20, label:' Inside Pantry' },
+  { id:'oven',       price:16, label:' Inside Oven' },
+  { id:'fridge',     price:16, label:' Inside Fridge' },
+  { id:'baseboards', price:5,  label:' Baseboard Cleaning' },
 ];
 
-// ─── Shared style helpers ──────────────────────────────
+//  Shared style helpers 
 const cardStyle = { background:'white', borderRadius:'18px', border:'1.5px solid #e2e8f0', marginBottom:'18px', overflow:'hidden', boxShadow:'0 2px 10px rgba(0,0,0,.04)' };
 const sectionHead = (icon, title, sub) => (
   <div style={{ display:'flex', alignItems:'center', gap:'12px', padding:'14px 20px', borderBottom:'1.5px solid #e2e8f0', background:'linear-gradient(135deg,#e8f2ff,#fce4f3)' }}>
@@ -38,7 +38,7 @@ function QRow({ label, desc, value, onDec, onInc }) {
         {desc && <div style={{ fontSize:'.72rem', color:'#4b5563', marginTop:2 }}>{desc}</div>}
       </div>
       <div style={{ display:'flex', alignItems:'center', gap:9 }}>
-        {['−','＋'].map((sym,i) => (
+        {['',''].map((sym,i) => (
           <button key={sym} onClick={i===0?onDec:onInc}
             style={{ width:30, height:30, borderRadius:8, border:'1.5px solid #e2e8f0', background:'white', fontSize:'1.1rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, color:'#1a6fd4' }}>
             {sym}
@@ -50,16 +50,16 @@ function QRow({ label, desc, value, onDec, onInc }) {
   );
 }
 
-function NavBtns({ onBack, onNext, nextLabel='Next →' }) {
+function NavBtns({ onBack, onNext, nextLabel='Next ' }) {
   return (
     <div style={{ display:'flex', gap:12, marginTop:6 }}>
-      {onBack && <button onClick={onBack} style={{ flex:1, maxWidth:140, padding:14, background:'white', color:'#111827', border:'2px solid #e2e8f0', borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:'.95rem', fontWeight:700, cursor:'pointer' }}>← Back</button>}
+      {onBack && <button onClick={onBack} style={{ flex:1, maxWidth:140, padding:14, background:'white', color:'#111827', border:'2px solid #e2e8f0', borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:'.95rem', fontWeight:700, cursor:'pointer' }}> Back</button>}
       <button onClick={onNext} style={{ flex:1, padding:14, background:'linear-gradient(135deg,#1a6fd4,#db2777)', color:'white', border:'none', borderRadius:14, fontFamily:"'DM Sans',sans-serif", fontSize:'.95rem', fontWeight:700, cursor:'pointer', boxShadow:'0 4px 18px rgba(26,111,212,.2)' }}>{nextLabel}</button>
     </div>
   );
 }
 
-// ─── Main Component ────────────────────────────────────
+//  Main Component 
 export default function BookingPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -93,7 +93,7 @@ export default function BookingPage() {
     return () => unsub();
   }, [router]);
 
-  // ─── Price calculation ─────────────────────────────
+  //  Price calculation 
   function calcPrice() {
     let base = 0;
     Object.entries(baths).forEach(([k,v]) => { if(v>0) base += v*bPrices[k]; });
@@ -112,11 +112,11 @@ export default function BookingPage() {
   function addonLines() {
     const lines = [];
     Object.entries(addons).forEach(([k,v]) => { if(v){ const a=ADDONS.find(a=>a.id===k); if(a) lines.push(a.label.replace(/^[^\s]+\s/,'').trim()); } });
-    if(windowCount>0) lines.push(`Window Trim �${windowCount}`);
+    if(windowCount>0) lines.push(`Window Trim ${windowCount}`);
     return lines.join(', ') || 'None';
   }
 
-  // ─── Submit ───────────────────────────────────────
+  //  Submit 
   async function submit() {
     if (!user) return;
     setSubmitting(true);
@@ -140,7 +140,7 @@ export default function BookingPage() {
     const docRef = await addDoc(collection(db, 'requests'), req);
     // Send welcome chat message
     await addDoc(collection(db, 'chats', docRef.id, 'messages'), {
-      text: `Hi ${info.firstName || 'there'}! �� Thank you for reaching out to Yoselin's Cleaning Service. I've received your request and will get back to you within 24 hours to confirm your appointment!`,
+      text: `Hi ${info.firstName || 'there'}!  Thank you for reaching out to Yoselin's Cleaning Service. I've received your request and will get back to you within 24 hours to confirm your appointment!`,
       sender: 'admin', senderName: 'Yoselin',
       createdAt: serverTimestamp(),
     });
@@ -160,11 +160,11 @@ export default function BookingPage() {
     </div>
   );
 
-  // ─── Step views ───────────────────────────────────
+  //  Step views 
   const steps = [
     // 0: Contact
     <div key={0}>
-      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:'1.5rem', fontWeight:900, marginBottom:4 }}>�� Your Information</div>
+      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:'1.5rem', fontWeight:900, marginBottom:4 }}> Your Information</div>
       <div style={{ fontSize:'.85rem', color:'#4b5563', marginBottom:22 }}>Tell us who you are and how to reach you</div>
       <div style={cardStyle}><div style={{ padding:'18px 20px' }}>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:13, marginBottom:0 }}>
@@ -186,48 +186,48 @@ export default function BookingPage() {
             <label style={{ display:'block', fontSize:'.82rem', fontWeight:700, color:'#111827', marginBottom:6 }}>Preferred Time</label>
             <select value={info.time} onChange={e=>setInfo({...info,time:e.target.value})} style={{ width:'100%', padding:'10px 13px', border:'1.5px solid #e2e8f0', borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:'.87rem', color:'#111827', background:'#f8f9ff', outline:'none' }}>
               <option value="">Select a time</option>
-              {['Morning (8am�12pm)','Afternoon (12pm�4pm)','Evening (4pm�7pm)','Flexible'].map(t=><option key={t}>{t}</option>)}
+              {['Morning (8am12pm)','Afternoon (12pm4pm)','Evening (4pm7pm)','Flexible'].map(t=><option key={t}>{t}</option>)}
             </select>
           </div>
         </div>
       </div></div>
-      <NavBtns onNext={()=>{ if(!info.firstName.trim()){alert('Please enter your first name.');return;} setStep(1); }} nextLabel="Next: Rooms →" />
+      <NavBtns onNext={()=>{ if(!info.firstName.trim()){alert('Please enter your first name.');return;} setStep(1); }} nextLabel="Next: Rooms " />
     </div>,
 
     // 1: Rooms
     <div key={1}>
-      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:'1.5rem', fontWeight:900, marginBottom:4 }}>�� Rooms</div>
+      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:'1.5rem', fontWeight:900, marginBottom:4 }}> Rooms</div>
       <div style={{ fontSize:'.85rem', color:'#4b5563', marginBottom:22 }}>Tell us about the rooms in your home</div>
       <div style={cardStyle}>
-        {sectionHead('��️','Bedrooms & Living Spaces')}
+        {sectionHead('','Bedrooms & Living Spaces')}
         <div style={{ padding:'0 20px' }}>
-          {[['bed_small','��️ Small Bedroom','Guest room, kids room'],['bed_medium','��️ Medium Bedroom','Standard bedroom with closet'],['bed_large','�� Large / Master Bedroom','Spacious primary bedroom'],['liv_medium','��️ Medium Living Room','Standard family room or den'],['liv_large','��️ Large Living Room','Open-concept or spacious'],['office','�� Office / Study','Home office or reading room']].map(([k,l,d])=>(
+          {[['bed_small',' Small Bedroom','Guest room, kids room'],['bed_medium',' Medium Bedroom','Standard bedroom with closet'],['bed_large',' Large / Master Bedroom','Spacious primary bedroom'],['liv_medium',' Medium Living Room','Standard family room or den'],['liv_large',' Large Living Room','Open-concept or spacious'],['office',' Office / Study','Home office or reading room']].map(([k,l,d])=>(
             <QRow key={k} label={l} desc={d} value={rooms[k]} onDec={()=>setRooms({...rooms,[k]:Math.max(0,rooms[k]-1)})} onInc={()=>setRooms({...rooms,[k]:rooms[k]+1})} />
           ))}
         </div>
       </div>
       <div style={cardStyle}>
-        {sectionHead('��','Bathrooms')}
+        {sectionHead('','Bathrooms')}
         <div style={{ padding:'0 20px' }}>
-          {[['half','�� Half Bathroom','Toilet + sink only'],['small','�� Small Full Bathroom','Shower or tub, smaller space'],['medium','�� Medium Full Bathroom','Standard size with tub + shower'],['large','�� Large / Master Bathroom','Large shower, spacious layout']].map(([k,l,d])=>(
+          {[['half',' Half Bathroom','Toilet + sink only'],['small',' Small Full Bathroom','Shower or tub, smaller space'],['medium',' Medium Full Bathroom','Standard size with tub + shower'],['large',' Large / Master Bathroom','Large shower, spacious layout']].map(([k,l,d])=>(
             <QRow key={k} label={l} desc={d} value={baths[k]} onDec={()=>setBaths({...baths,[k]:Math.max(0,baths[k]-1)})} onInc={()=>setBaths({...baths,[k]:baths[k]+1})} />
           ))}
         </div>
       </div>
       <div style={cardStyle}>
-        {sectionHead('��','Kitchen & Utility')}
+        {sectionHead('','Kitchen & Utility')}
         <div style={{ padding:'0 20px' }}>
-          {[['kit_small','�� Small Kitchen','Compact kitchen or kitchenette'],['kit_medium','�� Medium Kitchen','Standard kitchen with dining area'],['kit_large','�� Large Kitchen','Open-concept or chef\'s kitchen'],['laundry','�� Laundry Room','Washer/dryer area'],['basement','��️ Basement','Finished or unfinished basement']].map(([k,l,d])=>(
+          {[['kit_small',' Small Kitchen','Compact kitchen or kitchenette'],['kit_medium',' Medium Kitchen','Standard kitchen with dining area'],['kit_large',' Large Kitchen','Open-concept or chef\'s kitchen'],['laundry',' Laundry Room','Washer/dryer area'],['basement',' Basement','Finished or unfinished basement']].map(([k,l,d])=>(
             <QRow key={k} label={l} desc={d} value={rooms[k]} onDec={()=>setRooms({...rooms,[k]:Math.max(0,rooms[k]-1)})} onInc={()=>setRooms({...rooms,[k]:rooms[k]+1})} />
           ))}
         </div>
       </div>
-      <NavBtns onBack={()=>setStep(0)} onNext={()=>setStep(2)} nextLabel="Next: Add-Ons →" />
+      <NavBtns onBack={()=>setStep(0)} onNext={()=>setStep(2)} nextLabel="Next: Add-Ons " />
     </div>,
 
     // 2: Add-Ons
     <div key={2}>
-      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:'1.5rem', fontWeight:900, marginBottom:4 }}>✨ Add-On Services</div>
+      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:'1.5rem', fontWeight:900, marginBottom:4 }}> Add-On Services</div>
       <div style={{ fontSize:'.85rem', color:'#4b5563', marginBottom:22 }}>Select any extras you'd like included (all optional)</div>
       <div style={cardStyle}><div style={{ padding:'18px 20px' }}>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:10 }}>
@@ -241,10 +241,10 @@ export default function BookingPage() {
           <label style={{ display:'flex', alignItems:'flex-start', gap:10, padding:13, border:`1.5px solid ${windowCount>0?'#db2777':'#e2e8f0'}`, borderRadius:12, cursor:'pointer', background: windowCount>0?'#fce4f3':'#f8f9ff' }}>
             <input type="checkbox" checked={windowCount>0} onChange={e=>setWindowCount(e.target.checked?1:0)} style={{ width:17, height:17, accentColor:'#db2777', flexShrink:0, marginTop:2 }} />
             <div>
-              <span style={{ fontSize:'.83rem', fontWeight:700, color:'#111827' }}>�� Window Trim</span>
+              <span style={{ fontSize:'.83rem', fontWeight:700, color:'#111827' }}> Window Trim</span>
               {windowCount>0&&(
                 <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:8 }}>
-                  <button onClick={e=>{e.preventDefault();setWindowCount(Math.max(1,windowCount-1));}} style={{ width:26, height:26, borderRadius:6, border:'1.5px solid #e2e8f0', background:'white', cursor:'pointer', fontWeight:700, color:'#1a6fd4' }}>−</button>
+                  <button onClick={e=>{e.preventDefault();setWindowCount(Math.max(1,windowCount-1));}} style={{ width:26, height:26, borderRadius:6, border:'1.5px solid #e2e8f0', background:'white', cursor:'pointer', fontWeight:700, color:'#1a6fd4' }}></button>
                   <span style={{ fontSize:'.9rem', fontWeight:700 }}>{windowCount}</span>
                   <button onClick={e=>{e.preventDefault();setWindowCount(windowCount+1);}} style={{ width:26, height:26, borderRadius:6, border:'1.5px solid #e2e8f0', background:'white', cursor:'pointer', fontWeight:700, color:'#1a6fd4' }}>+</button>
                 </div>
@@ -254,7 +254,7 @@ export default function BookingPage() {
         </div>
         <div style={{ height:1, background:'#e2e8f0', margin:'14px 0' }} />
         <div style={{ marginBottom:13 }}>
-          <label style={{ display:'block', fontSize:'.82rem', fontWeight:700, color:'#111827', marginBottom:6 }}>�� Any Pets?</label>
+          <label style={{ display:'block', fontSize:'.82rem', fontWeight:700, color:'#111827', marginBottom:6 }}> Any Pets?</label>
           <select value={pets} onChange={e=>setPets(e.target.value)} style={{ width:'100%', padding:'10px 13px', border:'1.5px solid #e2e8f0', borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:'.87rem', color:'#111827', background:'#f8f9ff', outline:'none' }}>
             <option value="no">No</option><option value="yes">Yes</option>
           </select>
@@ -264,17 +264,17 @@ export default function BookingPage() {
           <input type="text" value={otherReqs} onChange={e=>setOtherReqs(e.target.value)} placeholder="e.g. Deep clean behind appliances..." style={{ width:'100%', padding:'10px 13px', border:'1.5px solid #e2e8f0', borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:'.87rem', color:'#111827', background:'#f8f9ff', outline:'none' }} />
         </div>
       </div></div>
-      <NavBtns onBack={()=>setStep(1)} onNext={()=>setStep(3)} nextLabel="Next: Frequency →" />
+      <NavBtns onBack={()=>setStep(1)} onNext={()=>setStep(3)} nextLabel="Next: Frequency " />
     </div>,
 
     // 3: Frequency
     <div key={3}>
-      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:'1.5rem', fontWeight:900, marginBottom:4 }}>�� Frequency & Discounts</div>
+      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:'1.5rem', fontWeight:900, marginBottom:4 }}> Frequency & Discounts</div>
       <div style={{ fontSize:'.85rem', color:'#4b5563', marginBottom:22 }}>How often would you like us to clean?</div>
       <div style={cardStyle}><div style={{ padding:'18px 20px' }}>
         <label style={{ display:'block', fontSize:'.82rem', fontWeight:700, color:'#111827', marginBottom:12 }}>Cleaning Frequency</label>
         <div style={{ display:'flex', flexWrap:'wrap', gap:9, marginBottom:18 }}>
-          {[['once','One-Time','No discount'],['biweekly','Bi-Weekly','Save 15%'],['weekly','Weekly','Save 15�20%'],['monthly','2�3� / Month','Save 10�15%']].map(([v,l,tag])=>(
+          {[['once','One-Time','No discount'],['biweekly','Bi-Weekly','Save 15%'],['weekly','Weekly','Save 1520%'],['monthly','23 / Month','Save 1015%']].map(([v,l,tag])=>(
             <div key={v} onClick={()=>setFreq(v)} style={{ padding:'11px 17px', border:`2px solid ${freq===v?'#0d0d0d':'#e2e8f0'}`, borderRadius:99, fontSize:'.82rem', fontWeight:700, cursor:'pointer', color: freq===v?'white':'#4b5563', background: freq===v?'#0d0d0d':'transparent', transition:'all .15s' }}>
               {l}<span style={{ display:'block', fontSize:'.68rem', marginTop:3, color: freq===v?'rgba(255,255,255,.7)':'#f472b6', fontWeight:600 }}>{tag}</span>
             </div>
@@ -285,32 +285,32 @@ export default function BookingPage() {
           <div>
             <label style={{ display:'block', fontSize:'.82rem', fontWeight:700, color:'#111827', marginBottom:6 }}>First time with us?</label>
             <select value={firstTime} onChange={e=>setFirstTime(e.target.value)} style={{ width:'100%', padding:'10px 13px', border:'1.5px solid #e2e8f0', borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:'.87rem', color:'#111827', background:'#f8f9ff', outline:'none' }}>
-              <option value="no">No, returning client</option><option value="yes">Yes! First time � 10% off</option>
+              <option value="no">No, returning client</option><option value="yes">Yes! First time  10% off</option>
             </select>
           </div>
           <div>
             <label style={{ display:'block', fontSize:'.82rem', fontWeight:700, color:'#111827', marginBottom:6 }}>Senior discount?</label>
             <select value={senior} onChange={e=>setSenior(e.target.value)} style={{ width:'100%', padding:'10px 13px', border:'1.5px solid #e2e8f0', borderRadius:10, fontFamily:"'DM Sans',sans-serif", fontSize:'.87rem', color:'#111827', background:'#f8f9ff', outline:'none' }}>
-              <option value="no">No</option><option value="yes">Yes � 10% senior discount</option>
+              <option value="no">No</option><option value="yes">Yes  10% senior discount</option>
             </select>
           </div>
         </div>
       </div></div>
       <div onClick={()=>setWalkthrough(!walkthrough)} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 18px', background: walkthrough?'#e8f2ff':'#f8f9ff', border:`1.5px solid ${walkthrough?'#1a6fd4':'#e2e8f0'}`, borderRadius:12, marginTop:14, cursor:'pointer' }}>
-        <div style={{ fontSize:'1.3rem' }}>��</div>
+        <div style={{ fontSize:'1.3rem' }}></div>
         <div style={{ flex:1 }}>
           <div style={{ fontSize:'.84rem', fontWeight:700, color:'#111827' }}>Request a Walk-Through</div>
           <div style={{ fontSize:'.72rem', color:'#4b5563', marginTop:2 }}>We'll visit before cleaning to give an exact quote</div>
         </div>
-        <div style={{ width:20, height:20, borderRadius:6, border:`2px solid ${walkthrough?'#1a6fd4':'#e2e8f0'}`, background: walkthrough?'#1a6fd4':'white', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'.75rem', color:'white' }}>{walkthrough?'✓':''}</div>
+        <div style={{ width:20, height:20, borderRadius:6, border:`2px solid ${walkthrough?'#1a6fd4':'#e2e8f0'}`, background: walkthrough?'#1a6fd4':'white', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'.75rem', color:'white' }}>{walkthrough?'':''}</div>
       </div>
-      <NavBtns onBack={()=>setStep(2)} onNext={()=>setStep(4)} nextLabel="Next: Review →" />
+      <NavBtns onBack={()=>setStep(2)} onNext={()=>setStep(4)} nextLabel="Next: Review " />
     </div>,
 
     // 4: Review & Submit
     <div key={4}>
-      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:'1.5rem', fontWeight:900, marginBottom:4 }}>�� Review & Submit</div>
-      <div style={{ fontSize:'.85rem', color:'#4b5563', marginBottom:22 }}>Almost done � add any notes and submit</div>
+      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:'1.5rem', fontWeight:900, marginBottom:4 }}> Review & Submit</div>
+      <div style={{ fontSize:'.85rem', color:'#4b5563', marginBottom:22 }}>Almost done  add any notes and submit</div>
       <div style={cardStyle}><div style={{ padding:'18px 20px' }}>
         <div style={{ marginBottom:13 }}>
           <label style={{ display:'block', fontSize:'.82rem', fontWeight:700, color:'#111827', marginBottom:6 }}>Notes <span style={{ fontWeight:400, color:'#6b7280', fontSize:'.74rem' }}>(optional)</span></label>
@@ -339,26 +339,26 @@ export default function BookingPage() {
           <div>
             <div style={{ fontSize:'.74rem', color:'#9ca3af', marginBottom:4, fontWeight:600 }}>YOUR ESTIMATE</div>
             <div style={{ fontFamily:"'Playfair Display',serif", fontSize:'2.6rem', fontWeight:900, background:'linear-gradient(135deg,#f472b6,#4a9eff)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', lineHeight:1 }}>${final}</div>
-            <div style={{ fontSize:'.72rem', color:'#9ca3af', marginTop:4 }}>Est. range: ${Math.round(final*.95)} � ${Math.round(final*1.1)}</div>
+            <div style={{ fontSize:'.72rem', color:'#9ca3af', marginTop:4 }}>Est. range: ${Math.round(final*.95)}  ${Math.round(final*1.1)}</div>
           </div>
         </div>
-        <div style={{ fontSize:'.69rem', color:'#9ca3af', textAlign:'center' }}>�� Estimate based on your selections. Final price confirmed after walkthrough.</div>
+        <div style={{ fontSize:'.69rem', color:'#9ca3af', textAlign:'center' }}> Estimate based on your selections. Final price confirmed after walkthrough.</div>
       </div>
 
-      <NavBtns onBack={()=>setStep(3)} onNext={submit} nextLabel={submitting ? 'Submitting...' : `✨ Submit Request � $${final}`} />
+      <NavBtns onBack={()=>setStep(3)} onNext={submit} nextLabel={submitting ? 'Submitting...' : ` Submit Request  $${final}`} />
     </div>,
   ];
 
-  // ─── Done overlay ──────────────────────────────────
+  //  Done overlay 
   if (done) {
     return (
       <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
         <div style={{ background:'white', borderRadius:22, padding:'40px 28px', textAlign:'center', maxWidth:380, width:'100%' }}>
-          <div style={{ fontSize:'2.8rem' }}>��</div>
+          <div style={{ fontSize:'2.8rem' }}></div>
           <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:'1.5rem', margin:'12px 0 8px', color:'#0d0d0d' }}>Request Sent!</h2>
           <p style={{ color:'#4b5563', fontSize:'.85rem', lineHeight:1.6 }}><strong>Yoselin will contact you within 24 hours</strong> to confirm your appointment.</p>
-          <p style={{ fontSize:'.82rem', color:'#4b5563', background:'#f3f4f6', borderRadius:10, padding:12, marginTop:12 }}>�� You can chat with Yoselin from your dashboard!</p>
-          <button onClick={()=>router.push('/dashboard')} style={{ marginTop:20, padding:'12px 32px', background:'#0d0d0d', color:'white', border:'none', borderRadius:99, fontFamily:"'DM Sans',sans-serif", fontWeight:600, cursor:'pointer', fontSize:'.86rem' }}>Go to My Dashboard →</button>
+          <p style={{ fontSize:'.82rem', color:'#4b5563', background:'#f3f4f6', borderRadius:10, padding:12, marginTop:12 }}> You can chat with Yoselin from your dashboard!</p>
+          <button onClick={()=>router.push('/dashboard')} style={{ marginTop:20, padding:'12px 32px', background:'#0d0d0d', color:'white', border:'none', borderRadius:99, fontFamily:"'DM Sans',sans-serif", fontWeight:600, cursor:'pointer', fontSize:'.86rem' }}>Go to My Dashboard </button>
         </div>
       </div>
     );
@@ -370,7 +370,7 @@ export default function BookingPage() {
       <div style={{ background:'#0d0d0d', height:5, background:'linear-gradient(90deg,#f472b6,#4a9eff,#db2777,#1a6fd4)', backgroundSize:'300% 100%' }} />
       <header style={{ background:'#0d0d0d', padding:'20px 24px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
         <div style={{ fontFamily:"'Playfair Display',serif", color:'white', fontSize:'1.1rem', fontWeight:700 }}>Yoselin's <span style={{ color:'#f472b6' }}>Cleaning</span></div>
-        <button onClick={()=>router.push('/dashboard')} style={{ background:'#222', border:'1px solid #444', color:'#c0c4cc', padding:'7px 13px', borderRadius:8, fontFamily:"'DM Sans',sans-serif", fontSize:'.75rem', cursor:'pointer' }}>← My Dashboard</button>
+        <button onClick={()=>router.push('/dashboard')} style={{ background:'#222', border:'1px solid #444', color:'#c0c4cc', padding:'7px 13px', borderRadius:8, fontFamily:"'DM Sans',sans-serif", fontSize:'.75rem', cursor:'pointer' }}> My Dashboard</button>
       </header>
 
       {/* Step indicators */}
@@ -379,7 +379,7 @@ export default function BookingPage() {
           {['Contact','Rooms','Add-Ons','Frequency','Review'].map((label,i)=>(
             <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', position:'relative' }}>
               {i<4&&<div style={{ position:'absolute', top:14, left:'calc(50% + 14px)', right:'calc(-50% + 14px)', height:2, background: i<step?'#1a6fd4':'#e2e8f0', zIndex:0 }} />}
-              <div style={{ width:28, height:28, borderRadius:'50%', border:`2px solid ${i<=step?'#1a6fd4':'#e2e8f0'}`, background: i<step?'#1a6fd4':i===step?'#1a6fd4':'white', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'.72rem', fontWeight:700, color: i<=step?'white':'#4b5563', position:'relative', zIndex:1, transition:'all .3s' }}>{i<step?'✓':i+1}</div>
+              <div style={{ width:28, height:28, borderRadius:'50%', border:`2px solid ${i<=step?'#1a6fd4':'#e2e8f0'}`, background: i<step?'#1a6fd4':i===step?'#1a6fd4':'white', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'.72rem', fontWeight:700, color: i<=step?'white':'#4b5563', position:'relative', zIndex:1, transition:'all .3s' }}>{i<step?'':i+1}</div>
               <div style={{ fontSize:'.65rem', fontWeight:700, color: i<=step?'#1a6fd4':'#4b5563', marginTop:5 }}>{label}</div>
             </div>
           ))}

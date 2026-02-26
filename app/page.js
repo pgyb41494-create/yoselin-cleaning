@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -123,7 +123,7 @@ export default function HomePage() {
   };
 
   const closeModal = () => {
-    if (authMode === 'verify') return; // don't close verify — user must act
+    if (authMode === 'verify') return; // don't close verify  user must act
     setAuthMode(null); setError(''); setName(''); setEmail(''); setPassword(''); setResetSent(false);
   };
 
@@ -157,11 +157,11 @@ export default function HomePage() {
       {/* AD BLOCKER WARNING */}
       {authError && (
         <div style={{background:'#fef3c7',borderBottom:'2px solid #f59e0b',padding:'10px 20px',textAlign:'center',fontSize:'.85rem',color:'#92400e',fontWeight:600}}>
-          ⚠️ An ad blocker may be interfering with login. Please disable it for this site if you have trouble signing in.
+           An ad blocker may be interfering with login. Please disable it for this site if you have trouble signing in.
         </div>
       )}
 
-      {/* ── NAVBAR ── */}
+      {/*  NAVBAR  */}
       <nav className="hp-nav">
         <div className="hp-tab-wrap">
           <button className="hp-tab-btn" onClick={() => setTabOpen(!tabOpen)}>
@@ -169,8 +169,8 @@ export default function HomePage() {
           </button>
           {tabOpen && (
             <div className="hp-tab-dropdown">
-              <a href="#pics" onClick={() => setTabOpen(false)}>📸 Pics</a>
-              <a href="#reviews" onClick={() => setTabOpen(false)}>⭐ Reviews</a>
+              <a href="#pics" onClick={() => setTabOpen(false)}> Pics</a>
+              <a href="#reviews" onClick={() => setTabOpen(false)}> Reviews</a>
             </div>
           )}
         </div>
@@ -178,13 +178,13 @@ export default function HomePage() {
         <button className="hp-nav-login" onClick={() => setAuthMode('login')}>Login</button>
       </nav>
 
-      {/* ── HERO ── */}
+      {/*  HERO  */}
       <section className="hp-hero">
         <p className="hp-hero-tagline">Ready To Make Your Place Shine</p>
         <h1 className="hp-hero-title">Professional Cleaning<br /><span>You Can Trust</span></h1>
         <p className="hp-hero-intro">
           We bring the sparkle back to your home or office. Detail-focused, reliable, and always on time.
-          Based in Fairfield, Ohio — serving the surrounding area.
+          Based in Fairfield, Ohio  serving the surrounding area.
         </p>
         <div className="hp-hero-btns">
           <button className="hp-btn-primary" onClick={() => setAuthMode('signup')}>Create Account</button>
@@ -192,24 +192,24 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── SERVICES ── */}
+      {/*  SERVICES  */}
       <section className="hp-services" id="services">
         <div className="hp-section-label">What We Offer</div>
         <div className="hp-services-grid">
           <div className="hp-service-card">
-            <div className="hsc-icon">🏠</div>
+            <div className="hsc-icon"></div>
             <h3>Residential</h3>
             <p>Full home cleaning tailored to your schedule. Weekly, bi-weekly, or one-time deep cleans.</p>
             <div className="hsc-price">From $120</div>
           </div>
           <div className="hp-service-card">
-            <div className="hsc-icon">🏢</div>
+            <div className="hsc-icon"></div>
             <h3>Light Commercial</h3>
             <p>Offices, studios, and small businesses. Flexible scheduling before or after hours.</p>
             <div className="hsc-price">From $150</div>
           </div>
           <div className="hp-service-card">
-            <div className="hsc-icon">📦</div>
+            <div className="hsc-icon"></div>
             <h3>Move Out / In</h3>
             <p>Leave your old place spotless or start fresh in your new home. Landlord-ready results.</p>
             <div className="hsc-price">From $250</div>
@@ -217,14 +217,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── PICS / REVIEWS ── */}
+      {/*  PICS / REVIEWS  */}
       <section className="hp-gallery" id="pics">
         <div className="hp-section-label">Pics / Reviews</div>
         <div className="hp-photos-row">
           {['Before & After', 'Kitchen Deep Clean', 'Bathroom Detail', 'Living Room', 'Office Space'].map((label, i) => (
             <div className="hp-photo" key={i}>
               <div className="hp-photo-inner">
-                <span className="hp-photo-icon">📷</span>
+                <span className="hp-photo-icon"></span>
                 <span className="hp-photo-label">{label}</span>
               </div>
             </div>
@@ -233,7 +233,7 @@ export default function HomePage() {
         <div className="hp-reviews-grid" id="reviews">
           {reviews.map(r => (
             <div className="hp-review-card" key={r.name}>
-              <div className="hrc-stars">{'⭐'.repeat(r.stars)}</div>
+              <div className="hrc-stars">{''.repeat(r.stars)}</div>
               <p className="hrc-text">"{r.text}"</p>
               <div className="hrc-footer">
                 <div className="hrc-avatar">{r.name[0]}</div>
@@ -247,12 +247,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── LOCATION ── */}
+      {/*  LOCATION  */}
       <section className="hp-location" id="schedule">
         <div className="hp-section-label">Locations</div>
         <div className="hp-location-stack">
           <div className="hp-location-box">
-            <span className="hp-loc-pin">📍</span>
+            <span className="hp-loc-pin"></span>
             <div>
               <strong>Based In Fairfield, Ohio</strong>
               <p>Serving Fairfield and surrounding cities in the Cincinnati area</p>
@@ -264,7 +264,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
+      {/*  FOOTER  */}
       <footer className="hp-footer">
         <div className="hp-footer-links">
           <a href="#">Policy</a>
@@ -275,15 +275,15 @@ export default function HomePage() {
           <a href="tel:5133709082">513-370-9082</a>
           <a href="tel:5132576942">513-257-6942</a>
         </div>
-        <div className="hp-footer-brand">✨ Yoselins Cleaning</div>
-        <p className="hp-footer-copy">© 2025 Yoselins Cleaning. All rights reserved.</p>
+        <div className="hp-footer-brand"> Yoselins Cleaning</div>
+        <p className="hp-footer-copy"> 2025 Yoselins Cleaning. All rights reserved.</p>
       </footer>
 
-      {/* ── VERIFY EMAIL MODAL ── */}
+      {/*  VERIFY EMAIL MODAL  */}
       {authMode === 'verify' && (
         <div className="am-overlay">
           <div className="am-modal" style={{textAlign:'center'}}>
-            <div className="am-logo">✉️</div>
+            <div className="am-logo"></div>
             <h2 className="am-title">Check Your Email</h2>
             <p className="am-sub" style={{marginBottom:'6px'}}>
               We sent a verification link to<br />
@@ -292,10 +292,10 @@ export default function HomePage() {
             <p style={{color:'#6b7280',fontSize:'.76rem',marginBottom:'22px'}}>Click the link in the email, then press the button below.</p>
 
             {verifyError && <p className="am-error" style={{marginBottom:'12px'}}>{verifyError}</p>}
-            {verifyResent && <p style={{color:'#10b981',fontSize:'.8rem',marginBottom:'12px'}}>✅ Email resent! Check your inbox.</p>}
+            {verifyResent && <p style={{color:'#10b981',fontSize:'.8rem',marginBottom:'12px'}}> Email resent! Check your inbox.</p>}
 
             <button className="am-submit" onClick={checkVerification} disabled={busy} style={{marginBottom:'10px'}}>
-              {busy ? 'Checking...' : "I've Verified My Email ✓"}
+              {busy ? 'Checking...' : "I've Verified My Email "}
             </button>
             <button className="am-link-btn" onClick={resendVerification} disabled={busy}>
               Resend verification email
@@ -307,16 +307,16 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* ── AUTH MODAL ── */}
+      {/*  AUTH MODAL  */}
       {authMode && authMode !== 'verify' && (
         <div className="am-overlay" onClick={(e) => e.target.classList.contains('am-overlay') && closeModal()}>
           <div className="am-modal">
 
             {/* Close */}
-            <button className="am-close" onClick={closeModal}>✕</button>
+            <button className="am-close" onClick={closeModal}></button>
 
             {/* Logo */}
-            <div className="am-logo">✨</div>
+            <div className="am-logo"></div>
             <h2 className="am-title">
               {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
             </h2>
@@ -326,13 +326,13 @@ export default function HomePage() {
 
             {resetSent ? (
               <div className="am-reset-success">
-                <div style={{fontSize:'2rem',marginBottom:'8px'}}>📧</div>
+                <div style={{fontSize:'2rem',marginBottom:'8px'}}></div>
                 <p>Password reset email sent! Check your inbox.</p>
                 <button className="am-link-btn" onClick={() => setResetSent(false)}>Back to Login</button>
               </div>
             ) : (
               <>
-                {/* Name field — signup only */}
+                {/* Name field  signup only */}
                 {authMode === 'signup' && (
                   <div className="am-field">
                     <label>Your Name</label>
@@ -368,7 +368,7 @@ export default function HomePage() {
                       onKeyDown={e => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignup())}
                     />
                     <button className="am-eye" onClick={() => setShowPass(s => !s)}>
-                      {showPass ? '🙈' : '👁️'}
+                      {showPass ? '' : ''}
                     </button>
                   </div>
                 </div>
