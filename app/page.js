@@ -6,23 +6,10 @@ import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   updateProfile, sendPasswordResetEmail, sendEmailVerification,
 } from 'firebase/auth';
-import { auth, ADMIN_EMAIL } from '../lib/firebase';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { auth, db, ADMIN_EMAIL } from '../lib/firebase';
 
-const STAR = '\u2B50';
-const SPARKLE = '\u2728';
-const PIN = '\uD83D\uDCCD';
-const CAM = '\uD83D\uDCF8';
-const HOUSE = '\uD83C\uDFE0';
-const OFFICE = '\uD83C\uDFE2';
-const TRUCK = '\uD83D\uDE9A';
-const MAIL = '\uD83D\uDCE7';
-const CHECK = '\u2705';
-const EYE_OPEN = '\uD83D\uDC41';
-const EYE_SHUT = '\uD83D\uDE48';
-const WARN = '\u26A0\uFE0F';
-const COPY = '\u00A9';
-
-const reviews = [
+const FALLBACK_REVIEWS = [
   { name: 'Maria G.',   stars: 5, text: 'Yoselin did an amazing job! My house has never looked this clean. She even organized my pantry without me asking. Highly recommend!', date: 'Jan 2025' },
   { name: 'Ashley R.',  stars: 5, text: 'Super professional and thorough. I booked a deep clean and she went above and beyond. Will definitely be booking again every month!',  date: 'Feb 2025' },
   { name: 'Carlos M.',  stars: 5, text: 'Best cleaning service I have ever used. On time, very detailed, and left everything sparkling. The booking process was so easy too.',   date: 'Feb 2025' },
@@ -32,6 +19,18 @@ const reviews = [
 export default function HomePage() {
   const router = useRouter();
   const [loading,       setLoading]       = useState(true);
+  const [liveReviews,   setLiveReviews]   = useState([]);
+
+  // Pull real customer reviews from Firestore
+  useEffect(() => {
+    const unsub = onSnapshot(
+      query(collection(db, 'reviews'), orderBy('createdAt', 'desc')),
+      snap => setLiveReviews(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      () => {} // silently fall back to hardcoded if rules block it
+    );
+    return () => unsub();
+  }, []);
+
   const [authMode,      setAuthMode]      = useState(null);
   const [tabOpen,       setTabOpen]       = useState(false);
   const [name,          setName]          = useState('');
@@ -136,6 +135,8 @@ export default function HomePage() {
     setBusy(false);
   };
 
+  const reviews = liveReviews.length > 0 ? liveReviews : FALLBACK_REVIEWS;
+
   if (loading) return <div className="spinner-page"><div className="spinner"></div></div>;
 
   return (
@@ -143,9 +144,9 @@ export default function HomePage() {
 
       {/* AD BLOCKER WARNING */}
       {authError && (
-        <div style={{background:'#fef3c7',borderBottom:'2px solid #f59e0b',padding:'10px 20px',textAlign:'center',fontSize:'.85rem',color:'#92400e',fontWeight:600}}>
-          {WARN} An ad blocker may be interfering with login. Please disable it for this site if you have trouble signing in.
-        </div>
+      <div style={{background:'#fef3c7',borderBottom:'2px solid #f59e0b',padding:'10px 20px',textAlign:'center',fontSize:'.85rem',color:'#92400e',fontWeight:600}}>
+      ⚠️ An ad blocker may be interfering with login. Please disable it for this site if you have trouble signing in.
+      </div>
       )}
 
       {/* NAVBAR */}
@@ -156,8 +157,8 @@ export default function HomePage() {
           </button>
           {tabOpen && (
             <div className="hp-tab-dropdown">
-              <a href="#pics"    onClick={() => setTabOpen(false)}>{CAM} Pics</a>
-              <a href="#reviews" onClick={() => setTabOpen(false)}>{STAR} Reviews</a>
+              <a href="#pics"    onClick={() => setTabOpen(false)}>📷 Pics</a>
+              <a href="#reviews" onClick={() => setTabOpen(false)}>⭐ Reviews</a>
             </div>
           )}
         </div>
@@ -172,7 +173,7 @@ export default function HomePage() {
 
       {/* HERO */}
       <section className="hp-hero">
-        <p className="hp-hero-tagline">{SPARKLE} Ready To Make Your Place Shine</p>
+        <p className="hp-hero-tagline">✨ Ready To Make Your Place Shine</p>
         <h1 className="hp-hero-title">Professional Cleaning<br /><span>You Can Trust</span></h1>
         <p className="hp-hero-intro">
           We bring the sparkle back to your home or office. Detail-focused, reliable, and always on time.
@@ -189,19 +190,19 @@ export default function HomePage() {
         <div className="hp-section-label">What We Offer</div>
         <div className="hp-services-grid">
           <div className="hp-service-card">
-            <div className="hsc-icon">{HOUSE}</div>
+            <div className="hsc-icon">🏠</div>
             <h3>Residential</h3>
             <p>Full home cleaning tailored to your schedule. Weekly, bi-weekly, or one-time deep cleans.</p>
             <div className="hsc-price">From $120</div>
           </div>
           <div className="hp-service-card">
-            <div className="hsc-icon">{OFFICE}</div>
+            <div className="hsc-icon">🏢</div>
             <h3>Light Commercial</h3>
             <p>Offices, studios, and small businesses. Flexible scheduling before or after hours.</p>
             <div className="hsc-price">From $150</div>
           </div>
           <div className="hp-service-card">
-            <div className="hsc-icon">{TRUCK}</div>
+            <div className="hsc-icon">🚚</div>
             <h3>Move Out / In</h3>
             <p>Leave your old place spotless or start fresh in your new home. Landlord-ready results.</p>
             <div className="hsc-price">From $250</div>
@@ -216,16 +217,16 @@ export default function HomePage() {
           {['Before & After', 'Kitchen Deep Clean', 'Bathroom Detail', 'Living Room', 'Office Space'].map((label, i) => (
             <div className="hp-photo" key={i}>
               <div className="hp-photo-inner">
-                <span className="hp-photo-icon">{CAM}</span>
+                <span className="hp-photo-icon">📷</span>
                 <span className="hp-photo-label">{label}</span>
               </div>
             </div>
           ))}
         </div>
         <div className="hp-reviews-grid" id="reviews">
-          {reviews.map(r => (
-            <div className="hp-review-card" key={r.name}>
-              <div className="hrc-stars">{STAR.repeat(r.stars)}</div>
+          {reviews.map((r, i) => (
+            <div className="hp-review-card" key={r.id || r.name || i}>
+              <div className="hrc-stars">{'⭐'.repeat(r.stars)}</div>
               <p className="hrc-text">"{r.text}"</p>
               <div className="hrc-footer">
                 <div className="hrc-avatar">{r.name[0]}</div>
@@ -244,7 +245,7 @@ export default function HomePage() {
         <div className="hp-section-label">Locations</div>
         <div className="hp-location-stack">
           <div className="hp-location-box">
-            <span className="hp-loc-pin">{PIN}</span>
+            <span className="hp-loc-pin">📍</span>
             <div>
               <strong>Based In Fairfield, Ohio</strong>
               <p>Serving Fairfield and surrounding cities in the Cincinnati area</p>
@@ -270,14 +271,14 @@ export default function HomePage() {
         <div className="hp-footer-brand">
           <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '120px', objectFit: 'contain', marginBottom: '10px' }} />
         </div>
-        <p className="hp-footer-copy">{COPY} 2025 Yoselins Cleaning. All rights reserved.</p>
+        <p className="hp-footer-copy">© 2025 Yoselins Cleaning. All rights reserved.</p>
       </footer>
 
       {/* VERIFY EMAIL MODAL */}
       {authMode === 'verify' && (
         <div className="am-overlay">
           <div className="am-modal" style={{textAlign:'center'}}>
-            <div className="am-logo">{MAIL}</div>
+            <div className="am-logo">📧</div>
             <h2 className="am-title">Check Your Email</h2>
             <p className="am-sub" style={{marginBottom:'6px'}}>
               We sent a verification link to<br />
@@ -287,7 +288,7 @@ export default function HomePage() {
               Click the link in the email, then press the button below.
             </p>
             {verifyError   && <p className="am-error" style={{marginBottom:'12px'}}>{verifyError}</p>}
-            {verifyResent  && <p style={{color:'#10b981',fontSize:'.8rem',marginBottom:'12px'}}>{CHECK} Email resent! Check your inbox.</p>}
+            {verifyResent  && <p style={{color:'#10b981',fontSize:'.8rem',marginBottom:'12px'}}>✅ Email resent! Check your inbox.</p>}
             <button className="am-submit" onClick={checkVerification} disabled={busy} style={{marginBottom:'10px'}}>
               {busy ? 'Checking...' : "I've Verified My Email"}
             </button>
@@ -318,7 +319,7 @@ export default function HomePage() {
 
             {resetSent ? (
               <div className="am-reset-success">
-                <div style={{fontSize:'2rem',marginBottom:'8px'}}>{MAIL}</div>
+                <div style={{fontSize:'2rem',marginBottom:'8px'}}>📧</div>
                 <p>Password reset email sent! Check your inbox.</p>
                 <button className="am-link-btn" onClick={() => setResetSent(false)}>Back to Login</button>
               </div>
@@ -345,7 +346,7 @@ export default function HomePage() {
                       value={password} onChange={e => setPassword(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignup())} />
                     <button className="am-eye" onClick={() => setShowPass(s => !s)}>
-                      {showPass ? EYE_OPEN : EYE_SHUT}
+                    {showPass ? '👁' : '🙈'}
                     </button>
                   </div>
                 </div>

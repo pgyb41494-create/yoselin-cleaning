@@ -5,6 +5,7 @@ import { onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthPr
 import { collection, query, where, onSnapshot, addDoc, getDocs, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL } from '../../lib/firebase';
 import Chat from '../../components/Chat';
+import { useUnreadCount } from '../../lib/useUnreadCount';
 
 function getLoyaltyTier(count) {
   if (count >= 8) return { label: 'VIP Client',       icon: '🏆', color: '#7c3aed', bg: 'rgba(124,58,237,.15)', next: null,        nextAt: null };
@@ -155,10 +156,12 @@ export default function DashboardPage() {
   const countdown    = isConfirmed ? getCountdown(latest?.date) : null;
   const isGoogleUser = user?.providerData?.[0]?.providerId === 'google.com';
 
+  const unreadFromAdmin = useUnreadCount(latest?.id || null, 'customer');
+
   const TABS = [
     { id: 'home',     label: 'Home'     },
     ...(latest && !isDone ? [
-      { id: 'messages', label: 'Messages' },
+      { id: 'messages', label: 'Messages', badge: unreadFromAdmin },
       { id: 'request',  label: 'My Quote' },
     ] : []),
     { id: 'settings', label: 'Settings' },
@@ -233,7 +236,20 @@ export default function DashboardPage() {
             fontSize: '.82rem', fontWeight: '700',
             color: safeTab === t.id ? '#60a5fa' : '#6b7280',
             cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap',
-          }}>{t.label}</button>
+            position: 'relative',
+          }}>
+            {t.label}
+            {t.badge > 0 && (
+              <span style={{
+                position: 'absolute', top: '8px', right: '6px',
+                background: '#ef4444', color: 'white',
+                fontSize: '.55rem', fontWeight: '800',
+                minWidth: '15px', height: '15px', borderRadius: '99px',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                padding: '0 4px', lineHeight: 1,
+              }}>{t.badge > 9 ? '9+' : t.badge}</span>
+            )}
+          </button>
         ))}
       </div>
 
