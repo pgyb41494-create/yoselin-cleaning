@@ -21,26 +21,13 @@ function generateTimes() {
 }
 const ALL_TIMES = generateTimes();
 
-function generateDays() {
-  const days = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  for (let i = 0; i < 90; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    days.push(d);
-  }
-  return days;
-}
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const DAY_NAMES_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 function formatDateKey(date) {
   return MONTH_NAMES[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
 }
 
-// Try to parse a stored date string into a Date object for calendar matching
 function parseDateString(str) {
   if (!str || str === 'N/A' || str === 'TBD') return null;
   try {
@@ -54,19 +41,6 @@ function getDaysInMonth(year, month) {
   return new Date(year, month + 1, 0).getDate();
 }
 
-// Shows a red count bubble when admin has unread messages from a customer
-function UnreadDot({ requestId }) {
-  const count = useUnreadCount(requestId, 'admin');
-  if (!count) return null;
-  return (
-    <span style={{
-      display:'inline-flex', alignItems:'center', justifyContent:'center',
-      background:'#ef4444', color:'white', fontSize:'.6rem', fontWeight:'800',
-      minWidth:'17px', height:'17px', borderRadius:'99px', padding:'0 4px', marginLeft:'6px',
-    }}>{count > 9 ? '9+' : count}</span>
-  );
-}
-
 export default function AdminPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -77,6 +51,10 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('requests');
   const [createDone, setCreateDone] = useState(false);
+
+  // Search + filter
+  const [reqFilter, setReqFilter] = useState('all');
+  const [reqSearch, setReqSearch] = useState('');
 
   // Notes state
   const [noteText, setNoteText] = useState('');
@@ -92,7 +70,7 @@ export default function AdminPage() {
   // Client history
   const [historyClient, setHistoryClient] = useState(null);
 
-  // Unread messages map: { [requestId]: count }
+  // Unread messages map
   const [unreadMap, setUnreadMap] = useState({});
 
   // Calendar state
@@ -106,7 +84,6 @@ export default function AdminPage() {
   const [selectedTimes, setSelectedTimes] = useState([]);
   const [repeatWeeks, setRepeatWeeks] = useState(0);
   const [saving, setSaving] = useState(false);
-  // Availability calendar nav
   const [availMonth, setAvailMonth] = useState(now.getMonth());
   const [availYear, setAvailYear] = useState(now.getFullYear());
 
@@ -136,7 +113,6 @@ export default function AdminPage() {
     return () => { unsubReqs(); unsubAvail(); unsubUnread(); };
   }, [user]);
 
-  // Sync note text when selected changes
   useEffect(() => {
     if (selected) {
       setNoteText(selected.adminNotes || '');
@@ -169,12 +145,8 @@ export default function AdminPage() {
   const confirmReq = async (req) => {
     await updateDoc(doc(db, 'requests', req.id), { status: 'confirmed' });
     notifyBookingConfirmed({
-      clientName: req.name,
-      clientEmail: req.email,
-      date: req.date,
-      time: req.time,
-      address: req.address,
-      estimate: req.estimate,
+      clientName: req.name, clientEmail: req.email,
+      date: req.date, time: req.time, address: req.address, estimate: req.estimate,
     });
     await addDoc(collection(db, 'chats', req.id, 'messages'), {
       text: 'Hi ' + req.name.split(' ')[0] + '! Your cleaning appointment has been confirmed for ' + req.date + '. Please reach out if you have any questions!',
@@ -194,11 +166,9 @@ export default function AdminPage() {
     setSelected(null);
   };
 
-  // Availability tab logic
   const applyAvailability = async () => {
     if (selectedDates.size === 0 || selectedTimes.length === 0) return;
     setSaving(true);
-    // Build all dates to apply including weekly repeats
     const allDatesToApply = new Set(selectedDates);
     if (repeatWeeks > 0) {
       [...selectedDates].forEach(dk => {
@@ -224,7 +194,6 @@ export default function AdminPage() {
     setSaving(false);
   };
 
-  // Calendar view helpers
   const calFirstDay = new Date(calYear, calMonth, 1).getDay();
   const calDaysInMonth = getDaysInMonth(calYear, calMonth);
 
@@ -233,8 +202,6 @@ export default function AdminPage() {
       if (!r.date || r.date === 'N/A' || r.date === 'TBD') return false;
       const d = parseDateString(r.date);
       if (d) return d.getFullYear() === calYear && d.getMonth() === calMonth && d.getDate() === day;
-      // Try string matching like "February 25, 2026"
-      const target = MONTH_NAMES[calMonth] + ' ' + day + ', ' + calYear;
       return r.date.toLowerCase().includes(MONTH_NAMES[calMonth].toLowerCase()) && r.date.includes(String(day)) && r.date.includes(String(calYear));
     });
   };
@@ -244,11 +211,7 @@ export default function AdminPage() {
   if (loading) return <div className="spinner-page"><div className="spinner"></div></div>;
 
   const newCount = requests.filter(r => r.status === 'new').length;
-  const avg = requests.length ? Math.round(requests.reduce((s, r) => s + (r.estimate || 0), 0) / requests.length) : 0;
-  const pipeline = requests.filter(r => r.status !== 'done').reduce((s, r) => s + (r.estimate || 0), 0);
-
   const datesWithSlots = new Set(availability.map(s => s.date));
-
   const clientHistory = historyClient
     ? requests.filter(r => r.email === historyClient.email || r.userId === historyClient.userId)
     : [];
@@ -260,8 +223,15 @@ export default function AdminPage() {
     { key: 'create', label: 'Create Quote' },
   ];
 
+  const btnStyle = (color) => ({
+    padding: '5px 11px', borderRadius: '8px', border: 'none',
+    background: color + '22', color: color,
+    fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.75rem', cursor: 'pointer',
+  });
+
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
+
       {/* Nav */}
       <nav className="nav" style={{ background: '#0d0d0d', borderBottom: '1px solid #1f1f1f' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -294,86 +264,167 @@ export default function AdminPage() {
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '28px 16px 80px' }}>
 
-        {/*  REQUESTS TAB  */}
-        {tab === 'requests' && (
-          <>
-            <div className="stats-grid">
-              {[
-                ['TOTAL REQUESTS', requests.length, ''],
-                ['NEW', newCount, 'Awaiting response'],
-                ['AVG ESTIMATE', '$' + avg, ''],
-                ['ACTIVE PIPELINE', '$' + pipeline, 'Excl. completed'],
-              ].map(([label, val, sub]) => (
-                <div key={label} className="stat-card" style={{ background: '#111', border: '1px solid #222' }}>
-                  <div className="stat-label" style={{ color: '#9ca3af' }}>{label}</div>
-                  <div className="stat-val" style={{ color: 'white' }}>{val}</div>
-                  {sub && <div className="stat-sub" style={{ color: '#9ca3af' }}>{sub}</div>}
-                </div>
-              ))}
-            </div>
+        {/* ── REQUESTS TAB ── */}
+        {tab === 'requests' && (() => {
+          // Today's confirmed jobs
+          const todayJobs = requests.filter(r => {
+            if (r.status !== 'confirmed') return false;
+            const d = parseDateString(r.date);
+            return d && d.toDateString() === now.toDateString();
+          });
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '13px', flexWrap: 'wrap', gap: '10px' }}>
-              <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', fontWeight: '700', color: 'white' }}>All Requests</div>
-              {requests.filter(r => r.status === 'done').length > 0 && (
-                <button onClick={async () => {
-                  const done = requests.filter(r => r.status === 'done');
-                  if (!window.confirm('Delete all ' + done.length + ' completed requests? This cannot be undone.')) return;
-                  for (const r of done) await deleteDoc(doc(db, 'requests', r.id));
-                }} style={{ padding: '8px 18px', background: 'rgba(239,68,68,.1)', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.78rem', cursor: 'pointer' }}>
-                  Delete All Completed ({requests.filter(r => r.status === 'done').length})
-                </button>
-              )}
-            </div>
-            <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #222', overflow: 'hidden', overflowX: 'auto' }}>
-              {requests.length === 0 ? (
-                <div className="empty-state" style={{ color: '#9ca3af' }}>No requests yet.</div>
-              ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      {['Submitted', 'Client', 'Email', 'Date', 'Estimate', 'Notes', 'Status', ''].map(h => (
-                        <th key={h} style={{ background: '#0d0d0d', color: '#9ca3af', padding: '12px 15px', textAlign: 'left', fontSize: '.75rem', fontWeight: '700' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {requests.map(r => (
-                      <tr key={r.id} style={{ borderBottom: '1px solid #1f1f1f' }}>
-                        <td style={{ padding: '12px 15px', fontSize: '.83rem', color: '#d1d5db' }}>{r.submittedAt}</td>
-                        <td style={{ padding: '12px 15px', fontSize: '.83rem', color: 'white' }}>
-                          <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                            <strong>{r.name}</strong>
-                            {r.createdByAdmin && <span style={{ fontSize: '.65rem', color: '#60a5fa', fontWeight: '700', background: 'rgba(96,165,250,.15)', padding: '2px 6px', borderRadius: '4px' }}>ADMIN</span>}
-                            {(unreadMap[r.id] || 0) > 0 && (
-                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444', display: 'inline-block', flexShrink: 0 }} title={`${unreadMap[r.id]} unread message(s)`}></span>
-                            )}
-                          </div>
-                        </td>
-                        <td style={{ padding: '12px 15px', fontSize: '.83rem', color: '#d1d5db' }}>{r.email}</td>
-                        <td style={{ padding: '12px 15px', fontSize: '.83rem', color: '#d1d5db' }}>{r.date}</td>
-                        <td style={{ padding: '12px 15px', fontSize: '.83rem' }}><strong style={{ color: '#60a5fa' }}>${r.estimate}</strong></td>
-                        <td style={{ padding: '12px 15px', fontSize: '.83rem', color: r.adminNotes ? '#a855f7' : '#444', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {r.adminNotes ? r.adminNotes : '--'}
-                        </td>
-                        <td style={{ padding: '12px 15px' }}>
-                          <span className={'badge badge-' + r.status}>
-                            {r.status === 'new' ? 'New' : r.status === 'confirmed' ? 'Confirmed' : 'Done'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '12px 15px' }}><button className="view-btn" onClick={() => setSelected(r)}>View</button></td>
-                      </tr>
+          // Filter + search
+          const filtered = requests.filter(r => {
+            if (reqFilter !== 'all' && r.status !== reqFilter) return false;
+            if (reqSearch.trim()) {
+              const q = reqSearch.toLowerCase();
+              return (r.name || '').toLowerCase().includes(q)
+                || (r.email || '').toLowerCase().includes(q)
+                || (r.phone || '').toLowerCase().includes(q);
+            }
+            return true;
+          });
+
+          return (
+            <>
+              {/* Stats */}
+              <div className="stats-grid">
+                {[
+                  ['TOTAL', requests.length, ''],
+                  ['NEW', newCount, 'Needs response'],
+                  ['CONFIRMED', requests.filter(r => r.status === 'confirmed').length, 'Upcoming'],
+                  ['REVENUE', '$' + requests.filter(r => r.status === 'done').reduce((s, r) => s + (r.estimate || 0), 0), 'From completed'],
+                ].map(([label, val, sub]) => (
+                  <div key={label} className="stat-card" style={{ background: '#111', border: '1px solid #222' }}>
+                    <div className="stat-label" style={{ color: '#9ca3af' }}>{label}</div>
+                    <div className="stat-val" style={{ color: 'white' }}>{val}</div>
+                    {sub && <div className="stat-sub" style={{ color: '#9ca3af' }}>{sub}</div>}
+                  </div>
+                ))}
+              </div>
+
+              {/* Today's jobs banner */}
+              {todayJobs.length > 0 && (
+                <div style={{ background: 'rgba(59,130,246,.08)', border: '1px solid rgba(59,130,246,.25)', borderRadius: '14px', padding: '14px 18px', marginBottom: '18px' }}>
+                  <div style={{ fontSize: '.72rem', fontWeight: '700', color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '10px' }}>📅 Today's Jobs</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                    {todayJobs.map(r => (
+                      <div key={r.id} onClick={() => setSelected(r)} style={{ background: '#0d0d0d', borderRadius: '10px', padding: '10px 14px', cursor: 'pointer', border: '1px solid #1f2f4f', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <div>
+                          <div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>{r.name}</div>
+                          <div style={{ fontSize: '.75rem', color: '#9ca3af', marginTop: '2px' }}>{r.time || 'No time'} · {r.address?.split(',')[0] || 'No address'}</div>
+                        </div>
+                        <strong style={{ color: '#60a5fa', fontFamily: 'Playfair Display, serif' }}>${r.estimate}</strong>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                </div>
               )}
-            </div>
-          </>
-        )}
 
-        {/*  CALENDAR TAB  */}
+              {/* Search + filter toolbar */}
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <input
+                  value={reqSearch} onChange={e => setReqSearch(e.target.value)}
+                  placeholder="Search by name, email, phone…"
+                  style={{ flex: 1, minWidth: '180px', padding: '9px 14px', background: '#111', border: '1px solid #2a2a2a', borderRadius: '10px', color: 'white', fontFamily: "'DM Sans',sans-serif", fontSize: '.84rem', outline: 'none' }}
+                />
+                <div style={{ display: 'flex', gap: '4px', background: '#111', border: '1px solid #222', borderRadius: '10px', padding: '4px' }}>
+                  {[['all', 'All'], ['new', 'New'], ['confirmed', 'Confirmed'], ['done', 'Done']].map(([val, label]) => (
+                    <button key={val} onClick={() => setReqFilter(val)} style={{
+                      padding: '6px 13px', borderRadius: '7px', border: 'none', cursor: 'pointer',
+                      background: reqFilter === val ? '#a855f7' : 'transparent',
+                      color: reqFilter === val ? 'white' : '#6b7280',
+                      fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.78rem',
+                    }}>
+                      {label}
+                      {val !== 'all' && <span style={{ marginLeft: '5px', opacity: .7 }}>({requests.filter(r => r.status === val).length})</span>}
+                    </button>
+                  ))}
+                </div>
+                {requests.filter(r => r.status === 'done').length > 0 && (
+                  <button onClick={async () => {
+                    const done = requests.filter(r => r.status === 'done');
+                    if (!window.confirm('Delete all ' + done.length + ' completed requests?')) return;
+                    for (const r of done) await deleteDoc(doc(db, 'requests', r.id));
+                  }} style={{ padding: '9px 14px', background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    🗑 Clear Done
+                  </button>
+                )}
+              </div>
+
+              {/* Requests table */}
+              <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #222', overflow: 'hidden', overflowX: 'auto' }}>
+                {filtered.length === 0 ? (
+                  <div className="empty-state" style={{ color: '#9ca3af' }}>{requests.length === 0 ? 'No requests yet.' : 'No results.'}</div>
+                ) : (
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>
+                        {['Client', 'Date', 'Estimate', 'Status', 'Actions'].map(h => (
+                          <th key={h} style={{ background: '#0d0d0d', color: '#9ca3af', padding: '12px 15px', textAlign: 'left', fontSize: '.75rem', fontWeight: '700' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map(r => (
+                        <tr key={r.id} style={{ borderBottom: '1px solid #1f1f1f' }}>
+                          {/* Client */}
+                          <td style={{ padding: '12px 15px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '2px' }}>
+                              <strong style={{ color: 'white', fontSize: '.88rem' }}>{r.name}</strong>
+                              {r.createdByAdmin && <span style={{ fontSize: '.6rem', color: '#60a5fa', fontWeight: '700', background: 'rgba(96,165,250,.15)', padding: '1px 5px', borderRadius: '4px' }}>ADMIN</span>}
+                              {(unreadMap[r.id] || 0) > 0 && <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef4444', display: 'inline-block', flexShrink: 0 }} title="Unread messages" />}
+                            </div>
+                            <div style={{ fontSize: '.75rem', color: '#6b7280' }}>{r.phone || r.email}</div>
+                            {r.adminNotes && <div style={{ fontSize: '.72rem', color: '#a855f7', marginTop: '2px' }}>📝 {r.adminNotes.slice(0, 45)}{r.adminNotes.length > 45 ? '…' : ''}</div>}
+                          </td>
+                          {/* Date */}
+                          <td style={{ padding: '12px 15px', fontSize: '.83rem', color: '#d1d5db', whiteSpace: 'nowrap' }}>
+                            {r.date || '—'}
+                            {r.time && r.time !== 'N/A' && <div style={{ fontSize: '.72rem', color: '#6b7280' }}>{r.time}</div>}
+                          </td>
+                          {/* Estimate */}
+                          <td style={{ padding: '12px 15px' }}>
+                            <strong style={{ color: '#60a5fa', fontFamily: 'Playfair Display,serif', fontSize: '1rem' }}>${r.estimate}</strong>
+                          </td>
+                          {/* Status */}
+                          <td style={{ padding: '12px 15px' }}>
+                            <span className={'badge badge-' + r.status}>
+                              {r.status === 'new' ? 'New' : r.status === 'confirmed' ? 'Confirmed' : 'Done'}
+                            </span>
+                          </td>
+                          {/* Actions */}
+                          <td style={{ padding: '12px 15px' }}>
+                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                              <button className="view-btn" onClick={() => setSelected(r)}>Details</button>
+                              <button onClick={() => setChatReq(r)} style={{
+                                ...btnStyle((unreadMap[r.id] || 0) > 0 ? '#ef4444' : '#60a5fa'),
+                                background: (unreadMap[r.id] || 0) > 0 ? '#ef4444' : 'rgba(96,165,250,.15)',
+                                color: (unreadMap[r.id] || 0) > 0 ? 'white' : '#60a5fa',
+                              }}>
+                                💬{(unreadMap[r.id] || 0) > 0 ? ` ${unreadMap[r.id]}` : ''}
+                              </button>
+                              {r.status === 'new' && (
+                                <button onClick={() => confirmReq(r)} style={btnStyle('#10b981')}>✓ Confirm</button>
+                              )}
+                              {r.status === 'confirmed' && (
+                                <button onClick={() => markDone(r)} style={btnStyle('#a855f7')}>✓ Done</button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </>
+          );
+        })()}
+
+        {/* ── CALENDAR TAB ── */}
         {tab === 'calendar' && (
           <div>
-            {/* Month header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
               <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: '900', color: 'white' }}>
                 {MONTH_NAMES[calMonth]} {calYear}
@@ -382,46 +433,34 @@ export default function AdminPage() {
                 <div style={{ display: 'flex', gap: '6px', fontSize: '.75rem', fontWeight: '700', marginRight: '8px' }}>
                   {[['new', '#f59e0b', 'New'], ['confirmed', '#3b82f6', 'Confirmed'], ['done', '#10b981', 'Done']].map(([s, c, l]) => (
                     <span key={s} style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#9ca3af' }}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: c, display: 'inline-block' }}></span>{l}
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: c, display: 'inline-block' }} />{l}
                     </span>
                   ))}
                 </div>
                 <button onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); } else setCalMonth(m => m - 1); }}
-                  style={{ padding: '8px 14px', background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '.85rem' }}>
-                  Prev
-                </button>
+                  style={{ padding: '8px 14px', background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '.85rem' }}>Prev</button>
                 <button onClick={() => { setCalMonth(now.getMonth()); setCalYear(now.getFullYear()); }}
-                  style={{ padding: '8px 14px', background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '.85rem' }}>
-                  Today
-                </button>
+                  style={{ padding: '8px 14px', background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '.85rem' }}>Today</button>
                 <button onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); } else setCalMonth(m => m + 1); }}
-                  style={{ padding: '8px 14px', background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '.85rem' }}>
-                  Next
-                </button>
+                  style={{ padding: '8px 14px', background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '.85rem' }}>Next</button>
               </div>
             </div>
 
-            {/* Calendar grid */}
             <div style={{ background: '#111', borderRadius: '18px', border: '1px solid #222', overflow: 'hidden' }}>
-              {/* Day headers */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid #222' }}>
                 {DAY_NAMES.map(d => (
                   <div key={d} style={{ padding: '10px 8px', textAlign: 'center', fontSize: '.72rem', fontWeight: '700', color: '#6b7280', letterSpacing: '.5px', textTransform: 'uppercase' }}>{d}</div>
                 ))}
               </div>
-              {/* Day cells */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
-                {/* Empty cells before first day */}
                 {Array.from({ length: calFirstDay }).map((_, i) => (
                   <div key={'empty-' + i} style={{ minHeight: '90px', borderRight: '1px solid #1a1a1a', borderBottom: '1px solid #1a1a1a', background: '#0d0d0d' }} />
                 ))}
-                {/* Day cells */}
                 {Array.from({ length: calDaysInMonth }).map((_, i) => {
                   const day = i + 1;
                   const dayReqs = getRequestsForDay(day);
                   const isToday = now.getFullYear() === calYear && now.getMonth() === calMonth && now.getDate() === day;
-                  const col = (calFirstDay + i) % 7;
-                  const isLastCol = col === 6;
+                  const isLastCol = (calFirstDay + i) % 7 === 6;
                   return (
                     <div key={day} style={{
                       minHeight: '90px', padding: '8px 6px',
@@ -438,31 +477,25 @@ export default function AdminPage() {
                       }}>{day}</div>
                       {dayReqs.slice(0, 3).map(r => (
                         <div key={r.id} onClick={(e) => { e.stopPropagation(); setSelected(r); }} style={{
-                          background: statusColor[r.status] + '22',
-                          border: '1px solid ' + statusColor[r.status] + '55',
-                          color: statusColor[r.status],
-                          fontSize: '.65rem', fontWeight: '700', padding: '2px 6px', borderRadius: '5px',
-                          marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                          cursor: 'pointer',
+                          background: statusColor[r.status] + '22', border: '1px solid ' + statusColor[r.status] + '55',
+                          color: statusColor[r.status], fontSize: '.65rem', fontWeight: '700', padding: '2px 6px', borderRadius: '5px',
+                          marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer',
                         }}>
                           {r.name.split(' ')[0]} - ${r.estimate}
                         </div>
                       ))}
-                      {dayReqs.length > 3 && (
-                        <div style={{ fontSize: '.62rem', color: '#6b7280', fontWeight: '700', marginTop: '2px' }}>+{dayReqs.length - 3} more</div>
-                      )}
+                      {dayReqs.length > 3 && <div style={{ fontSize: '.62rem', color: '#6b7280', fontWeight: '700', marginTop: '2px' }}>+{dayReqs.length - 3} more</div>}
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            {/* Expanded day panel */}
             {calSelected && getRequestsForDay(calSelected).length > 0 && (
               <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #222', marginTop: '20px', overflow: 'hidden' }}>
                 <div style={{ padding: '14px 20px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ fontWeight: '700', color: 'white' }}>{MONTH_NAMES[calMonth]} {calSelected}</div>
-                  <button onClick={() => setCalSelected(null)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.1rem' }}>x</button>
+                  <button onClick={() => setCalSelected(null)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.1rem' }}>×</button>
                 </div>
                 {getRequestsForDay(calSelected).map(r => (
                   <div key={r.id} style={{ padding: '14px 20px', borderBottom: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
@@ -481,11 +514,10 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* No bookings this month */}
             {requests.filter(r => {
               const d = parseDateString(r.date);
               if (d) return d.getFullYear() === calYear && d.getMonth() === calMonth;
-              return r.date && MONTH_NAMES[calMonth] && r.date.toLowerCase().includes(MONTH_NAMES[calMonth].toLowerCase()) && r.date.includes(String(calYear));
+              return r.date && r.date.toLowerCase().includes(MONTH_NAMES[calMonth].toLowerCase()) && r.date.includes(String(calYear));
             }).length === 0 && (
               <div style={{ textAlign: 'center', padding: '32px', color: '#6b7280', fontSize: '.85rem', marginTop: '16px' }}>
                 No bookings with dates set for {MONTH_NAMES[calMonth]}.
@@ -494,7 +526,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/*  AVAILABILITY TAB  */}
+        {/* ── AVAILABILITY TAB ── */}
         {tab === 'availability' && (
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '8px' }}>
@@ -503,7 +535,10 @@ export default function AdminPage() {
                 <div style={{ fontSize: '.8rem', color: '#6b7280', marginTop: '3px' }}>Select multiple dates, pick times, then apply all at once</div>
               </div>
               {selectedDates.size > 0 && (
-                <button onClick={() => { setSelectedDates(new Set()); setSelectedTimes([]); setRepeatWeeks(0); }} style={{ padding: '7px 16px', background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '8px', fontWeight: '700', fontSize: '.78rem', cursor: 'pointer' }}>Clear Selection</button>
+                <button onClick={() => { setSelectedDates(new Set()); setSelectedTimes([]); setRepeatWeeks(0); }}
+                  style={{ padding: '7px 16px', background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '8px', fontWeight: '700', fontSize: '.78rem', cursor: 'pointer' }}>
+                  Clear Selection
+                </button>
               )}
             </div>
 
@@ -512,38 +547,16 @@ export default function AdminPage() {
               {/* Multi-select Calendar */}
               <div style={{ background: '#111', borderRadius: '20px', border: '1px solid #1f1f1f', padding: '18px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                  <button onClick={() => { if (availMonth === 0) { setAvailMonth(11); setAvailYear(y => y-1); } else setAvailMonth(m => m-1); }} style={{ background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', padding: '5px 11px', cursor: 'pointer', fontWeight: '700' }}>{'<'}</button>
+                  <button onClick={() => { if (availMonth === 0) { setAvailMonth(11); setAvailYear(y => y - 1); } else setAvailMonth(m => m - 1); }} style={{ background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', padding: '5px 11px', cursor: 'pointer', fontWeight: '700' }}>{'<'}</button>
                   <div style={{ fontWeight: '700', color: 'white', fontSize: '.88rem' }}>{MONTH_NAMES[availMonth]} {availYear}</div>
-                  <button onClick={() => { if (availMonth === 11) { setAvailMonth(0); setAvailYear(y => y+1); } else setAvailMonth(m => m+1); }} style={{ background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', padding: '5px 11px', cursor: 'pointer', fontWeight: '700' }}>{'>'}</button>
+                  <button onClick={() => { if (availMonth === 11) { setAvailMonth(0); setAvailYear(y => y + 1); } else setAvailMonth(m => m + 1); }} style={{ background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', padding: '5px 11px', cursor: 'pointer', fontWeight: '700' }}>{'>'}</button>
                 </div>
 
-                {/* Shortcut buttons */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '12px' }}>
                   {[
-                    { label: 'Weekdays', fn: () => {
-                      const dates = new Set(); const t = new Date(); t.setHours(0,0,0,0);
-                      for (let i = 1; i <= getDaysInMonth(availYear, availMonth); i++) {
-                        const d = new Date(availYear, availMonth, i);
-                        if (d >= t && d.getDay() !== 0 && d.getDay() !== 6) dates.add(formatDateKey(d));
-                      }
-                      setSelectedDates(dates); setSelectedTimes([]);
-                    }},
-                    { label: 'Saturdays', fn: () => {
-                      const dates = new Set(); const t = new Date(); t.setHours(0,0,0,0);
-                      for (let i = 1; i <= getDaysInMonth(availYear, availMonth); i++) {
-                        const d = new Date(availYear, availMonth, i);
-                        if (d >= t && d.getDay() === 6) dates.add(formatDateKey(d));
-                      }
-                      setSelectedDates(dates); setSelectedTimes([]);
-                    }},
-                    { label: 'Sundays', fn: () => {
-                      const dates = new Set(); const t = new Date(); t.setHours(0,0,0,0);
-                      for (let i = 1; i <= getDaysInMonth(availYear, availMonth); i++) {
-                        const d = new Date(availYear, availMonth, i);
-                        if (d >= t && d.getDay() === 0) dates.add(formatDateKey(d));
-                      }
-                      setSelectedDates(dates); setSelectedTimes([]);
-                    }},
+                    { label: 'Weekdays', fn: () => { const dates = new Set(); const t = new Date(); t.setHours(0,0,0,0); for (let i = 1; i <= getDaysInMonth(availYear, availMonth); i++) { const d = new Date(availYear, availMonth, i); if (d >= t && d.getDay() !== 0 && d.getDay() !== 6) dates.add(formatDateKey(d)); } setSelectedDates(dates); setSelectedTimes([]); } },
+                    { label: 'Saturdays', fn: () => { const dates = new Set(); const t = new Date(); t.setHours(0,0,0,0); for (let i = 1; i <= getDaysInMonth(availYear, availMonth); i++) { const d = new Date(availYear, availMonth, i); if (d >= t && d.getDay() === 6) dates.add(formatDateKey(d)); } setSelectedDates(dates); setSelectedTimes([]); } },
+                    { label: 'Sundays',  fn: () => { const dates = new Set(); const t = new Date(); t.setHours(0,0,0,0); for (let i = 1; i <= getDaysInMonth(availYear, availMonth); i++) { const d = new Date(availYear, availMonth, i); if (d >= t && d.getDay() === 0) dates.add(formatDateKey(d)); } setSelectedDates(dates); setSelectedTimes([]); } },
                     { label: 'Clear', fn: () => setSelectedDates(new Set()) },
                   ].map(({ label, fn }) => (
                     <button key={label} onClick={fn} style={{ padding: '4px 10px', borderRadius: '99px', border: '1px solid #2a2a2a', background: '#1a1a1a', color: '#d1d5db', fontSize: '.7rem', fontWeight: '700', cursor: 'pointer' }}>{label}</button>
@@ -559,7 +572,7 @@ export default function AdminPage() {
                   const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
                   return (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px' }}>
-                      {Array.from({ length: firstDay }).map((_, i) => <div key={'e'+i} />)}
+                      {Array.from({ length: firstDay }).map((_, i) => <div key={'e' + i} />)}
                       {Array.from({ length: daysInMonth }).map((_, i) => {
                         const day = i + 1;
                         const d = new Date(availYear, availMonth, day);
@@ -574,10 +587,7 @@ export default function AdminPage() {
                             setSelectedDates(prev => {
                               const next = new Set(prev);
                               if (next.has(key)) { next.delete(key); }
-                              else {
-                                next.add(key);
-                                if (next.size === 1) setSelectedTimes(availability.filter(s => s.date === key).map(s => s.time));
-                              }
+                              else { next.add(key); if (next.size === 1) setSelectedTimes(availability.filter(s => s.date === key).map(s => s.time)); }
                               return next;
                             });
                           }} style={{
@@ -614,7 +624,6 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* Preset buttons */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
                   {[
                     { label: '🌅 Morning',   times: ALL_TIMES.slice(0, 12) },
@@ -623,14 +632,10 @@ export default function AdminPage() {
                     { label: '📅 All Day',   times: ALL_TIMES },
                     { label: '✕ Clear',      times: [] },
                   ].map(({ label, times }) => (
-                    <button key={label} onClick={() => setSelectedTimes(times)} style={{
-                      padding: '7px 13px', borderRadius: '99px', border: '1px solid #2a2a2a',
-                      background: '#1a1a1a', color: '#d1d5db', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer',
-                    }}>{label}</button>
+                    <button key={label} onClick={() => setSelectedTimes(times)} style={{ padding: '7px 13px', borderRadius: '99px', border: '1px solid #2a2a2a', background: '#1a1a1a', color: '#d1d5db', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer' }}>{label}</button>
                   ))}
                 </div>
 
-                {/* Time grid */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '260px', overflowY: 'auto', paddingRight: '4px' }}>
                   {[
                     { label: 'Morning',   sub: '6am – 11:30am', times: ALL_TIMES.slice(0, 12) },
@@ -660,7 +665,6 @@ export default function AdminPage() {
                   ))}
                 </div>
 
-                {/* Repeat weekly option */}
                 <div style={{ marginTop: '16px', padding: '12px 14px', background: '#0d0d0d', borderRadius: '12px', border: '1px solid #1f1f1f', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <div style={{ fontSize: '.8rem', fontWeight: '700', color: '#9ca3af' }}>Repeat for next</div>
                   <div style={{ display: 'flex', gap: '5px' }}>
@@ -675,29 +679,23 @@ export default function AdminPage() {
                     ))}
                   </div>
                   <div style={{ fontSize: '.75rem', color: '#555' }}>
-                    {repeatWeeks === 0 ? 'weeks (no repeat)' : `week${repeatWeeks !== 1 ? 's' : ''} — applies to ${selectedDates.size + selectedDates.size * repeatWeeks} dates total`}
+                    {repeatWeeks === 0 ? 'weeks (no repeat)' : `week${repeatWeeks !== 1 ? 's' : ''} — ${selectedDates.size * (1 + repeatWeeks)} dates total`}
                   </div>
                 </div>
 
-                {/* Apply button */}
-                <button
-                  onClick={applyAvailability}
-                  disabled={saving || selectedDates.size === 0 || selectedTimes.length === 0}
-                  style={{
-                    marginTop: '14px', width: '100%', padding: '13px',
-                    background: selectedDates.size > 0 && selectedTimes.length > 0 ? 'linear-gradient(135deg, #a855f7, #db2777)' : '#1f1f1f',
-                    color: selectedDates.size > 0 && selectedTimes.length > 0 ? 'white' : '#444',
-                    border: 'none', borderRadius: '12px',
-                    fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.92rem',
-                    cursor: selectedDates.size > 0 && selectedTimes.length > 0 ? 'pointer' : 'not-allowed',
-                    opacity: saving ? .7 : 1, transition: 'all .15s',
-                  }}
-                >
-                  {saving ? 'Saving...' :
+                <button onClick={applyAvailability} disabled={saving || selectedDates.size === 0 || selectedTimes.length === 0} style={{
+                  marginTop: '14px', width: '100%', padding: '13px',
+                  background: selectedDates.size > 0 && selectedTimes.length > 0 ? 'linear-gradient(135deg, #a855f7, #db2777)' : '#1f1f1f',
+                  color: selectedDates.size > 0 && selectedTimes.length > 0 ? 'white' : '#444',
+                  border: 'none', borderRadius: '12px',
+                  fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.92rem',
+                  cursor: selectedDates.size > 0 && selectedTimes.length > 0 ? 'pointer' : 'not-allowed',
+                  opacity: saving ? .7 : 1, transition: 'all .15s',
+                }}>
+                  {saving ? 'Saving…' :
                     selectedDates.size === 0 ? 'Select dates first' :
                     selectedTimes.length === 0 ? 'Select times first' :
-                    `Apply ${selectedTimes.length} time${selectedTimes.length !== 1 ? 's' : ''} to ${selectedDates.size * (1 + repeatWeeks)} date${selectedDates.size * (1 + repeatWeeks) !== 1 ? 's' : ''}`
-                  }
+                    `Apply ${selectedTimes.length} slot${selectedTimes.length !== 1 ? 's' : ''} to ${selectedDates.size * (1 + repeatWeeks)} date${selectedDates.size * (1 + repeatWeeks) !== 1 ? 's' : ''}`}
                 </button>
               </div>
             </div>
@@ -720,7 +718,7 @@ export default function AdminPage() {
                       <div key={date} style={{ background: '#0d0d0d', borderRadius: '12px', border: '1px solid #222', padding: '10px 14px', minWidth: '160px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '7px', gap: '8px' }}>
                           <div style={{ fontSize: '.72rem', fontWeight: '700', color: '#a855f7', textTransform: 'uppercase' }}>{date}</div>
-                          <button onClick={async () => { for (const s of slots) await deleteDoc(doc(db, 'availability', s.id)); }} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: '.9rem', padding: '0', lineHeight: 1 }} title="Remove all slots for this date">×</button>
+                          <button onClick={async () => { for (const s of slots) await deleteDoc(doc(db, 'availability', s.id)); }} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: '.9rem', padding: '0', lineHeight: 1 }} title="Remove date">×</button>
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                           {slots.map(s => (
@@ -739,7 +737,7 @@ export default function AdminPage() {
           </div>
         )}
 
-                {/*  CREATE QUOTE TAB  */}
+        {/* ── CREATE QUOTE TAB ── */}
         {tab === 'create' && (
           <>
             {createDone ? (
@@ -768,7 +766,7 @@ export default function AdminPage() {
         )}
       </div>
 
-      {/*  DETAIL MODAL  */}
+      {/* ── DETAIL MODAL ── */}
       {selected && (
         <div className="overlay show" onClick={e => e.target === e.currentTarget && setSelected(null)}>
           <div className="modal" style={{ background: '#181818', border: '1px solid #2a2a2a', maxWidth: '600px' }}>
@@ -782,7 +780,6 @@ export default function AdminPage() {
               <div className="price-val">${selected.estimate}</div>
             </div>
 
-            {/* Request fields */}
             {[
               ['Submitted', selected.submittedAt], ['Client', selected.name], ['Building Type', selected.buildingType || 'Not specified'], ['Phone', selected.phone],
               ['Email', selected.email], ['Address', selected.address],
@@ -798,10 +795,9 @@ export default function AdminPage() {
               <div key={k} className="detail-row"><span className="dk">{k}</span><span className="dv">{v}</span></div>
             ))}
 
-            {/*  Reschedule Request Alert  */}
             {selected.rescheduleRequested && (
               <div style={{ margin: '0 0 12px', background: 'rgba(245,158,11,.1)', border: '1.5px solid rgba(245,158,11,.3)', borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '1.3rem' }}>{'!'}</span>
+                <span style={{ fontSize: '1.3rem' }}>!</span>
                 <div>
                   <div style={{ fontWeight: '700', color: '#f59e0b', fontSize: '.85rem' }}>Client Requested a Reschedule</div>
                   {selected.reschedulePreferredDates && <div style={{ fontSize: '.78rem', color: '#d1d5db', marginTop: '2px' }}>Preferred: {selected.reschedulePreferredDates}</div>}
@@ -810,7 +806,7 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/*  Reschedule section  */}
+            {/* Reschedule section */}
             <div style={{ margin: '16px 0', background: '#1f1f1f', borderRadius: '12px', padding: '14px 16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: reschedMode ? '12px' : '0' }}>
                 <div style={{ fontWeight: '700', fontSize: '.82rem', color: '#d1d5db' }}>Reschedule</div>
@@ -838,21 +834,21 @@ export default function AdminPage() {
                   </div>
                   <button onClick={saveReschedule} disabled={reschedSaving || !reschedDate.trim()}
                     style={{ padding: '10px 22px', background: 'linear-gradient(135deg, #1a6fd4, #db2777)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '.83rem', cursor: 'pointer', opacity: reschedSaving ? .6 : 1 }}>
-                    {reschedSaving ? 'Saving...' : 'Save New Date'}
+                    {reschedSaving ? 'Saving…' : 'Save New Date'}
                   </button>
                 </div>
               )}
             </div>
 
-            {/*  Admin Notes  */}
+            {/* Admin Notes */}
             <div style={{ margin: '16px 0', background: '#1f1f1f', borderRadius: '12px', padding: '14px 16px' }}>
               <div style={{ fontWeight: '700', fontSize: '.82rem', color: '#d1d5db', marginBottom: '8px' }}>Admin Notes (private)</div>
-              <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add private notes about this client or job..." rows={3}
+              <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add private notes about this client or job…" rows={3}
                 style={{ width: '100%', padding: '10px 12px', background: '#141414', border: '1.5px solid #333', borderRadius: '9px', color: 'white', fontSize: '.83rem', fontFamily: "'DM Sans', sans-serif", outline: 'none', resize: 'vertical' }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
                 <button onClick={saveNote} disabled={noteSaving}
                   style={{ padding: '8px 20px', background: '#a855f7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '.8rem', cursor: 'pointer', opacity: noteSaving ? .6 : 1 }}>
-                  {noteSaving ? 'Saving...' : 'Save Note'}
+                  {noteSaving ? 'Saving…' : 'Save Note'}
                 </button>
                 {noteSaved && <span style={{ fontSize: '.78rem', color: '#10b981', fontWeight: '700' }}>Saved!</span>}
               </div>
@@ -867,20 +863,18 @@ export default function AdminPage() {
                 <button className="act-btn act-done" onClick={() => markDone(selected)}>Mark Done</button>
               )}
               <button className="act-btn act-chat" onClick={() => { setChatReq(selected); setSelected(null); }}>Chat with Client</button>
-              {/* Email reminder */}
               <a href={'mailto:' + selected.email + '?subject=Your Cleaning Appointment Reminder&body=Hi ' + (selected.name ? selected.name.split(' ')[0] : '') + '%2C%0A%0AThis is a friendly reminder that your cleaning appointment is scheduled for ' + encodeURIComponent(selected.date) + ' at ' + encodeURIComponent(selected.time) + '.%0A%0AAddress%3A ' + encodeURIComponent(selected.address) + '%0A%0APlease reach out if you have any questions!%0A%0A- Yoselin%27s Cleaning Service'}
                 style={{ flex: 1, padding: '11px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '700', cursor: 'pointer', border: 'none', background: '#1e3a5f', color: '#60a5fa', textAlign: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '120px' }}>
                 Send Reminder Email
               </a>
-              {/* Client history */}
               <button onClick={() => { setHistoryClient(selected); setSelected(null); }} style={{ flex: 1, padding: '11px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '700', cursor: 'pointer', border: 'none', background: '#1a1a1a', color: '#d1d5db', minWidth: '120px' }}>
                 Client History
               </button>
             </div>
-            {/* Delete - only for completed requests */}
+
             {selected.status === 'done' && (
               <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #2a2a2a' }}>
-                <button onClick={() => deleteRequest(selected)} style={{ width: '100%', padding: '11px', background: 'rgba(239,68,68,.1)', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.84rem', cursor: 'pointer', transition: 'all .2s' }}
+                <button onClick={() => deleteRequest(selected)} style={{ width: '100%', padding: '11px', background: 'rgba(239,68,68,.1)', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.84rem', cursor: 'pointer' }}
                   onMouseEnter={e => { e.target.style.background = 'rgba(239,68,68,.2)'; e.target.style.borderColor = '#ef4444'; }}
                   onMouseLeave={e => { e.target.style.background = 'rgba(239,68,68,.1)'; e.target.style.borderColor = 'rgba(239,68,68,.3)'; }}>
                   Delete This Request
@@ -892,7 +886,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/*  CLIENT HISTORY MODAL  */}
+      {/* ── CLIENT HISTORY MODAL ── */}
       {historyClient && (
         <div className="overlay show" onClick={e => e.target === e.currentTarget && setHistoryClient(null)}>
           <div className="modal" style={{ background: '#181818', border: '1px solid #2a2a2a', maxWidth: '620px' }}>
@@ -904,7 +898,6 @@ export default function AdminPage() {
               <button className="modal-close" onClick={() => setHistoryClient(null)}>X</button>
             </div>
 
-            {/* Summary stats */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '18px' }}>
               {[
                 ['Total Bookings', clientHistory.length],
@@ -953,9 +946,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-
-
-
-
-
