@@ -102,12 +102,11 @@ export default function AdminPage() {
   const [calSelected, setCalSelected] = useState(null);
 
   // Availability tab
-  const allDays = generateDays();
-  const [calDate, setCalDate] = useState(allDays[0]);
-  const [weekStart, setWeekStart] = useState(0);
-  const [pendingTimes, setPendingTimes] = useState({});
+  const [selectedDates, setSelectedDates] = useState(new Set());
+  const [selectedTimes, setSelectedTimes] = useState([]);
+  const [repeatWeeks, setRepeatWeeks] = useState(0);
   const [saving, setSaving] = useState(false);
-  // Availability mini-calendar nav
+  // Availability calendar nav
   const [availMonth, setAvailMonth] = useState(now.getMonth());
   const [availYear, setAvailYear] = useState(now.getFullYear());
 
@@ -196,52 +195,33 @@ export default function AdminPage() {
   };
 
   // Availability tab logic
-  const dateKey = formatDateKey(calDate);
-  const savedTimesForDate = availability.filter(s => s.date === dateKey).map(s => s.time);
-  const pendingForDate = pendingTimes[dateKey] || [];
-
-  const toggleTime = (time) => {
-    setPendingTimes(prev => {
-      const cur = prev[dateKey] || [];
-      return cur.includes(time)
-        ? { ...prev, [dateKey]: cur.filter(t => t !== time) }
-        : { ...prev, [dateKey]: [...cur, time] };
-    });
-  };
-
-  const saveSlots = async () => {
+  const applyAvailability = async () => {
+    if (selectedDates.size === 0 || selectedTimes.length === 0) return;
     setSaving(true);
-    const toAdd = pendingForDate.filter(t => !savedTimesForDate.includes(t));
-    const toRemove = savedTimesForDate.filter(t => !pendingForDate.includes(t));
-    for (const t of toAdd) await addDoc(collection(db, 'availability'), { date: dateKey, time: t, createdAt: serverTimestamp() });
-    for (const t of toRemove) {
-      const slot = availability.find(s => s.date === dateKey && s.time === t);
-      if (slot) await deleteDoc(doc(db, 'availability', slot.id));
+    // Build all dates to apply including weekly repeats
+    const allDatesToApply = new Set(selectedDates);
+    if (repeatWeeks > 0) {
+      [...selectedDates].forEach(dk => {
+        const base = new Date(dk);
+        if (isNaN(base)) return;
+        for (let w = 1; w <= repeatWeeks; w++) {
+          const future = new Date(base);
+          future.setDate(base.getDate() + w * 7);
+          allDatesToApply.add(formatDateKey(future));
+        }
+      });
     }
-    setPendingTimes(prev => ({ ...prev, [dateKey]: undefined }));
+    for (const dk of allDatesToApply) {
+      const currentSlots = availability.filter(s => s.date === dk);
+      const toAdd = selectedTimes.filter(t => !currentSlots.map(s => s.time).includes(t));
+      const toRemove = currentSlots.filter(s => !selectedTimes.includes(s.time));
+      for (const t of toAdd) await addDoc(collection(db, 'availability'), { date: dk, time: t, createdAt: serverTimestamp() });
+      for (const s of toRemove) await deleteDoc(doc(db, 'availability', s.id));
+    }
+    setSelectedDates(new Set());
+    setSelectedTimes([]);
+    setRepeatWeeks(0);
     setSaving(false);
-  };
-
-  const selectCalDate = (d) => {
-    const key = formatDateKey(d);
-    setCalDate(d);
-    setPendingTimes(prev => {
-      if (prev[key] !== undefined) return prev;
-      return { ...prev, [key]: availability.filter(s => s.date === key).map(s => s.time) };
-    });
-  };
-
-  useEffect(() => {
-    const key = formatDateKey(calDate);
-    setPendingTimes(prev => {
-      if (prev[key] !== undefined) return prev;
-      return { ...prev, [key]: availability.filter(s => s.date === key).map(s => s.time) };
-    });
-  }, [availability]);
-
-  const isTimeOn = (t) => {
-    if (pendingTimes[dateKey] !== undefined) return pendingForDate.includes(t);
-    return savedTimesForDate.includes(t);
   };
 
   // Calendar view helpers
@@ -519,23 +499,60 @@ export default function AdminPage() {
         {/*  AVAILABILITY TAB  */}
         {tab === 'availability' && (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', flexWrap: 'wrap', gap: '8px' }}>
-              <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white' }}>Manage Availability</div>
-              <div style={{ fontSize: '.78rem', color: '#6b7280' }}>Click a date, then toggle time slots</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '8px' }}>
+              <div>
+                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white' }}>Manage Availability</div>
+                <div style={{ fontSize: '.8rem', color: '#6b7280', marginTop: '3px' }}>Select multiple dates, pick times, then apply all at once</div>
+              </div>
+              {selectedDates.size > 0 && (
+                <button onClick={() => { setSelectedDates(new Set()); setSelectedTimes([]); setRepeatWeeks(0); }} style={{ padding: '7px 16px', background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '8px', fontWeight: '700', fontSize: '.78rem', cursor: 'pointer' }}>Clear Selection</button>
+              )}
             </div>
-            <p style={{ color: '#6b7280', fontSize: '.8rem', marginBottom: '22px' }}>
-              Purple dots = dates with slots already set. Select a date then pick times. Save when done.
-            </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 1fr) minmax(300px, 2fr)', gap: '18px', alignItems: 'start' }}>
-              {/* Mini Calendar */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(270px, 1fr) minmax(320px, 2fr)', gap: '18px', alignItems: 'start' }}>
+
+              {/* Multi-select Calendar */}
               <div style={{ background: '#111', borderRadius: '20px', border: '1px solid #1f1f1f', padding: '18px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                  <button onClick={() => { if (availMonth === 0) { setAvailMonth(11); setAvailYear(y => y-1); } else setAvailMonth(m => m-1); }} style={{ background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', padding: '5px 11px', cursor: 'pointer', fontWeight: '700', fontSize: '.9rem' }}>{'<'}</button>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <button onClick={() => { if (availMonth === 0) { setAvailMonth(11); setAvailYear(y => y-1); } else setAvailMonth(m => m-1); }} style={{ background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', padding: '5px 11px', cursor: 'pointer', fontWeight: '700' }}>{'<'}</button>
                   <div style={{ fontWeight: '700', color: 'white', fontSize: '.88rem' }}>{MONTH_NAMES[availMonth]} {availYear}</div>
-                  <button onClick={() => { if (availMonth === 11) { setAvailMonth(0); setAvailYear(y => y+1); } else setAvailMonth(m => m+1); }} style={{ background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', padding: '5px 11px', cursor: 'pointer', fontWeight: '700', fontSize: '.9rem' }}>{'>'}</button>
+                  <button onClick={() => { if (availMonth === 11) { setAvailMonth(0); setAvailYear(y => y+1); } else setAvailMonth(m => m+1); }} style={{ background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', padding: '5px 11px', cursor: 'pointer', fontWeight: '700' }}>{'>'}</button>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '6px' }}>
+
+                {/* Shortcut buttons */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '12px' }}>
+                  {[
+                    { label: 'Weekdays', fn: () => {
+                      const dates = new Set(); const t = new Date(); t.setHours(0,0,0,0);
+                      for (let i = 1; i <= getDaysInMonth(availYear, availMonth); i++) {
+                        const d = new Date(availYear, availMonth, i);
+                        if (d >= t && d.getDay() !== 0 && d.getDay() !== 6) dates.add(formatDateKey(d));
+                      }
+                      setSelectedDates(dates); setSelectedTimes([]);
+                    }},
+                    { label: 'Saturdays', fn: () => {
+                      const dates = new Set(); const t = new Date(); t.setHours(0,0,0,0);
+                      for (let i = 1; i <= getDaysInMonth(availYear, availMonth); i++) {
+                        const d = new Date(availYear, availMonth, i);
+                        if (d >= t && d.getDay() === 6) dates.add(formatDateKey(d));
+                      }
+                      setSelectedDates(dates); setSelectedTimes([]);
+                    }},
+                    { label: 'Sundays', fn: () => {
+                      const dates = new Set(); const t = new Date(); t.setHours(0,0,0,0);
+                      for (let i = 1; i <= getDaysInMonth(availYear, availMonth); i++) {
+                        const d = new Date(availYear, availMonth, i);
+                        if (d >= t && d.getDay() === 0) dates.add(formatDateKey(d));
+                      }
+                      setSelectedDates(dates); setSelectedTimes([]);
+                    }},
+                    { label: 'Clear', fn: () => setSelectedDates(new Set()) },
+                  ].map(({ label, fn }) => (
+                    <button key={label} onClick={fn} style={{ padding: '4px 10px', borderRadius: '99px', border: '1px solid #2a2a2a', background: '#1a1a1a', color: '#d1d5db', fontSize: '.7rem', fontWeight: '700', cursor: 'pointer' }}>{label}</button>
+                  ))}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '4px' }}>
                   {DAY_NAMES.map(d => (<div key={d} style={{ textAlign: 'center', fontSize: '.6rem', fontWeight: '700', color: '#555', textTransform: 'uppercase', padding: '3px 0' }}>{d}</div>))}
                 </div>
                 {(() => {
@@ -550,69 +567,168 @@ export default function AdminPage() {
                         const d = new Date(availYear, availMonth, day);
                         const key = formatDateKey(d);
                         const hasSlots = datesWithSlots.has(key);
-                        const isSelected = formatDateKey(d) === formatDateKey(calDate);
+                        const isSelected = selectedDates.has(key);
                         const isPast = d < todayMidnight;
+                        const isToday = now.getDate() === day && now.getMonth() === availMonth && now.getFullYear() === availYear;
                         return (
-                          <button key={day} onClick={() => !isPast && selectCalDate(d)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', aspectRatio: '1', borderRadius: '8px', padding: '4px 2px', border: isSelected ? '2px solid #a855f7' : '1px solid transparent', background: isSelected ? 'rgba(168,85,247,.18)' : 'transparent', color: isPast ? '#333' : isSelected ? '#d8b4fe' : '#d1d5db', cursor: isPast ? 'default' : 'pointer', fontWeight: '700', fontSize: '.78rem', position: 'relative', transition: 'all .12s' }}>
+                          <button key={day} onClick={() => {
+                            if (isPast) return;
+                            setSelectedDates(prev => {
+                              const next = new Set(prev);
+                              if (next.has(key)) { next.delete(key); }
+                              else {
+                                next.add(key);
+                                if (next.size === 1) setSelectedTimes(availability.filter(s => s.date === key).map(s => s.time));
+                              }
+                              return next;
+                            });
+                          }} style={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            aspectRatio: '1', borderRadius: '8px', padding: '2px',
+                            border: isSelected ? '2px solid #a855f7' : isToday ? '1.5px solid #555' : '1px solid transparent',
+                            background: isSelected ? 'rgba(168,85,247,.25)' : 'transparent',
+                            color: isPast ? '#2a2a2a' : isSelected ? '#e9d5ff' : '#d1d5db',
+                            cursor: isPast ? 'default' : 'pointer',
+                            fontWeight: isSelected ? '800' : '600', fontSize: '.78rem',
+                            position: 'relative', transition: 'all .1s',
+                          }}>
                             {day}
-                            {hasSlots && !isPast && <span style={{ position: 'absolute', bottom: '2px', width: '4px', height: '4px', borderRadius: '50%', background: '#a855f7', display: 'block' }} />}
+                            {hasSlots && !isPast && <span style={{ position: 'absolute', bottom: '2px', width: '4px', height: '4px', borderRadius: '50%', background: isSelected ? '#e9d5ff' : '#a855f7' }} />}
                           </button>
                         );
                       })}
                     </div>
                   );
                 })()}
-                <div style={{ marginTop: '12px', display: 'flex', gap: '14px', fontSize: '.68rem', color: '#555', flexWrap: 'wrap', borderTop: '1px solid #1f1f1f', paddingTop: '10px' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#a855f7', display: 'inline-block' }}></span>Has slots</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#a855f7' }}><span style={{ width: '10px', height: '10px', borderRadius: '3px', border: '2px solid #a855f7', display: 'inline-block' }}></span>Selected</span>
+                <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #1f1f1f', fontSize: '.75rem', color: selectedDates.size > 0 ? '#a855f7' : '#555', fontWeight: '700' }}>
+                  {selectedDates.size > 0 ? `${selectedDates.size} date${selectedDates.size !== 1 ? 's' : ''} selected` : 'Tap dates to select — tap again to deselect'}
                 </div>
               </div>
 
-              {/* Time Slots Panel */}
+              {/* Time Setter */}
               <div style={{ background: '#111', borderRadius: '20px', border: '1px solid #1f1f1f', padding: '18px' }}>
-                <div style={{ marginBottom: '12px' }}>
-                  <div style={{ fontWeight: '700', color: 'white', fontSize: '.95rem' }}>{dateKey}</div>
-                  <div style={{ fontSize: '.75rem', color: pendingForDate.length > 0 ? '#a855f7' : '#555', marginTop: '3px' }}>{pendingForDate.length > 0 ? pendingForDate.length + ' slot(s) selected' : 'No slots selected'}</div>
+                <div style={{ marginBottom: '14px' }}>
+                  <div style={{ fontWeight: '700', color: 'white', fontSize: '.95rem' }}>
+                    {selectedDates.size === 0 ? 'Select dates on the left' : `Times for ${selectedDates.size} date${selectedDates.size !== 1 ? 's' : ''}`}
+                  </div>
+                  <div style={{ fontSize: '.73rem', color: selectedTimes.length > 0 ? '#a855f7' : '#555', marginTop: '3px' }}>
+                    {selectedTimes.length > 0 ? `${selectedTimes.length} time slot${selectedTimes.length !== 1 ? 's' : ''} selected` : 'No times selected yet'}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '16px' }}>
-                  {[{label:'Morning',times:ALL_TIMES.slice(0,12)},{label:'Afternoon',times:ALL_TIMES.slice(12,22)},{label:'Evening',times:ALL_TIMES.slice(22)},{label:'All Day',times:ALL_TIMES},{label:'Clear',times:[]}].map(({ label, times }) => (
-                    <button key={label} onClick={() => setPendingTimes(prev => ({ ...prev, [dateKey]: times }))} style={{ padding: '5px 12px', borderRadius: '99px', border: '1px solid #2a2a2a', background: '#1a1a1a', color: '#d1d5db', fontSize: '.74rem', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}>{label}</button>
+
+                {/* Preset buttons */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
+                  {[
+                    { label: '🌅 Morning',   times: ALL_TIMES.slice(0, 12) },
+                    { label: '☀️ Afternoon', times: ALL_TIMES.slice(12, 22) },
+                    { label: '🌆 Evening',   times: ALL_TIMES.slice(22) },
+                    { label: '📅 All Day',   times: ALL_TIMES },
+                    { label: '✕ Clear',      times: [] },
+                  ].map(({ label, times }) => (
+                    <button key={label} onClick={() => setSelectedTimes(times)} style={{
+                      padding: '7px 13px', borderRadius: '99px', border: '1px solid #2a2a2a',
+                      background: '#1a1a1a', color: '#d1d5db', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer',
+                    }}>{label}</button>
                   ))}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '340px', overflowY: 'auto', paddingRight: '4px' }}>
-                  {[{label:'Morning',sub:'6am - 11:30am',times:ALL_TIMES.slice(0,12)},{label:'Afternoon',sub:'12pm - 4:30pm',times:ALL_TIMES.slice(12,22)},{label:'Evening',sub:'5pm - 8pm',times:ALL_TIMES.slice(22)}].map(({ label, sub, times }) => (
+
+                {/* Time grid */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '260px', overflowY: 'auto', paddingRight: '4px' }}>
+                  {[
+                    { label: 'Morning',   sub: '6am – 11:30am', times: ALL_TIMES.slice(0, 12) },
+                    { label: 'Afternoon', sub: '12pm – 4:30pm', times: ALL_TIMES.slice(12, 22) },
+                    { label: 'Evening',   sub: '5pm – 8pm',     times: ALL_TIMES.slice(22) },
+                  ].map(({ label, sub, times }) => (
                     <div key={label}>
-                      <div style={{ fontSize: '.68rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '7px' }}>{label} <span style={{ fontWeight: '500', textTransform: 'none', letterSpacing: 0, color: '#444' }}>{sub}</span></div>
+                      <div style={{ fontSize: '.68rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '7px' }}>
+                        {label} <span style={{ fontWeight: '500', textTransform: 'none', letterSpacing: 0, color: '#444' }}>{sub}</span>
+                      </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                         {times.map(t => {
-                          const on = isTimeOn(t);
-                          return (<button key={t} onClick={() => toggleTime(t)} style={{ padding: '6px 11px', borderRadius: '8px', border: on ? '2px solid #a855f7' : '1px solid #2a2a2a', background: on ? 'rgba(168,85,247,.22)' : '#0d0d0d', color: on ? '#d8b4fe' : '#6b7280', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.75rem', cursor: 'pointer', transition: 'all .12s' }}>{t}</button>);
+                          const on = selectedTimes.includes(t);
+                          return (
+                            <button key={t} onClick={() => setSelectedTimes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])} style={{
+                              padding: '6px 11px', borderRadius: '8px',
+                              border: on ? '2px solid #a855f7' : '1px solid #2a2a2a',
+                              background: on ? 'rgba(168,85,247,.22)' : '#0d0d0d',
+                              color: on ? '#d8b4fe' : '#6b7280',
+                              fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.75rem',
+                              cursor: 'pointer', transition: 'all .1s',
+                            }}>{t}</button>
+                          );
                         })}
                       </div>
                     </div>
                   ))}
                 </div>
-                <button onClick={saveSlots} disabled={saving} style={{ marginTop: '18px', width: '100%', padding: '12px', background: 'linear-gradient(135deg, #1a6fd4, #db2777)', color: 'white', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.9rem', cursor: saving ? 'default' : 'pointer', opacity: saving ? .6 : 1 }}>
-                  {saving ? 'Saving...' : 'Save Availability for ' + MONTH_NAMES[calDate.getMonth()] + ' ' + calDate.getDate()}
+
+                {/* Repeat weekly option */}
+                <div style={{ marginTop: '16px', padding: '12px 14px', background: '#0d0d0d', borderRadius: '12px', border: '1px solid #1f1f1f', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: '.8rem', fontWeight: '700', color: '#9ca3af' }}>Repeat for next</div>
+                  <div style={{ display: 'flex', gap: '5px' }}>
+                    {[0, 1, 2, 3, 4].map(n => (
+                      <button key={n} onClick={() => setRepeatWeeks(n)} style={{
+                        width: '34px', height: '34px', borderRadius: '8px',
+                        border: repeatWeeks === n ? '2px solid #a855f7' : '1px solid #2a2a2a',
+                        background: repeatWeeks === n ? 'rgba(168,85,247,.2)' : '#1a1a1a',
+                        color: repeatWeeks === n ? '#d8b4fe' : '#9ca3af',
+                        fontWeight: '700', fontSize: '.82rem', cursor: 'pointer',
+                      }}>{n === 0 ? '–' : n}</button>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: '.75rem', color: '#555' }}>
+                    {repeatWeeks === 0 ? 'weeks (no repeat)' : `week${repeatWeeks !== 1 ? 's' : ''} — applies to ${selectedDates.size + selectedDates.size * repeatWeeks} dates total`}
+                  </div>
+                </div>
+
+                {/* Apply button */}
+                <button
+                  onClick={applyAvailability}
+                  disabled={saving || selectedDates.size === 0 || selectedTimes.length === 0}
+                  style={{
+                    marginTop: '14px', width: '100%', padding: '13px',
+                    background: selectedDates.size > 0 && selectedTimes.length > 0 ? 'linear-gradient(135deg, #a855f7, #db2777)' : '#1f1f1f',
+                    color: selectedDates.size > 0 && selectedTimes.length > 0 ? 'white' : '#444',
+                    border: 'none', borderRadius: '12px',
+                    fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.92rem',
+                    cursor: selectedDates.size > 0 && selectedTimes.length > 0 ? 'pointer' : 'not-allowed',
+                    opacity: saving ? .7 : 1, transition: 'all .15s',
+                  }}
+                >
+                  {saving ? 'Saving...' :
+                    selectedDates.size === 0 ? 'Select dates first' :
+                    selectedTimes.length === 0 ? 'Select times first' :
+                    `Apply ${selectedTimes.length} time${selectedTimes.length !== 1 ? 's' : ''} to ${selectedDates.size * (1 + repeatWeeks)} date${selectedDates.size * (1 + repeatWeeks) !== 1 ? 's' : ''}`
+                  }
                 </button>
               </div>
             </div>
 
+            {/* Saved slots list */}
             {availability.length > 0 && (
               <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #1f1f1f', overflow: 'hidden', marginTop: '20px' }}>
-                <div style={{ padding: '14px 18px', borderBottom: '1px solid #1f1f1f', color: '#9ca3af', fontSize: '.75rem', fontWeight: '700', letterSpacing: '.4px', textTransform: 'uppercase' }}>All Saved Slots</div>
+                <div style={{ padding: '14px 18px', borderBottom: '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ color: '#9ca3af', fontSize: '.75rem', fontWeight: '700', letterSpacing: '.4px', textTransform: 'uppercase' }}>Saved Slots ({availability.length} total)</div>
+                  <button onClick={async () => {
+                    if (!window.confirm('Delete ALL saved availability slots?')) return;
+                    for (const s of availability) await deleteDoc(doc(db, 'availability', s.id));
+                  }} style={{ padding: '5px 12px', background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '7px', fontSize: '.72rem', fontWeight: '700', cursor: 'pointer' }}>Clear All</button>
+                </div>
                 <div style={{ padding: '14px 18px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {(() => {
                     const grouped = {};
                     availability.forEach(s => { if (!grouped[s.date]) grouped[s.date] = []; grouped[s.date].push(s); });
                     return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([date, slots]) => (
-                      <div key={date} style={{ background: '#0d0d0d', borderRadius: '12px', border: '1px solid #222', padding: '10px 14px' }}>
-                        <div style={{ fontSize: '.72rem', fontWeight: '700', color: '#a855f7', marginBottom: '7px', textTransform: 'uppercase' }}>{date}</div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                      <div key={date} style={{ background: '#0d0d0d', borderRadius: '12px', border: '1px solid #222', padding: '10px 14px', minWidth: '160px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '7px', gap: '8px' }}>
+                          <div style={{ fontSize: '.72rem', fontWeight: '700', color: '#a855f7', textTransform: 'uppercase' }}>{date}</div>
+                          <button onClick={async () => { for (const s of slots) await deleteDoc(doc(db, 'availability', s.id)); }} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: '.9rem', padding: '0', lineHeight: 1 }} title="Remove all slots for this date">×</button>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                           {slots.map(s => (
-                            <span key={s.id} style={{ background: '#1a1a1a', color: '#d1d5db', fontSize: '.72rem', fontWeight: '700', padding: '3px 9px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <span key={s.id} style={{ background: '#1a1a1a', color: '#d1d5db', fontSize: '.7rem', fontWeight: '700', padding: '3px 8px', borderRadius: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               {s.time}
-                              <button onClick={() => deleteDoc(doc(db, 'availability', s.id))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.75rem', padding: '0', lineHeight: 1 }}>x</button>
+                              <button onClick={() => deleteDoc(doc(db, 'availability', s.id))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.72rem', padding: '0', lineHeight: 1 }}>×</button>
                             </span>
                           ))}
                         </div>
