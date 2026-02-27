@@ -62,6 +62,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   const [senior,       setSenior]       = useState('no');
   const [submitting,   setSubmitting]   = useState(false);
   const [availability, setAvailability] = useState([]);
+  const [livePrices,   setLivePrices]   = useState(null);
 
   const addressInputRef = useRef(null);
   const autocompleteRef = useRef(null);
@@ -73,6 +74,13 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     address: '', date: '', time: '',
     pets: 'no', otherReqs: '', notes: '', referral: '', access: "I'll be home",
   });
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'pricing'), snap => {
+      if (snap.exists()) setLivePrices(snap.data());
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'availability'), snap => {
@@ -110,20 +118,24 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   const setF = (k, v) => setForm(x => ({ ...x, [k]: v }));
 
   const calcPrice = () => {
+    const BP = livePrices?.bathrooms || BPRICES;
+    const RP = livePrices?.rooms || RPRICES;
+    const EP = livePrices?.extras || {};
     let base = 0;
     const lines = [];
     Object.keys(baths).forEach(t => {
-      if (baths[t] > 0) { base += baths[t] * BPRICES[t]; lines.push(BNAMES[t] + ' x' + baths[t]); }
+      if (baths[t] > 0) { base += baths[t] * (BP[t] ?? BPRICES[t]); lines.push(BNAMES[t] + ' x' + baths[t]); }
     });
     Object.keys(rooms).forEach(r => {
-      if (rooms[r] > 0) { base += rooms[r] * RPRICES[r]; lines.push(RNAMES[r] + ' x' + rooms[r]); }
+      if (rooms[r] > 0) { base += rooms[r] * (RP[r] ?? RPRICES[r]); lines.push(RNAMES[r] + ' x' + rooms[r]); }
     });
     let extTotal = 0;
     const extraNames = [];
     EXTRAS.forEach(e => {
       if (extras[e.id]) {
+        const liveP = EP[e.id] ?? e.price;
         const qty = e.hasQty ? (windowQty || 1) : 1;
-        extTotal += e.price * qty;
+        extTotal += liveP * qty;
         const label = e.hasQty ? `${e.name} x${qty}` : e.name;
         extraNames.push(label);
         lines.push(label);
@@ -131,9 +143,12 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     });
     const sub = base + extTotal;
     const fq = FREQS.find(f => f.val === freq);
-    let discAmt = fq && fq.pct > 0 ? sub * fq.pct : 0;
-    if (firstTime === 'yes') discAmt += sub * 0.10;
-    if (senior    === 'yes') discAmt += sub * 0.10;
+    const freqPctMap = { biweekly: (livePrices?.discounts?.biweekly ?? 15) / 100, weekly: (livePrices?.discounts?.weekly ?? 17.5) / 100, monthly: (livePrices?.discounts?.monthly ?? 12.5) / 100 };
+    let discAmt = fq && fq.val !== 'once' ? sub * (freqPctMap[fq.val] || 0) : 0;
+    const ftPct = (livePrices?.discounts?.firstTime ?? 10) / 100;
+    const srPct = (livePrices?.discounts?.senior ?? 10) / 100;
+    if (firstTime === 'yes') discAmt += sub * ftPct;
+    if (senior    === 'yes') discAmt += sub * srPct;
     const hasDiscount = discAmt > 0;
     const final = Math.max(0, Math.round(sub - discAmt));
     return { final, sub: Math.round(sub), hasDiscount, lines, extraNames };

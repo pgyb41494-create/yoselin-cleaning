@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, orderBy, query } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, orderBy, query, setDoc } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL } from '../../lib/firebase';
 import { useUnreadCount } from '../../lib/useUnreadCount';
 import { notifyBookingConfirmed } from '../../lib/notifications';
@@ -40,6 +40,13 @@ function parseDateString(str) {
 function getDaysInMonth(year, month) {
   return new Date(year, month + 1, 0).getDate();
 }
+
+const DEFAULT_PRICING = {
+  bathrooms: { half: 15, small: 50, medium: 65, large: 80 },
+  rooms: { bed_small: 25, bed_medium: 30, bed_large: 35, liv_medium: 15, liv_large: 35, office: 10, kit_small: 45, kit_medium: 55, kit_large: 70, laundry: 10, basement: 75 },
+  extras: { cabinets: 16, pantry: 20, oven: 16, fridge: 16, baseboard: 5, windows: 5 },
+  discounts: { firstTime: 10, senior: 10, biweekly: 15, weekly: 17.5, monthly: 12.5 },
+};
 
 export default function AdminPage() {
   const router = useRouter();
@@ -87,6 +94,11 @@ export default function AdminPage() {
   const [availMonth, setAvailMonth] = useState(now.getMonth());
   const [availYear, setAvailYear] = useState(now.getFullYear());
 
+  // Pricing tab
+  const [editPrices, setEditPrices] = useState(DEFAULT_PRICING);
+  const [priceSaving, setPriceSaving] = useState(false);
+  const [priceSaved, setPriceSaved] = useState(false);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       if (!u || u.email !== ADMIN_EMAIL) { router.push('/'); return; }
@@ -110,7 +122,18 @@ export default function AdminPage() {
       snap.docs.forEach(d => { map[d.id] = d.data().unreadByAdmin || 0; });
       setUnreadMap(map);
     });
-    return () => { unsubReqs(); unsubAvail(); unsubUnread(); };
+    const unsubPricing = onSnapshot(doc(db, 'settings', 'pricing'), snap => {
+      if (snap.exists()) {
+        const d = snap.data();
+        setEditPrices({
+          bathrooms: { ...DEFAULT_PRICING.bathrooms, ...d.bathrooms },
+          rooms: { ...DEFAULT_PRICING.rooms, ...d.rooms },
+          extras: { ...DEFAULT_PRICING.extras, ...d.extras },
+          discounts: { ...DEFAULT_PRICING.discounts, ...d.discounts },
+        });
+      }
+    });
+    return () => { unsubReqs(); unsubAvail(); unsubUnread(); unsubPricing(); };
   }, [user]);
 
   useEffect(() => {
@@ -194,6 +217,17 @@ export default function AdminPage() {
     setSaving(false);
   };
 
+  const savePricing = async () => {
+    setPriceSaving(true);
+    await setDoc(doc(db, 'settings', 'pricing'), editPrices);
+    setPriceSaving(false);
+    setPriceSaved(true);
+    setTimeout(() => setPriceSaved(false), 2500);
+  };
+
+  const setP = (section, key, val) =>
+    setEditPrices(p => ({ ...p, [section]: { ...p[section], [key]: parseFloat(val) || 0 } }));
+
   const calFirstDay = new Date(calYear, calMonth, 1).getDay();
   const calDaysInMonth = getDaysInMonth(calYear, calMonth);
 
@@ -221,6 +255,7 @@ export default function AdminPage() {
     { key: 'calendar', label: 'Calendar' },
     { key: 'availability', label: 'Availability' },
     { key: 'create', label: 'Create Quote' },
+    { key: 'pricing', label: '💰 Pricing' },
   ];
 
   const btnStyle = (color) => ({
@@ -228,6 +263,32 @@ export default function AdminPage() {
     background: color + '22', color: color,
     fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.75rem', cursor: 'pointer',
   });
+
+  // Reusable pricing input
+  const PriceInput = ({ section, fieldKey, label, unit = '$' }) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      <label style={{ fontSize: '.7rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px' }}>{label}</label>
+      <div style={{ display: 'flex', alignItems: 'center', background: '#0d0d0d', border: '1.5px solid #2a2a2a', borderRadius: '10px', overflow: 'hidden' }}>
+        <span style={{ padding: '0 10px', color: '#6b7280', fontWeight: '700', fontSize: '.85rem', borderRight: '1px solid #2a2a2a', height: '40px', display: 'flex', alignItems: 'center' }}>{unit}</span>
+        <input
+          type="number" min="0" step="0.5"
+          value={editPrices[section][fieldKey]}
+          onChange={e => setP(section, fieldKey, e.target.value)}
+          style={{ flex: 1, padding: '9px 12px', background: 'transparent', border: 'none', color: 'white', fontSize: '.9rem', fontWeight: '700', fontFamily: "'DM Sans',sans-serif", outline: 'none', width: '80px' }}
+        />
+      </div>
+    </div>
+  );
+
+  const PriceCard = ({ title, desc, children }) => (
+    <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #222', overflow: 'hidden', marginBottom: '16px' }}>
+      <div style={{ padding: '14px 20px', borderBottom: '1px solid #1f1f1f', display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+        <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: '700', color: 'white', fontSize: '1rem' }}>{title}</div>
+        {desc && <div style={{ fontSize: '.75rem', color: '#6b7280' }}>{desc}</div>}
+      </div>
+      <div style={{ padding: '18px 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px,1fr))', gap: '14px' }}>{children}</div>
+    </div>
+  );
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
@@ -246,13 +307,13 @@ export default function AdminPage() {
       </nav>
 
       {/* Tab Bar */}
-      <div style={{ background: '#111', borderBottom: '1px solid #222', padding: '0 26px', display: 'flex' }}>
+      <div style={{ background: '#111', borderBottom: '1px solid #222', padding: '0 26px', display: 'flex', overflowX: 'auto' }}>
         {TABS.map(({ key, label }) => (
           <button key={key} onClick={() => { setTab(key); setCreateDone(false); }} style={{
             padding: '14px 20px', background: 'none', border: 'none',
             borderBottom: tab === key ? '3px solid #a855f7' : '3px solid transparent',
             fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.85rem',
-            color: tab === key ? '#a855f7' : '#6b7280', cursor: 'pointer',
+            color: tab === key ? '#a855f7' : '#6b7280', cursor: 'pointer', whiteSpace: 'nowrap',
           }}>
             {label}
             {key === 'requests' && newCount > 0 && (
@@ -266,14 +327,12 @@ export default function AdminPage() {
 
         {/* ── REQUESTS TAB ── */}
         {tab === 'requests' && (() => {
-          // Today's confirmed jobs
           const todayJobs = requests.filter(r => {
             if (r.status !== 'confirmed') return false;
             const d = parseDateString(r.date);
             return d && d.toDateString() === now.toDateString();
           });
 
-          // Filter + search
           const filtered = requests.filter(r => {
             if (reqFilter !== 'all' && r.status !== reqFilter) return false;
             if (reqSearch.trim()) {
@@ -287,7 +346,6 @@ export default function AdminPage() {
 
           return (
             <>
-              {/* Stats */}
               <div className="stats-grid">
                 {[
                   ['TOTAL', requests.length, ''],
@@ -303,10 +361,9 @@ export default function AdminPage() {
                 ))}
               </div>
 
-              {/* Today's jobs banner */}
               {todayJobs.length > 0 && (
                 <div style={{ background: 'rgba(59,130,246,.08)', border: '1px solid rgba(59,130,246,.25)', borderRadius: '14px', padding: '14px 18px', marginBottom: '18px' }}>
-                  <div style={{ fontSize: '.72rem', fontWeight: '700', color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '10px' }}>📅 Today's Jobs</div>
+                  <div style={{ fontSize: '.72rem', fontWeight: '700', color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '10px' }}>Today's Jobs</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                     {todayJobs.map(r => (
                       <div key={r.id} onClick={() => setSelected(r)} style={{ background: '#0d0d0d', borderRadius: '10px', padding: '10px 14px', cursor: 'pointer', border: '1px solid #1f2f4f', display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -321,7 +378,6 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* Search + filter toolbar */}
               <div style={{ display: 'flex', gap: '10px', marginBottom: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <input
                   value={reqSearch} onChange={e => setReqSearch(e.target.value)}
@@ -347,12 +403,11 @@ export default function AdminPage() {
                     if (!window.confirm('Delete all ' + done.length + ' completed requests?')) return;
                     for (const r of done) await deleteDoc(doc(db, 'requests', r.id));
                   }} style={{ padding: '9px 14px', background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                    🗑 Clear Done
+                    Clear Done
                   </button>
                 )}
               </div>
 
-              {/* Requests table */}
               <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #222', overflow: 'hidden', overflowX: 'auto' }}>
                 {filtered.length === 0 ? (
                   <div className="empty-state" style={{ color: '#9ca3af' }}>{requests.length === 0 ? 'No requests yet.' : 'No results.'}</div>
@@ -368,7 +423,6 @@ export default function AdminPage() {
                     <tbody>
                       {filtered.map(r => (
                         <tr key={r.id} style={{ borderBottom: '1px solid #1f1f1f' }}>
-                          {/* Client */}
                           <td style={{ padding: '12px 15px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '2px' }}>
                               <strong style={{ color: 'white', fontSize: '.88rem' }}>{r.name}</strong>
@@ -376,24 +430,20 @@ export default function AdminPage() {
                               {(unreadMap[r.id] || 0) > 0 && <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef4444', display: 'inline-block', flexShrink: 0 }} title="Unread messages" />}
                             </div>
                             <div style={{ fontSize: '.75rem', color: '#6b7280' }}>{r.phone || r.email}</div>
-                            {r.adminNotes && <div style={{ fontSize: '.72rem', color: '#a855f7', marginTop: '2px' }}>📝 {r.adminNotes.slice(0, 45)}{r.adminNotes.length > 45 ? '…' : ''}</div>}
+                            {r.adminNotes && <div style={{ fontSize: '.72rem', color: '#a855f7', marginTop: '2px' }}>Note: {r.adminNotes.slice(0, 45)}{r.adminNotes.length > 45 ? '…' : ''}</div>}
                           </td>
-                          {/* Date */}
                           <td style={{ padding: '12px 15px', fontSize: '.83rem', color: '#d1d5db', whiteSpace: 'nowrap' }}>
                             {r.date || '—'}
                             {r.time && r.time !== 'N/A' && <div style={{ fontSize: '.72rem', color: '#6b7280' }}>{r.time}</div>}
                           </td>
-                          {/* Estimate */}
                           <td style={{ padding: '12px 15px' }}>
                             <strong style={{ color: '#60a5fa', fontFamily: 'Playfair Display,serif', fontSize: '1rem' }}>${r.estimate}</strong>
                           </td>
-                          {/* Status */}
                           <td style={{ padding: '12px 15px' }}>
                             <span className={'badge badge-' + r.status}>
                               {r.status === 'new' ? 'New' : r.status === 'confirmed' ? 'Confirmed' : 'Done'}
                             </span>
                           </td>
-                          {/* Actions */}
                           <td style={{ padding: '12px 15px' }}>
                             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                               <button className="view-btn" onClick={() => setSelected(r)}>Details</button>
@@ -402,14 +452,10 @@ export default function AdminPage() {
                                 background: (unreadMap[r.id] || 0) > 0 ? '#ef4444' : 'rgba(96,165,250,.15)',
                                 color: (unreadMap[r.id] || 0) > 0 ? 'white' : '#60a5fa',
                               }}>
-                                💬{(unreadMap[r.id] || 0) > 0 ? ` ${unreadMap[r.id]}` : ''}
+                                Chat{(unreadMap[r.id] || 0) > 0 ? ` (${unreadMap[r.id]})` : ''}
                               </button>
-                              {r.status === 'new' && (
-                                <button onClick={() => confirmReq(r)} style={btnStyle('#10b981')}>✓ Confirm</button>
-                              )}
-                              {r.status === 'confirmed' && (
-                                <button onClick={() => markDone(r)} style={btnStyle('#a855f7')}>✓ Done</button>
-                              )}
+                              {r.status === 'new' && <button onClick={() => confirmReq(r)} style={btnStyle('#10b981')}>Confirm</button>}
+                              {r.status === 'confirmed' && <button onClick={() => markDone(r)} style={btnStyle('#a855f7')}>Done</button>}
                             </div>
                           </td>
                         </tr>
@@ -430,13 +476,6 @@ export default function AdminPage() {
                 {MONTH_NAMES[calMonth]} {calYear}
               </div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: '6px', fontSize: '.75rem', fontWeight: '700', marginRight: '8px' }}>
-                  {[['new', '#f59e0b', 'New'], ['confirmed', '#3b82f6', 'Confirmed'], ['done', '#10b981', 'Done']].map(([s, c, l]) => (
-                    <span key={s} style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#9ca3af' }}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: c, display: 'inline-block' }} />{l}
-                    </span>
-                  ))}
-                </div>
                 <button onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); } else setCalMonth(m => m - 1); }}
                   style={{ padding: '8px 14px', background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '.85rem' }}>Prev</button>
                 <button onClick={() => { setCalMonth(now.getMonth()); setCalYear(now.getFullYear()); }}
@@ -502,7 +541,6 @@ export default function AdminPage() {
                     <div>
                       <div style={{ fontWeight: '700', color: 'white', fontSize: '.9rem', marginBottom: '2px' }}>{r.name}</div>
                       <div style={{ fontSize: '.78rem', color: '#9ca3af' }}>{r.time || 'No time set'} - {r.address}</div>
-                      {r.adminNotes && <div style={{ fontSize: '.75rem', color: '#a855f7', marginTop: '3px' }}>Note: {r.adminNotes}</div>}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
                       <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: '900', color: '#60a5fa', fontSize: '1.1rem' }}>${r.estimate}</span>
@@ -511,16 +549,6 @@ export default function AdminPage() {
                     </div>
                   </div>
                 ))}
-              </div>
-            )}
-
-            {requests.filter(r => {
-              const d = parseDateString(r.date);
-              if (d) return d.getFullYear() === calYear && d.getMonth() === calMonth;
-              return r.date && r.date.toLowerCase().includes(MONTH_NAMES[calMonth].toLowerCase()) && r.date.includes(String(calYear));
-            }).length === 0 && (
-              <div style={{ textAlign: 'center', padding: '32px', color: '#6b7280', fontSize: '.85rem', marginTop: '16px' }}>
-                No bookings with dates set for {MONTH_NAMES[calMonth]}.
               </div>
             )}
           </div>
@@ -534,33 +562,15 @@ export default function AdminPage() {
                 <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white' }}>Manage Availability</div>
                 <div style={{ fontSize: '.8rem', color: '#6b7280', marginTop: '3px' }}>Select multiple dates, pick times, then apply all at once</div>
               </div>
-              {selectedDates.size > 0 && (
-                <button onClick={() => { setSelectedDates(new Set()); setSelectedTimes([]); setRepeatWeeks(0); }}
-                  style={{ padding: '7px 16px', background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '8px', fontWeight: '700', fontSize: '.78rem', cursor: 'pointer' }}>
-                  Clear Selection
-                </button>
-              )}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(270px, 1fr) minmax(320px, 2fr)', gap: '18px', alignItems: 'start' }}>
-
               {/* Multi-select Calendar */}
               <div style={{ background: '#111', borderRadius: '20px', border: '1px solid #1f1f1f', padding: '18px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                   <button onClick={() => { if (availMonth === 0) { setAvailMonth(11); setAvailYear(y => y - 1); } else setAvailMonth(m => m - 1); }} style={{ background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', padding: '5px 11px', cursor: 'pointer', fontWeight: '700' }}>{'<'}</button>
                   <div style={{ fontWeight: '700', color: 'white', fontSize: '.88rem' }}>{MONTH_NAMES[availMonth]} {availYear}</div>
                   <button onClick={() => { if (availMonth === 11) { setAvailMonth(0); setAvailYear(y => y + 1); } else setAvailMonth(m => m + 1); }} style={{ background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', padding: '5px 11px', cursor: 'pointer', fontWeight: '700' }}>{'>'}</button>
-                </div>
-
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '12px' }}>
-                  {[
-                    { label: 'Weekdays', fn: () => { const dates = new Set(); const t = new Date(); t.setHours(0,0,0,0); for (let i = 1; i <= getDaysInMonth(availYear, availMonth); i++) { const d = new Date(availYear, availMonth, i); if (d >= t && d.getDay() !== 0 && d.getDay() !== 6) dates.add(formatDateKey(d)); } setSelectedDates(dates); setSelectedTimes([]); } },
-                    { label: 'Saturdays', fn: () => { const dates = new Set(); const t = new Date(); t.setHours(0,0,0,0); for (let i = 1; i <= getDaysInMonth(availYear, availMonth); i++) { const d = new Date(availYear, availMonth, i); if (d >= t && d.getDay() === 6) dates.add(formatDateKey(d)); } setSelectedDates(dates); setSelectedTimes([]); } },
-                    { label: 'Sundays',  fn: () => { const dates = new Set(); const t = new Date(); t.setHours(0,0,0,0); for (let i = 1; i <= getDaysInMonth(availYear, availMonth); i++) { const d = new Date(availYear, availMonth, i); if (d >= t && d.getDay() === 0) dates.add(formatDateKey(d)); } setSelectedDates(dates); setSelectedTimes([]); } },
-                    { label: 'Clear', fn: () => setSelectedDates(new Set()) },
-                  ].map(({ label, fn }) => (
-                    <button key={label} onClick={fn} style={{ padding: '4px 10px', borderRadius: '99px', border: '1px solid #2a2a2a', background: '#1a1a1a', color: '#d1d5db', fontSize: '.7rem', fontWeight: '700', cursor: 'pointer' }}>{label}</button>
-                  ))}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '4px' }}>
@@ -586,8 +596,7 @@ export default function AdminPage() {
                             if (isPast) return;
                             setSelectedDates(prev => {
                               const next = new Set(prev);
-                              if (next.has(key)) { next.delete(key); }
-                              else { next.add(key); if (next.size === 1) setSelectedTimes(availability.filter(s => s.date === key).map(s => s.time)); }
+                              if (next.has(key)) next.delete(key); else next.add(key);
                               return next;
                             });
                           }} style={{
@@ -609,7 +618,7 @@ export default function AdminPage() {
                   );
                 })()}
                 <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #1f1f1f', fontSize: '.75rem', color: selectedDates.size > 0 ? '#a855f7' : '#555', fontWeight: '700' }}>
-                  {selectedDates.size > 0 ? `${selectedDates.size} date${selectedDates.size !== 1 ? 's' : ''} selected` : 'Tap dates to select — tap again to deselect'}
+                  {selectedDates.size > 0 ? `${selectedDates.size} date${selectedDates.size !== 1 ? 's' : ''} selected` : 'Tap dates to select'}
                 </div>
               </div>
 
@@ -620,17 +629,17 @@ export default function AdminPage() {
                     {selectedDates.size === 0 ? 'Select dates on the left' : `Times for ${selectedDates.size} date${selectedDates.size !== 1 ? 's' : ''}`}
                   </div>
                   <div style={{ fontSize: '.73rem', color: selectedTimes.length > 0 ? '#a855f7' : '#555', marginTop: '3px' }}>
-                    {selectedTimes.length > 0 ? `${selectedTimes.length} time slot${selectedTimes.length !== 1 ? 's' : ''} selected` : 'No times selected yet'}
+                    {selectedTimes.length > 0 ? `${selectedTimes.length} slot${selectedTimes.length !== 1 ? 's' : ''} selected` : 'No times selected yet'}
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
                   {[
-                    { label: '🌅 Morning',   times: ALL_TIMES.slice(0, 12) },
-                    { label: '☀️ Afternoon', times: ALL_TIMES.slice(12, 22) },
-                    { label: '🌆 Evening',   times: ALL_TIMES.slice(22) },
-                    { label: '📅 All Day',   times: ALL_TIMES },
-                    { label: '✕ Clear',      times: [] },
+                    { label: 'Morning',   times: ALL_TIMES.slice(0, 12) },
+                    { label: 'Afternoon', times: ALL_TIMES.slice(12, 22) },
+                    { label: 'Evening',   times: ALL_TIMES.slice(22) },
+                    { label: 'All Day',   times: ALL_TIMES },
+                    { label: 'Clear',     times: [] },
                   ].map(({ label, times }) => (
                     <button key={label} onClick={() => setSelectedTimes(times)} style={{ padding: '7px 13px', borderRadius: '99px', border: '1px solid #2a2a2a', background: '#1a1a1a', color: '#d1d5db', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer' }}>{label}</button>
                   ))}
@@ -690,17 +699,13 @@ export default function AdminPage() {
                   border: 'none', borderRadius: '12px',
                   fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.92rem',
                   cursor: selectedDates.size > 0 && selectedTimes.length > 0 ? 'pointer' : 'not-allowed',
-                  opacity: saving ? .7 : 1, transition: 'all .15s',
+                  opacity: saving ? .7 : 1,
                 }}>
-                  {saving ? 'Saving…' :
-                    selectedDates.size === 0 ? 'Select dates first' :
-                    selectedTimes.length === 0 ? 'Select times first' :
-                    `Apply ${selectedTimes.length} slot${selectedTimes.length !== 1 ? 's' : ''} to ${selectedDates.size * (1 + repeatWeeks)} date${selectedDates.size * (1 + repeatWeeks) !== 1 ? 's' : ''}`}
+                  {saving ? 'Saving…' : selectedDates.size === 0 ? 'Select dates first' : selectedTimes.length === 0 ? 'Select times first' : `Apply ${selectedTimes.length} slot${selectedTimes.length !== 1 ? 's' : ''} to ${selectedDates.size * (1 + repeatWeeks)} date${selectedDates.size * (1 + repeatWeeks) !== 1 ? 's' : ''}`}
                 </button>
               </div>
             </div>
 
-            {/* Saved slots list */}
             {availability.length > 0 && (
               <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #1f1f1f', overflow: 'hidden', marginTop: '20px' }}>
                 <div style={{ padding: '14px 18px', borderBottom: '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -718,7 +723,7 @@ export default function AdminPage() {
                       <div key={date} style={{ background: '#0d0d0d', borderRadius: '12px', border: '1px solid #222', padding: '10px 14px', minWidth: '160px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '7px', gap: '8px' }}>
                           <div style={{ fontSize: '.72rem', fontWeight: '700', color: '#a855f7', textTransform: 'uppercase' }}>{date}</div>
-                          <button onClick={async () => { for (const s of slots) await deleteDoc(doc(db, 'availability', s.id)); }} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: '.9rem', padding: '0', lineHeight: 1 }} title="Remove date">×</button>
+                          <button onClick={async () => { for (const s of slots) await deleteDoc(doc(db, 'availability', s.id)); }} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: '.9rem', padding: '0', lineHeight: 1 }}>×</button>
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                           {slots.map(s => (
@@ -734,6 +739,72 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── PRICING TAB ── */}
+        {tab === 'pricing' && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white' }}>Live Pricing Editor</div>
+                <div style={{ fontSize: '.8rem', color: '#6b7280', marginTop: '3px' }}>Changes take effect instantly on the booking form — no code needed</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {priceSaved && <span style={{ fontSize: '.82rem', color: '#10b981', fontWeight: '700' }}>Saved!</span>}
+                <button onClick={savePricing} disabled={priceSaving} style={{ padding: '11px 24px', background: 'linear-gradient(135deg,#a855f7,#db2777)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer', opacity: priceSaving ? .6 : 1 }}>
+                  {priceSaving ? 'Saving...' : 'Save All Prices'}
+                </button>
+              </div>
+            </div>
+
+            <PriceCard title="Bathrooms" desc="Price per bathroom">
+              <PriceInput section="bathrooms" fieldKey="half"   label="Half Bath" />
+              <PriceInput section="bathrooms" fieldKey="small"  label="Small Full Bath" />
+              <PriceInput section="bathrooms" fieldKey="medium" label="Medium Full Bath" />
+              <PriceInput section="bathrooms" fieldKey="large"  label="Large/Master Bath" />
+            </PriceCard>
+
+            <PriceCard title="Bedrooms & Living Rooms" desc="Price per room">
+              <PriceInput section="rooms" fieldKey="bed_small"  label="Small Bedroom" />
+              <PriceInput section="rooms" fieldKey="bed_medium" label="Medium Bedroom" />
+              <PriceInput section="rooms" fieldKey="bed_large"  label="Large/Master Bed" />
+              <PriceInput section="rooms" fieldKey="liv_medium" label="Medium Living Rm" />
+              <PriceInput section="rooms" fieldKey="liv_large"  label="Large Living Rm" />
+              <PriceInput section="rooms" fieldKey="office"     label="Office/Study" />
+            </PriceCard>
+
+            <PriceCard title="Kitchen & Utility" desc="Price per room">
+              <PriceInput section="rooms" fieldKey="kit_small"  label="Small Kitchen" />
+              <PriceInput section="rooms" fieldKey="kit_medium" label="Medium Kitchen" />
+              <PriceInput section="rooms" fieldKey="kit_large"  label="Large Kitchen" />
+              <PriceInput section="rooms" fieldKey="laundry"    label="Laundry Room" />
+              <PriceInput section="rooms" fieldKey="basement"   label="Basement" />
+            </PriceCard>
+
+            <PriceCard title="Add-On Services" desc="Price per add-on">
+              <PriceInput section="extras" fieldKey="cabinets"  label="Inside Cabinets" />
+              <PriceInput section="extras" fieldKey="pantry"    label="Inside Pantry" />
+              <PriceInput section="extras" fieldKey="oven"      label="Inside Oven" />
+              <PriceInput section="extras" fieldKey="fridge"    label="Inside Fridge" />
+              <PriceInput section="extras" fieldKey="baseboard" label="Baseboard Clean" />
+              <PriceInput section="extras" fieldKey="windows"   label="Window Trim (each)" />
+            </PriceCard>
+
+            <PriceCard title="Discounts" desc="Percentage off subtotal">
+              <PriceInput section="discounts" fieldKey="firstTime" label="First-Time Client" unit="%" />
+              <PriceInput section="discounts" fieldKey="senior"    label="Senior Discount"   unit="%" />
+              <PriceInput section="discounts" fieldKey="biweekly"  label="Bi-Weekly Repeat"  unit="%" />
+              <PriceInput section="discounts" fieldKey="weekly"    label="Weekly Repeat"      unit="%" />
+              <PriceInput section="discounts" fieldKey="monthly"   label="2-3x/Month Repeat" unit="%" />
+            </PriceCard>
+
+            <div style={{ background: 'rgba(168,85,247,.06)', border: '1px solid rgba(168,85,247,.2)', borderRadius: '14px', padding: '14px 18px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>💡</span>
+              <div style={{ fontSize: '.82rem', color: '#9ca3af', lineHeight: 1.6 }}>
+                These prices update instantly on the customer booking form. Customers already on the page will use the new prices on their next calculation — no reload needed.
+              </div>
+            </div>
           </div>
         )}
 
@@ -764,6 +835,7 @@ export default function AdminPage() {
             )}
           </>
         )}
+
       </div>
 
       {/* ── DETAIL MODAL ── */}
@@ -781,15 +853,15 @@ export default function AdminPage() {
             </div>
 
             {[
-              ['Submitted', selected.submittedAt], ['Client', selected.name], ['Building Type', selected.buildingType || 'Not specified'], ['Phone', selected.phone],
+              ['Submitted', selected.submittedAt], ['Client', selected.name], ['Phone', selected.phone],
               ['Email', selected.email], ['Address', selected.address],
               ['Date', selected.date], ['Time', selected.time],
               ['Bathrooms', selected.bathrooms], ['Rooms', selected.rooms],
               ['Add-Ons', selected.addons], ['Pets', selected.pets === 'yes' ? 'Yes' : 'No'],
               ['Other Requests', selected.otherRequests || '-'],
               ['Frequency', selected.frequency],
-              ['First-Time?', selected.firstTime === 'yes' ? 'Yes (10% disc)' : 'No'],
-              ['Senior?', selected.senior === 'yes' ? 'Yes (10% disc)' : 'No'],
+              ['First-Time?', selected.firstTime === 'yes' ? 'Yes (disc applied)' : 'No'],
+              ['Senior?', selected.senior === 'yes' ? 'Yes (disc applied)' : 'No'],
               ['Home Access', selected.access], ['Referral', selected.referral || '-'],
             ].map(([k, v]) => (
               <div key={k} className="detail-row"><span className="dk">{k}</span><span className="dv">{v}</span></div>
@@ -806,7 +878,6 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* Reschedule section */}
             <div style={{ margin: '16px 0', background: '#1f1f1f', borderRadius: '12px', padding: '14px 16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: reschedMode ? '12px' : '0' }}>
                 <div style={{ fontWeight: '700', fontSize: '.82rem', color: '#d1d5db' }}>Reschedule</div>
@@ -840,7 +911,6 @@ export default function AdminPage() {
               )}
             </div>
 
-            {/* Admin Notes */}
             <div style={{ margin: '16px 0', background: '#1f1f1f', borderRadius: '12px', padding: '14px 16px' }}>
               <div style={{ fontWeight: '700', fontSize: '.82rem', color: '#d1d5db', marginBottom: '8px' }}>Admin Notes (private)</div>
               <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add private notes about this client or job…" rows={3}
@@ -854,7 +924,6 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Actions */}
             <div className="modal-actions" style={{ flexWrap: 'wrap', gap: '8px' }}>
               {selected.status === 'new' && (
                 <button className="act-btn act-confirm" onClick={() => confirmReq(selected)}>Confirm Appointment</button>
@@ -874,9 +943,7 @@ export default function AdminPage() {
 
             {selected.status === 'done' && (
               <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #2a2a2a' }}>
-                <button onClick={() => deleteRequest(selected)} style={{ width: '100%', padding: '11px', background: 'rgba(239,68,68,.1)', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.84rem', cursor: 'pointer' }}
-                  onMouseEnter={e => { e.target.style.background = 'rgba(239,68,68,.2)'; e.target.style.borderColor = '#ef4444'; }}
-                  onMouseLeave={e => { e.target.style.background = 'rgba(239,68,68,.1)'; e.target.style.borderColor = 'rgba(239,68,68,.3)'; }}>
+                <button onClick={() => deleteRequest(selected)} style={{ width: '100%', padding: '11px', background: 'rgba(239,68,68,.1)', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.84rem', cursor: 'pointer' }}>
                   Delete This Request
                 </button>
                 <div style={{ fontSize: '.72rem', color: '#6b7280', textAlign: 'center', marginTop: '6px' }}>Only available for completed requests. Cannot be undone.</div>
@@ -893,7 +960,7 @@ export default function AdminPage() {
             <div className="modal-head">
               <div>
                 <h3 style={{ color: 'white' }}>Client History</h3>
-                <div style={{ fontSize: '.78rem', color: '#9ca3af', marginTop: '2px' }}>{historyClient.name} - {historyClient.email}</div>
+                <div style={{ fontSize: '.78rem', color: '#9ca3af', marginTop: '2px' }}>{historyClient.name} — {historyClient.email}</div>
               </div>
               <button className="modal-close" onClick={() => setHistoryClient(null)}>X</button>
             </div>
@@ -922,7 +989,7 @@ export default function AdminPage() {
                       <div>
                         <div style={{ fontSize: '.82rem', color: '#9ca3af', marginBottom: '3px' }}>{r.submittedAt}</div>
                         <div style={{ fontWeight: '700', color: 'white', marginBottom: '3px' }}>{r.date} at {r.time}</div>
-                        <div style={{ fontSize: '.78rem', color: '#6b7280' }}>{r.rooms} - {r.bathrooms}</div>
+                        <div style={{ fontSize: '.78rem', color: '#6b7280' }}>{r.rooms} — {r.bathrooms}</div>
                         {r.adminNotes && <div style={{ fontSize: '.75rem', color: '#a855f7', marginTop: '4px' }}>Note: {r.adminNotes}</div>}
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
