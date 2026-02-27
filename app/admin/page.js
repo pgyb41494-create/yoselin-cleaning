@@ -247,8 +247,6 @@ export default function AdminPage() {
   const avg = requests.length ? Math.round(requests.reduce((s, r) => s + (r.estimate || 0), 0) / requests.length) : 0;
   const pipeline = requests.filter(r => r.status !== 'done').reduce((s, r) => s + (r.estimate || 0), 0);
 
-  const visibleDays = allDays.slice(weekStart, weekStart + 10);
-  const currentMonth = MONTH_NAMES[calDate.getMonth()] + ' ' + calDate.getFullYear();
   const datesWithSlots = new Set(availability.map(s => s.date));
 
   const clientHistory = historyClient
