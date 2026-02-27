@@ -156,6 +156,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       const hasRoom = Object.values(rooms).some(v => v > 0) || Object.values(baths).some(v => v > 0);
       if (!hasRoom) { alert('Please select at least one room or bathroom before continuing.'); return; }
     }
+    // Remap old step numbers: old steps 2+3 are now step 2, old step 4 is now step 3
     setStep(s);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -207,7 +208,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     if (onDone) onDone(docRef.id);
   };
 
-  const stepLabels = ['Contact', 'Rooms', 'Add-Ons', 'Frequency', 'Review'];
+  const stepLabels = ['Contact', 'Rooms', 'Preferences', 'Review'];
 
   const QCtrl = ({ val, onInc, onDec }) => (
     <div className="qctrl">
@@ -408,91 +409,27 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
           </div>
         )}
 
-        {/* ── STEP 2: ADD-ONS ── */}
+        {/* ── STEP 2: PREFERENCES (Add-Ons + Frequency merged) ── */}
         {step === 2 && (
           <div>
-            <div className="page-title">Add-On Services</div>
-            <div className="page-sub">Select any extras (all optional)</div>
-            <div className="wcard">
-              <div className="card-body">
-                <div className="extras-grid">
-                  {EXTRAS.map(e => (
-                    <div key={e.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <div
-                        className={'eitem ' + (extras[e.id] ? 'selected' : '')}
-                        onClick={() => setExtras(x => ({ ...x, [e.id]: !x[e.id] }))}
-                      >
-                        <input type="checkbox" readOnly checked={!!extras[e.id]}
-                          style={{ width: '17px', height: '17px', accentColor: 'var(--pink-deep)', flexShrink: 0, marginTop: '2px' }}
-                        />
-                        <div className="ename">{e.name}</div>
-                      </div>
-                      {e.hasQty && extras[e.id] && (
-                        <div style={{
-                          background: '#1a1a2e', border: '1.5px solid var(--blue)',
-                          borderRadius: '10px', padding: '10px 14px',
-                          display: 'flex', alignItems: 'center', gap: '10px',
-                        }}>
-                          <span style={{ fontSize: '.78rem', color: '#d1d5db', fontWeight: '700', flex: 1 }}>
-                            How many windows?
-                          </span>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <button type="button" className="qbtn"
-                              onClick={ev => { ev.stopPropagation(); setWindowQty(q => Math.max(1, q - 1)); }}>-</button>
-                            <span className="qdis">{windowQty}</span>
-                            <button type="button" className="qbtn"
-                              onClick={ev => { ev.stopPropagation(); setWindowQty(q => q + 1); }}>+</button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div className="divider"></div>
-                <div className="fg">
-                  <label>Any Pets?</label>
-                  <select value={form.pets} onChange={e => setF('pets', e.target.value)}>
-                    <option value="no">No</option>
-                    <option value="yes">Yes</option>
-                  </select>
-                </div>
-                <div className="fg">
-                  <label>Other Requests <span className="opt">(optional)</span></label>
-                  <input type="text" value={form.otherReqs} onChange={e => setF('otherReqs', e.target.value)} placeholder="e.g. Deep clean behind appliances..." />
-                </div>
-              </div>
-            </div>
-            <div className="nav-btns">
-              <button className="btn-back" onClick={() => goTo(1)}>Back</button>
-              <button className="btn-next" onClick={() => goTo(3)}>Next: Frequency</button>
-            </div>
-          </div>
-        )}
+            <div className="page-title">Preferences</div>
+            <div className="page-sub">Extras, frequency, and a few quick questions</div>
 
-        {/* ── STEP 3: FREQUENCY ── */}
-        {step === 3 && (
-          <div>
-            <div className="page-title">Cleaning Frequency</div>
-            <div className="page-sub">How often would you like us to clean?</div>
+            {/* Frequency */}
             <div className="wcard">
+              <div className="card-header">
+                <div className="card-icon">F</div>
+                <div><div className="card-title">How often?</div></div>
+              </div>
               <div className="card-body">
-                <label style={{ display: 'block', fontWeight: '700', fontSize: '.82rem', color: '#111827', marginBottom: '12px' }}>
-                  Frequency
-                </label>
-                {/* Frequency pills — no discount tags shown */}
-                <div className="fpills" style={{ marginBottom: '18px' }}>
+                <div className="fpills">
                   {FREQS.map(fq => (
-                    <div
-                      key={fq.val}
-                      className={'fpill ' + (freq === fq.val ? 'active' : '')}
-                      onClick={() => setFreq(fq.val)}
-                    >
+                    <div key={fq.val} className={'fpill ' + (freq === fq.val ? 'active' : '')} onClick={() => setFreq(fq.val)}>
                       {fq.label}
                     </div>
                   ))}
                 </div>
                 <div className="divider"></div>
-                {/* First-time / senior — simple Yes/No, no percentage labels */}
                 <div className="row2">
                   <div className="fg">
                     <label>First time with us?</label>
@@ -512,15 +449,60 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               </div>
             </div>
 
-            <div className="nav-btns" style={{ marginTop: '18px' }}>
-              <button className="btn-back" onClick={() => goTo(2)}>Back</button>
-              <button className="btn-next" onClick={() => goTo(4)}>Next: Review</button>
+            {/* Add-Ons */}
+            <div className="wcard">
+              <div className="card-header">
+                <div className="card-icon">+</div>
+                <div><div className="card-title">Add-On Services</div><div className="card-sub">All optional</div></div>
+              </div>
+              <div className="card-body">
+                <div className="extras-grid">
+                  {EXTRAS.map(e => (
+                    <div key={e.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div className={'eitem ' + (extras[e.id] ? 'selected' : '')} onClick={() => setExtras(x => ({ ...x, [e.id]: !x[e.id] }))}>
+                        <input type="checkbox" readOnly checked={!!extras[e.id]}
+                          style={{ width: '17px', height: '17px', accentColor: 'var(--pink-deep)', flexShrink: 0, marginTop: '2px' }} />
+                        <div className="ename">{e.name}</div>
+                      </div>
+                      {e.hasQty && extras[e.id] && (
+                        <div style={{ background: '#1a1a2e', border: '1.5px solid var(--blue)', borderRadius: '10px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{ fontSize: '.78rem', color: '#d1d5db', fontWeight: '700', flex: 1 }}>How many windows?</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <button type="button" className="qbtn" onClick={ev => { ev.stopPropagation(); setWindowQty(q => Math.max(1, q - 1)); }}>-</button>
+                            <span className="qdis">{windowQty}</span>
+                            <button type="button" className="qbtn" onClick={ev => { ev.stopPropagation(); setWindowQty(q => q + 1); }}>+</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="divider"></div>
+                <div className="row2">
+                  <div className="fg">
+                    <label>Any Pets?</label>
+                    <select value={form.pets} onChange={e => setF('pets', e.target.value)}>
+                      <option value="no">No</option>
+                      <option value="yes">Yes</option>
+                    </select>
+                  </div>
+                  <div className="fg">
+                    <label>Other Requests <span className="opt">(optional)</span></label>
+                    <input type="text" value={form.otherReqs} onChange={e => setF('otherReqs', e.target.value)} placeholder="e.g. Deep clean behind appliances..." />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="nav-btns">
+              <button className="btn-back" onClick={() => goTo(1)}>Back</button>
+              <button className="btn-next" onClick={() => goTo(3)}>Next: Review</button>
             </div>
           </div>
         )}
 
-        {/* ── STEP 4: REVIEW ── */}
-        {step === 4 && (
+        {/* ── STEP 3: REVIEW ── */}
+        {step === 3 && (
           <div>
             <div className="page-title">Review and Submit</div>
             <div className="page-sub">Add any notes and submit your request</div>
@@ -585,7 +567,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
             </div>
 
             <div className="nav-btns">
-              <button className="btn-back" onClick={() => goTo(3)}>Back</button>
+              <button className="btn-back" onClick={() => goTo(2)}>Back</button>
               <button className="btn-next" onClick={handleSubmit} disabled={submitting}>
                 {submitting ? 'Submitting...' : 'Submit Request  \u2014  $' + price.final}
               </button>

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -23,7 +23,7 @@ export default function BookPage() {
         docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
         const latest = docs[0];
         if (latest.status !== 'done') {
-          router.push('/portal');
+          router.push('/dashboard');
           return;
         }
       }
@@ -38,32 +38,32 @@ export default function BookPage() {
   if (submitted) return (
     <div className="sov show">
       <div className="sbox">
-        <div style={{fontSize:'2.8rem'}}>:)</div>
+        <div style={{ fontSize: '2.8rem' }}>✨</div>
         <h2>Request Sent!</h2>
-        <p>👏 <strong>The owner will contact you within 24 hours</strong> to confirm your appointment.</p>
+        <p>👏 <strong>Yoselin will contact you within 24 hours</strong> to confirm your appointment.</p>
         <br />
-        <p style={{fontSize:'.82rem',background:'#f3f4f6',borderRadius:'10px',padding:'12px'}}>
-          Track your request in your portal.
+        <p style={{ fontSize: '.82rem', background: '#f3f4f6', borderRadius: '10px', padding: '12px' }}>
+          Track your request and chat with Yoselin from your dashboard.
         </p>
-        <button className="sclose" onClick={() => router.push('/portal')}>Go to My Portal</button>
+        <button className="sclose" onClick={() => router.push('/dashboard')}>Go to My Dashboard</button>
       </div>
     </div>
   );
 
   return (
     <div>
-      <div className="sparkle-bar">\u2728\u2728\u2728</div>
+      <div className="sparkle-bar">✨✨✨</div>
       <div className="guest-header">
-        <div style={{position:'absolute',top:'15px',right:'16px',display:'flex',gap:'8px',alignItems:'center'}}>
+        <div style={{ position: 'absolute', top: '15px', right: '16px', display: 'flex', gap: '8px', alignItems: 'center' }}>
           {user?.photoURL && <img src={user.photoURL} className="nav-avatar" alt="" />}
           <button className="signout-btn" onClick={() => { signOut(auth); router.push('/'); }}>Sign Out</button>
         </div>
         <h1>Yoselin's<br /><span>Cleaning Service</span></h1>
         <p>Professional - Reliable - Sparkling Clean</p>
         <div className="header-badges">
-          <span className="hbadge pink">\u2705 Licensed and Insured</span>
-          <span className="hbadge blue">\u2B50 5-Star Rated</span>
-          <span className="hbadge">\uD83C\uDF81 Free Estimates</span>
+          <span className="hbadge pink">✅ Licensed and Insured</span>
+          <span className="hbadge blue">⭐ 5-Star Rated</span>
+          <span className="hbadge">🎁 Free Estimates</span>
         </div>
       </div>
       <BookingWizard user={user} onDone={() => setSubmitted(true)} />
