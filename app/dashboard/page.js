@@ -1,4 +1,4 @@
-﻿'use client';
+﻿﻿'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
@@ -190,7 +190,7 @@ export default function DashboardPage() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
+    <div style={{ minHeight: '100vh', background: '#131313' }}>
 
       {/* NAV */}
       <nav style={{ background: '#151515', borderBottom: '1px solid #1f1f1f', padding: '0 24px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -208,7 +208,7 @@ export default function DashboardPage() {
       </nav>
 
       {/* HERO */}
-      <div style={{ background: 'linear-gradient(135deg,#0d0d0d 0%,#1a1040 100%)', padding: '24px 24px 20px' }}>
+      <div style={{ background: 'linear-gradient(135deg,#151515 0%,#1a1040 100%)', padding: '24px 24px 20px' }}>
         <div style={{ maxWidth: '760px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
           <div>
             <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: '900', color: 'white', marginBottom: '4px' }}>
