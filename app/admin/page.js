@@ -1,4 +1,4 @@
-﻿﻿﻿'use client';
+﻿﻿﻿﻿'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -681,7 +681,7 @@ export default function AdminPage() {
                             <button key={t} onClick={() => setSelectedTimes(prev => prev.includes(t) ? prev.filter(x=>x!==t) : [...prev, t])} style={{
                               padding: '6px 11px', borderRadius: '8px',
                               border: on ? '2px solid #a855f7' : '1px solid #2a2a2a',
-                              background: on ? 'rgba(168,85,247,.22)' : '#0d0d0d',
+                              background: on ? 'rgba(168,85,247,.22)' : '#151515',
                               color: on ? '#d8b4fe' : '#6b7280',
                               fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.75rem',
                               cursor: 'pointer', transition: 'all .1s',
