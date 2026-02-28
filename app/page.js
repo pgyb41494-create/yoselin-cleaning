@@ -165,7 +165,8 @@ export default function HomePage() {
     setBusy(false);
   };
 
-  const reviews = liveReviews.length > 0 ? liveReviews : FALLBACK_REVIEWS;
+  // Always show fake reviews; real submitted reviews are prepended at the front
+  const reviews = [...liveReviews, ...FALLBACK_REVIEWS];
 
   if (loading) return <div className="spinner-page"><div className="spinner"></div></div>;
 
