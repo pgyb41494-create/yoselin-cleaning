@@ -862,115 +862,192 @@ export default function AdminPage() {
       </div>
 
       {/* ── DETAIL MODAL ── */}
-      {selected && (
-        <div className="overlay show" onClick={e => e.target === e.currentTarget && setSelected(null)}>
-          <div className="modal" style={{ background: '#181818', border: '1px solid #2a2a2a', maxWidth: '600px' }}>
-            <div className="modal-head">
-              <h3 style={{ color: 'white' }}>Request Details</h3>
-              <button className="modal-close" onClick={() => setSelected(null)}>X</button>
+      {selected && (() => {
+        const Row = ({ label, value, highlight }) => value ? (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', padding: '9px 0', borderBottom: '1px solid #222' }}>
+            <span style={{ fontSize: '.75rem', fontWeight: '600', color: '#6b7280', minWidth: '110px', flexShrink: 0 }}>{label}</span>
+            <span style={{ fontSize: '.82rem', fontWeight: highlight ? '700' : '500', color: highlight ? 'white' : '#d1d5db', textAlign: 'right' }}>{value}</span>
+          </div>
+        ) : null;
+
+        const Section = ({ title, icon, children }) => (
+          <div style={{ background: '#141414', borderRadius: '14px', border: '1px solid #252525', overflow: 'hidden', marginBottom: '10px' }}>
+            <div style={{ padding: '10px 16px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', gap: '7px' }}>
+              <span style={{ fontSize: '.85rem' }}>{icon}</span>
+              <span style={{ fontSize: '.72rem', fontWeight: '800', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.6px' }}>{title}</span>
             </div>
+            <div style={{ padding: '4px 16px 10px' }}>{children}</div>
+          </div>
+        );
 
-            <div className="price-box">
-              <div className="price-label">ESTIMATED TOTAL</div>
-              <div className="price-val">${selected.estimate}</div>
-            </div>
+        return (
+          <div className="overlay show" onClick={e => e.target === e.currentTarget && setSelected(null)}>
+            <div className="modal" style={{ background: '#181818', border: '1px solid #2a2a2a', maxWidth: '620px', padding: '0' }}>
 
-            {[
-              ['Submitted', selected.submittedAt], ['Client', selected.name], ['Phone', selected.phone],
-              ['Email', selected.email], ['Address', selected.address],
-              ['Date', selected.date], ['Time', selected.time],
-              ['Bathrooms', selected.bathrooms], ['Rooms', selected.rooms],
-              ['Add-Ons', selected.addons], ['Pets', selected.pets === 'yes' ? 'Yes' : 'No'],
-              ['Other Requests', selected.otherRequests || '-'],
-              ['Frequency', selected.frequency],
-              ['First-Time?', selected.firstTime === 'yes' ? 'Yes (disc applied)' : 'No'],
-              ['Senior?', selected.senior === 'yes' ? 'Yes (disc applied)' : 'No'],
-              ['Home Access', selected.access], ['Referral', selected.referral || '-'],
-            ].map(([k, v]) => (
-              <div key={k} className="detail-row"><span className="dk">{k}</span><span className="dv">{v}</span></div>
-            ))}
-
-            {selected.rescheduleRequested && (
-              <div style={{ margin: '0 0 12px', background: 'rgba(245,158,11,.1)', border: '1.5px solid rgba(245,158,11,.3)', borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '1.3rem' }}>!</span>
+              {/* Header */}
+              <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                 <div>
-                  <div style={{ fontWeight: '700', color: '#f59e0b', fontSize: '.85rem' }}>Client Requested a Reschedule</div>
-                  {selected.reschedulePreferredDates && <div style={{ fontSize: '.78rem', color: '#d1d5db', marginTop: '2px' }}>Preferred: {selected.reschedulePreferredDates}</div>}
-                  {selected.rescheduleReason && <div style={{ fontSize: '.75rem', color: '#9ca3af', marginTop: '1px' }}>Reason: {selected.rescheduleReason}</div>}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <h3 style={{ color: 'white', fontFamily: 'Playfair Display, serif', fontSize: '1.15rem', fontWeight: '700', margin: 0 }}>{selected.name}</h3>
+                    <span className={'badge badge-' + selected.status}>{selected.status === 'new' ? 'New' : selected.status === 'confirmed' ? 'Confirmed' : 'Done'}</span>
+                    {selected.walkThrough === 'yes' && <span style={{ fontSize: '.65rem', fontWeight: '800', color: '#f59e0b', background: 'rgba(245,158,11,.15)', border: '1px solid rgba(245,158,11,.35)', padding: '2px 8px', borderRadius: '99px' }}>🚶 WALK-THROUGH</span>}
+                  </div>
+                  <div style={{ fontSize: '.78rem', color: '#6b7280', marginTop: '4px' }}>{selected.submittedAt} · #{selected.id.slice(-6).toUpperCase()}</div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '2rem', fontWeight: '900', color: '#60a5fa', lineHeight: 1 }}>${selected.estimate}</div>
+                  <div style={{ fontSize: '.68rem', color: '#6b7280', marginTop: '2px' }}>estimate</div>
                 </div>
               </div>
-            )}
 
-            <div style={{ margin: '16px 0', background: '#1f1f1f', borderRadius: '12px', padding: '14px 16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: reschedMode ? '12px' : '0' }}>
-                <div style={{ fontWeight: '700', fontSize: '.82rem', color: '#d1d5db' }}>Reschedule</div>
-                <button onClick={() => setReschedMode(m => !m)} style={{ background: reschedMode ? '#2a2a2a' : 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer' }}>
-                  {reschedMode ? 'Cancel' : 'Change Date / Time'}
-                </button>
-              </div>
-              {reschedMode && (
-                <div>
-                  <div style={{ fontSize: '.75rem', color: '#9ca3af', marginBottom: '10px' }}>Current: {selected.date} at {selected.time}</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+              {/* Scrollable body */}
+              <div style={{ padding: '14px 16px', overflowY: 'auto', maxHeight: '70vh', display: 'flex', flexDirection: 'column', gap: '0' }}>
+
+                {/* Walk-through banner */}
+                {selected.walkThrough === 'yes' && (
+                  <div style={{ background: 'rgba(245,158,11,.08)', border: '1.5px solid rgba(245,158,11,.35)', borderRadius: '12px', padding: '12px 16px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '1.4rem' }}>🚶</span>
                     <div>
-                      <label style={{ display: 'block', fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>New Date</label>
-                      <input value={reschedDate} onChange={e => setReschedDate(e.target.value)} placeholder="e.g. March 5, 2026"
-                        style={{ width: '100%', padding: '9px 12px', background: '#141414', border: '1.5px solid #333', borderRadius: '9px', color: 'white', fontSize: '.83rem', outline: 'none' }} />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>New Time</label>
-                      <select value={reschedTime} onChange={e => setReschedTime(e.target.value)}
-                        style={{ width: '100%', padding: '9px 12px', background: '#141414', border: '1.5px solid #333', borderRadius: '9px', color: 'white', fontSize: '.83rem', outline: 'none' }}>
-                        <option value="">Select time</option>
-                        {ALL_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
+                      <div style={{ fontWeight: '800', color: '#f59e0b', fontSize: '.85rem' }}>Walk-Through Requested</div>
+                      <div style={{ fontSize: '.76rem', color: '#d1d5db', marginTop: '2px' }}>Client wants you to visit first to assess the job before booking.</div>
                     </div>
                   </div>
-                  <button onClick={saveReschedule} disabled={reschedSaving || !reschedDate.trim()}
-                    style={{ padding: '10px 22px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '.83rem', cursor: 'pointer', opacity: reschedSaving ? .6 : 1 }}>
-                    {reschedSaving ? 'Saving…' : 'Save New Date'}
+                )}
+
+                {/* Reschedule request banner */}
+                {selected.rescheduleRequested && (
+                  <div style={{ background: 'rgba(239,68,68,.08)', border: '1.5px solid rgba(239,68,68,.3)', borderRadius: '12px', padding: '12px 16px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '1.4rem' }}>📅</span>
+                    <div>
+                      <div style={{ fontWeight: '800', color: '#ef4444', fontSize: '.85rem' }}>Client Requested a Reschedule</div>
+                      {selected.reschedulePreferredDates && <div style={{ fontSize: '.76rem', color: '#d1d5db', marginTop: '2px' }}>Preferred: {selected.reschedulePreferredDates}</div>}
+                      {selected.rescheduleReason && <div style={{ fontSize: '.73rem', color: '#9ca3af', marginTop: '1px' }}>Reason: {selected.rescheduleReason}</div>}
+                    </div>
+                  </div>
+                )}
+
+                {/* Contact */}
+                <Section title="Contact" icon="👤">
+                  <Row label="Phone"   value={selected.phone} highlight />
+                  <Row label="Email"   value={selected.email} />
+                  <Row label="Address" value={selected.address} />
+                  <Row label="Referral" value={selected.referral} />
+                </Section>
+
+                {/* Appointment */}
+                <Section title="Appointment" icon="📅">
+                  <Row label="Date"      value={selected.date} highlight />
+                  <Row label="Time"      value={selected.time} highlight />
+                  <Row label="Frequency" value={selected.frequency} />
+                  <Row label="Access"    value={selected.access} />
+                </Section>
+
+                {/* Job Details */}
+                <Section title="Job Details" icon="🏠">
+                  <Row label="Bathrooms" value={selected.bathrooms} />
+                  <Row label="Rooms"     value={selected.rooms} />
+                  <Row label="Add-Ons"   value={selected.addons || 'None'} />
+                  <Row label="Pets"      value={selected.pets === 'yes' ? '🐾 Yes' : 'No'} />
+                  <Row label="Walk-Through" value={selected.walkThrough === 'yes' ? '✅ Yes — visit requested' : 'No'} highlight={selected.walkThrough === 'yes'} />
+                  {selected.otherRequests && <Row label="Special Requests" value={selected.otherRequests} />}
+                </Section>
+
+                {/* Discounts */}
+                <Section title="Discounts" icon="💰">
+                  <Row label="First-Time"  value={selected.firstTime === 'yes' ? '✅ Applied' : 'No'} highlight={selected.firstTime === 'yes'} />
+                  <Row label="Senior"      value={selected.senior === 'yes' ? '✅ Applied' : 'No'}     highlight={selected.senior === 'yes'} />
+                </Section>
+
+                {/* Reschedule tool */}
+                <div style={{ background: '#141414', borderRadius: '14px', border: '1px solid #252525', overflow: 'hidden', marginBottom: '10px' }}>
+                  <div style={{ padding: '10px 16px', borderBottom: reschedMode ? '1px solid #222' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                      <span style={{ fontSize: '.85rem' }}>🗓</span>
+                      <span style={{ fontSize: '.72rem', fontWeight: '800', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.6px' }}>Reschedule</span>
+                    </div>
+                    <button onClick={() => setReschedMode(m => !m)} style={{ background: reschedMode ? '#2a2a2a' : 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '8px', padding: '5px 13px', fontSize: '.73rem', fontWeight: '700', cursor: 'pointer' }}>
+                      {reschedMode ? 'Cancel' : 'Change Date / Time'}
+                    </button>
+                  </div>
+                  {reschedMode && (
+                    <div style={{ padding: '12px 16px' }}>
+                      <div style={{ fontSize: '.74rem', color: '#6b7280', marginBottom: '10px' }}>Current: {selected.date} at {selected.time}</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '.73rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>New Date</label>
+                          <input value={reschedDate} onChange={e => setReschedDate(e.target.value)} placeholder="e.g. March 5, 2026"
+                            style={{ width: '100%', padding: '8px 11px', background: '#1a1a1a', border: '1.5px solid #333', borderRadius: '9px', color: 'white', fontSize: '.82rem', outline: 'none' }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '.73rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>New Time</label>
+                          <select value={reschedTime} onChange={e => setReschedTime(e.target.value)}
+                            style={{ width: '100%', padding: '8px 11px', background: '#1a1a1a', border: '1.5px solid #333', borderRadius: '9px', color: 'white', fontSize: '.82rem', outline: 'none' }}>
+                            <option value="">Select time</option>
+                            {ALL_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <button onClick={saveReschedule} disabled={reschedSaving || !reschedDate.trim()}
+                        style={{ padding: '9px 20px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '9px', fontWeight: '700', fontSize: '.82rem', cursor: 'pointer', opacity: reschedSaving ? .6 : 1 }}>
+                        {reschedSaving ? 'Saving…' : 'Save New Date'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Admin Notes */}
+                <div style={{ background: '#141414', borderRadius: '14px', border: '1px solid #252525', overflow: 'hidden', marginBottom: '10px' }}>
+                  <div style={{ padding: '10px 16px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', gap: '7px' }}>
+                    <span style={{ fontSize: '.85rem' }}>📝</span>
+                    <span style={{ fontSize: '.72rem', fontWeight: '800', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.6px' }}>Admin Notes (private)</span>
+                  </div>
+                  <div style={{ padding: '12px 16px' }}>
+                    <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add private notes about this client or job…" rows={3}
+                      style={{ width: '100%', padding: '10px 12px', background: '#1a1a1a', border: '1.5px solid #2a2a2a', borderRadius: '9px', color: 'white', fontSize: '.83rem', fontFamily: "'DM Sans',sans-serif", outline: 'none', resize: 'vertical' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
+                      <button onClick={saveNote} disabled={noteSaving}
+                        style={{ padding: '8px 20px', background: '#a855f7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '.8rem', cursor: 'pointer', opacity: noteSaving ? .6 : 1 }}>
+                        {noteSaving ? 'Saving…' : 'Save Note'}
+                      </button>
+                      {noteSaved && <span style={{ fontSize: '.78rem', color: '#10b981', fontWeight: '700' }}>✅ Saved!</span>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                  {selected.status === 'new'       && <button className="act-btn act-confirm" onClick={() => confirmReq(selected)} style={{ flex: 1, minWidth: '140px' }}>✅ Confirm Appointment</button>}
+                  {selected.status === 'confirmed' && <button className="act-btn act-done"    onClick={() => markDone(selected)}   style={{ flex: 1, minWidth: '140px' }}>✔ Mark Done</button>}
+                  <button className="act-btn act-chat" onClick={() => { setChatReq(selected); setSelected(null); }} style={{ flex: 1, minWidth: '110px' }}>💬 Chat</button>
+                  <a href={'mailto:' + selected.email + '?subject=Your Cleaning Appointment Reminder&body=Hi ' + (selected.name ? selected.name.split(' ')[0] : '') + '%2C%0A%0AThis is a friendly reminder that your cleaning appointment is scheduled for ' + encodeURIComponent(selected.date) + ' at ' + encodeURIComponent(selected.time) + '.%0A%0AAddress%3A ' + encodeURIComponent(selected.address) + '%0A%0APlease reach out if you have any questions!%0A%0A- Yoselin%27s Cleaning Service'}
+                    style={{ flex: 1, minWidth: '110px', padding: '11px', borderRadius: '12px', fontSize: '.82rem', fontWeight: '700', cursor: 'pointer', border: 'none', background: '#1e3a5f', color: '#60a5fa', textAlign: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    📧 Reminder
+                  </a>
+                  <button onClick={() => { setHistoryClient(selected); setSelected(null); }} style={{ flex: 1, minWidth: '110px', padding: '11px', borderRadius: '12px', fontSize: '.82rem', fontWeight: '700', cursor: 'pointer', border: '1px solid #2a2a2a', background: '#1a1a1a', color: '#d1d5db' }}>
+                    🕓 History
                   </button>
                 </div>
-              )}
-            </div>
 
-            <div style={{ margin: '16px 0', background: '#1f1f1f', borderRadius: '12px', padding: '14px 16px' }}>
-              <div style={{ fontWeight: '700', fontSize: '.82rem', color: '#d1d5db', marginBottom: '8px' }}>Admin Notes (private)</div>
-              <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add private notes about this client or job…" rows={3}
-                style={{ width: '100%', padding: '10px 12px', background: '#141414', border: '1.5px solid #333', borderRadius: '9px', color: 'white', fontSize: '.83rem', fontFamily: "'DM Sans',sans-serif", outline: 'none', resize: 'vertical' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
-                <button onClick={saveNote} disabled={noteSaving}
-                  style={{ padding: '8px 20px', background: '#a855f7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '.8rem', cursor: 'pointer', opacity: noteSaving ? .6 : 1 }}>
-                  {noteSaving ? 'Saving…' : 'Save Note'}
-                </button>
-                {noteSaved && <span style={{ fontSize: '.78rem', color: '#10b981', fontWeight: '700' }}>Saved!</span>}
+                {selected.status === 'done' && (
+                  <div style={{ paddingTop: '8px', borderTop: '1px solid #2a2a2a' }}>
+                    <button onClick={() => deleteRequest(selected)} style={{ width: '100%', padding: '11px', background: 'rgba(239,68,68,.1)', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '12px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.84rem', cursor: 'pointer' }}>
+                      🗑 Delete This Request
+                    </button>
+                    <div style={{ fontSize: '.72rem', color: '#6b7280', textAlign: 'center', marginTop: '6px' }}>Only available for completed requests. Cannot be undone.</div>
+                  </div>
+                )}
+
+              </div>{/* end scrollable body */}
+
+              {/* Close button footer */}
+              <div style={{ padding: '12px 16px', borderTop: '1px solid #222', display: 'flex', justifyContent: 'flex-end' }}>
+                <button onClick={() => setSelected(null)} style={{ padding: '8px 22px', background: '#2a2a2a', border: 'none', borderRadius: '9px', color: '#9ca3af', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.82rem', cursor: 'pointer' }}>Close</button>
               </div>
-            </div>
 
-            <div className="modal-actions" style={{ flexWrap: 'wrap', gap: '8px' }}>
-              {selected.status === 'new'       && <button className="act-btn act-confirm" onClick={() => confirmReq(selected)}>Confirm Appointment</button>}
-              {selected.status === 'confirmed' && <button className="act-btn act-done"    onClick={() => markDone(selected)}>Mark Done</button>}
-              <button className="act-btn act-chat" onClick={() => { setChatReq(selected); setSelected(null); }}>Chat with Client</button>
-              <a href={'mailto:' + selected.email + '?subject=Your Cleaning Appointment Reminder&body=Hi ' + (selected.name ? selected.name.split(' ')[0] : '') + '%2C%0A%0AThis is a friendly reminder that your cleaning appointment is scheduled for ' + encodeURIComponent(selected.date) + ' at ' + encodeURIComponent(selected.time) + '.%0A%0AAddress%3A ' + encodeURIComponent(selected.address) + '%0A%0APlease reach out if you have any questions!%0A%0A- Yoselin%27s Cleaning Service'}
-                style={{ flex: 1, padding: '11px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '700', cursor: 'pointer', border: 'none', background: '#1e3a5f', color: '#60a5fa', textAlign: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '120px' }}>
-                Send Reminder Email
-              </a>
-              <button onClick={() => { setHistoryClient(selected); setSelected(null); }} style={{ flex: 1, padding: '11px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '700', cursor: 'pointer', border: 'none', background: '#1a1a1a', color: '#d1d5db', minWidth: '120px' }}>
-                Client History
-              </button>
             </div>
-
-            {selected.status === 'done' && (
-              <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #2a2a2a' }}>
-                <button onClick={() => deleteRequest(selected)} style={{ width: '100%', padding: '11px', background: 'rgba(239,68,68,.1)', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '12px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.84rem', cursor: 'pointer' }}>
-                  Delete This Request
-                </button>
-                <div style={{ fontSize: '.72rem', color: '#6b7280', textAlign: 'center', marginTop: '6px' }}>Only available for completed requests. Cannot be undone.</div>
-              </div>
-            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── CLIENT HISTORY MODAL ── */}
       {historyClient && (
