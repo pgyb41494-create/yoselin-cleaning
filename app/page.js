@@ -7,7 +7,7 @@ import {
   updateProfile, sendPasswordResetEmail, sendEmailVerification,
 } from 'firebase/auth';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { auth, db, ADMIN_EMAIL } from '../lib/firebase';
+import { auth, db, ADMIN_EMAIL, ADMIN_EMAILS } from '../lib/firebase';
 
 const FALLBACK_REVIEWS = [
   { name: 'Maria G.',      stars: 5, text: 'Yoselin did an amazing job! My house has never looked this clean. She even organized my pantry without me asking. Absolutely love this service!', date: 'Jan 2025' },
@@ -80,7 +80,7 @@ export default function HomePage() {
       const unsub = onAuthStateChanged(auth, (user) => {
         clearTimeout(timeout);
         if (user) {
-          if (user.email === ADMIN_EMAIL) { router.push('/admin'); }
+          if (ADMIN_EMAILS.includes(user.email?.toLowerCase()) || ADMIN_EMAILS.includes(user.email)) { router.push('/admin'); }
           else if (user.emailVerified)    { router.push('/dashboard'); }
           else { setLoading(false); setAuthMode('verify'); }
         } else {
@@ -93,7 +93,7 @@ export default function HomePage() {
   }, [router]);
 
   const redirect = (user) => {
-    if (user.email === ADMIN_EMAIL) router.push('/admin');
+    if (ADMIN_EMAILS.includes(user.email?.toLowerCase()) || ADMIN_EMAILS.includes(user.email)) router.push('/admin');
     else if (!user.emailVerified)   { setAuthMode('verify'); setBusy(false); }
     else router.push('/dashboard');
   };

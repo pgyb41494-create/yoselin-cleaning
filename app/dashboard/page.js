@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { collection, query, where, onSnapshot, addDoc, getDocs, serverTimestamp, doc, updateDoc, setDoc } from 'firebase/firestore';
-import { auth, db, ADMIN_EMAIL } from '../../lib/firebase';
+import { auth, db, ADMIN_EMAILS } from '../../lib/firebase';
 import Chat from '../../components/Chat';
 import { useUnreadCount } from '../../lib/useUnreadCount';
 
@@ -79,7 +79,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (u) => {
       if (!u) { router.push('/'); return; }
-      if (u.email === ADMIN_EMAIL) { router.push('/admin'); return; }
+      if (ADMIN_EMAILS.includes(u.email?.toLowerCase()) || ADMIN_EMAILS.includes(u.email)) { router.push('/admin'); return; }
       setUser(u);
       setSettingsName(u.displayName || '');
       const q = query(collection(db, 'requests'), where('userId', '==', u.uid));
