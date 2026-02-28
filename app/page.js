@@ -30,6 +30,20 @@ const FALLBACK_REVIEWS = [
   { name: 'Amanda S.',     stars: 5, text: 'The baseboards, the blinds, the light switches — she cleaned things I always forget about. My whole house felt fresh and new. Incredible attention to detail.', date: 'Aug 2025' },
   { name: 'Tony R.',       stars: 5, text: 'My wife and I were both shocked at how clean our home was after the deep clean. We looked at each other and said we should have done this years ago.', date: 'Sep 2025' },
   { name: 'Jennifer M.',   stars: 5, text: 'From booking to payment everything was smooth and easy. Yoselin is prompt, professional, and genuinely passionate about what she does. Highly recommend!', date: 'Sep 2025' },
+  { name: 'Linda C.',      stars: 5, text: 'I have a large home and was worried it would take forever but she powered through every room efficiently without cutting any corners. Truly impressive work.', date: 'Oct 2025' },
+  { name: 'Raymond T.',    stars: 5, text: 'She cleaned areas my previous cleaner always missed like under the couch cushions, ceiling fans, and inside the microwave. Now this is what thorough looks like.', date: 'Oct 2025' },
+  { name: 'Nicole A.',     stars: 5, text: 'Yoselin does not just clean, she transforms your space. I walked back in after she left and actually gasped. My home has never smelled or looked this good.', date: 'Oct 2025' },
+  { name: 'Brandon E.',    stars: 5, text: 'I hired her for a one-time deep clean but immediately signed up for monthly service after seeing the results. That says it all. Do yourself a favor and book.', date: 'Nov 2025' },
+  { name: 'Melissa O.',    stars: 5, text: 'With three kids and two pets my house gets messy fast. She tackled everything without even flinching. I felt like I could breathe again when she was done.', date: 'Nov 2025' },
+  { name: 'Harold G.',     stars: 5, text: 'As someone who is 74 and cannot clean like I used to, finding Yoselin has been a true blessing. She is respectful, careful with my belongings, and does incredible work.', date: 'Nov 2025' },
+  { name: 'Stephanie N.',  stars: 5, text: 'I specifically requested the fridge and oven add-ons and she spent real time on them. They looked store-bought clean. I could not believe my eyes honestly.', date: 'Dec 2025' },
+  { name: 'Victor R.',     stars: 5, text: 'I own a few rental properties and use Yoselin between tenants. She gets the units guest-ready every single time. My new tenants always comment on how clean everything is.', date: 'Dec 2025' },
+  { name: 'Diana F.',      stars: 5, text: 'The walk-through option she offers was so helpful. She came to see the space first and gave me an exact price with zero surprises. Super professional approach.', date: 'Dec 2025' },
+  { name: 'Chris W.',      stars: 5, text: 'I work from home and was worried about having someone in my space but Yoselin was quiet, efficient, and respectful of my work setup. Perfect experience.', date: 'Jan 2026' },
+  { name: 'Evelyn S.',     stars: 5, text: 'She noticed a water stain I had been stressing about for months and told me exactly what it was. So knowledgeable and went the extra mile to clean around it carefully.', date: 'Jan 2026' },
+  { name: 'Michael H.',    stars: 5, text: 'We used her before our house went on the market and our realtor was blown away. The listing photos looked incredible partly because the house was just that clean.', date: 'Jan 2026' },
+  { name: 'Vanessa P.',    stars: 5, text: 'My apartment is small but she treated it with the same care and attention as a big home. Every inch was cleaned. Great value and wonderful person to work with.', date: 'Feb 2026' },
+  { name: 'Gary L.',       stars: 5, text: 'I booked her as a gift for my mom and she called me right after to say it was the best gift I had ever given her. That honestly made my whole week.', date: 'Feb 2026' },
 ];
 
 export default function HomePage() {
