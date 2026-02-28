@@ -341,17 +341,63 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               </div>
             </div>
 
-            {/* Walk-through toggle on step 0 */}
+            {/* Walk-through — prominent banner card */}
             <div
-              className={'wt-toggle ' + (walkthrough ? 'active' : '')}
               onClick={() => setWalkthrough(w => !w)}
-              style={{ marginTop: '12px' }}
+              style={{
+                marginTop: '16px',
+                borderRadius: '16px',
+                border: walkthrough ? '2px solid #1a6fd4' : '2px dashed #3a3a3a',
+                background: walkthrough
+                  ? 'linear-gradient(135deg, rgba(26,111,212,.15), rgba(219,39,119,.08))'
+                  : '#141414',
+                padding: '20px 22px',
+                cursor: 'pointer',
+                transition: 'all .2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '18px',
+              }}
             >
-              <div className="wt-info">
-                <div className="wt-title">Request a Walk-Through</div>
-                <div className="wt-desc">We will visit before cleaning to give you an exact quote</div>
+              <div style={{
+                width: '52px', height: '52px', borderRadius: '14px', flexShrink: 0,
+                background: walkthrough ? 'linear-gradient(135deg,#1a6fd4,#db2777)' : '#222',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1.6rem', transition: 'all .2s',
+              }}>
+                🏠
               </div>
-              <div className="wt-check">{walkthrough ? '✓' : ''}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  fontWeight: '800', fontSize: '.98rem',
+                  color: walkthrough ? 'white' : '#9ca3af',
+                  marginBottom: '4px', transition: 'color .2s',
+                }}>
+                  Request a Free Walk-Through
+                </div>
+                <div style={{ fontSize: '.8rem', color: walkthrough ? '#a5c8ff' : '#555', lineHeight: 1.5, transition: 'color .2s' }}>
+                  We’ll visit your space first to give you an exact price — no surprises.
+                </div>
+                {walkthrough && (
+                  <div style={{
+                    marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '5px',
+                    background: 'rgba(16,185,129,.15)', border: '1px solid rgba(16,185,129,.3)',
+                    borderRadius: '99px', padding: '3px 10px',
+                    fontSize: '.74rem', fontWeight: '700', color: '#10b981',
+                  }}>
+                    ✅ Walk-through requested
+                  </div>
+                )}
+              </div>
+              <div style={{
+                width: '28px', height: '28px', borderRadius: '8px', flexShrink: 0,
+                border: walkthrough ? '2px solid #1a6fd4' : '2px solid #3a3a3a',
+                background: walkthrough ? '#1a6fd4' : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '.9rem', color: 'white', fontWeight: '900', transition: 'all .2s',
+              }}>
+                {walkthrough ? '✓' : ''}
+              </div>
             </div>
 
             <div className="nav-btns">
@@ -444,23 +490,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                     </div>
                   ))}
                 </div>
-                <div className="divider"></div>
-                <div className="row2">
-                  <div className="fg">
-                    <label>First time with us?</label>
-                    <select value={firstTime} onChange={e => setFirstTime(e.target.value)}>
-                      <option value="no">No</option>
-                      <option value="yes">Yes</option>
-                    </select>
-                  </div>
-                  <div className="fg">
-                    <label>Senior discount?</label>
-                    <select value={senior} onChange={e => setSenior(e.target.value)}>
-                      <option value="no">No</option>
-                      <option value="yes">Yes</option>
-                    </select>
-                  </div>
-                </div>
+
               </div>
             </div>
 
@@ -554,6 +584,43 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                     </select>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Discounts */}
+            <div className="wcard">
+              <div className="card-header" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,.18), rgba(26,111,212,.1))' }}>
+                <div className="card-icon" style={{ fontSize: '1.2rem' }}>🏷️</div>
+                <div>
+                  <div className="card-title">Discounts</div>
+                  <div className="card-sub">Any applicable discounts will be applied to your estimate</div>
+                </div>
+              </div>
+              <div className="card-body">
+                <div className="row2">
+                  <div className="fg">
+                    <label>First time with us?</label>
+                    <select value={firstTime} onChange={e => setFirstTime(e.target.value)}>
+                      <option value="no">No, returning client</option>
+                      <option value="yes">Yes — 10% first-time discount</option>
+                    </select>
+                  </div>
+                  <div className="fg">
+                    <label>Senior discount?</label>
+                    <select value={senior} onChange={e => setSenior(e.target.value)}>
+                      <option value="no">No</option>
+                      <option value="yes">Yes — 10% senior discount</option>
+                    </select>
+                  </div>
+                </div>
+                {(firstTime === 'yes' || senior === 'yes') && (
+                  <div style={{ marginTop: '10px', background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.25)', borderRadius: '10px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '1.1rem' }}>✅</span>
+                    <span style={{ fontSize: '.82rem', fontWeight: '700', color: '#10b981' }}>
+                      Discount applied — your estimate already reflects the savings!
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
