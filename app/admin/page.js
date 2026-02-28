@@ -53,28 +53,33 @@ export default function AdminPage() {
   const pipeline = requests.reduce((s, r) => s + (r.estimate || 0), 0);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f1f4f9' }}>
-      <nav className="nav">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div className="nav-brand">Yoselin's <span>Cleaning</span></div>
-          <span className="nav-badge">ADMIN</span>
+    <div className="ad-root">
+      {/* Nav */}
+      <div className="ad-nav">
+        <div className="ad-nav-left">
+          <div className="ad-nav-brand">Yoselin's <span style={{color:'var(--pink)'}}>Cleaning</span></div>
+          <span className="ad-badge">ADMIN</span>
         </div>
         <div className="nav-user">
-          {user?.photoURL && <img src={user.photoURL} className="nav-avatar" alt="" />}
+          {user?.photoURL
+            ? <img src={user.photoURL} className="nav-avatar" alt="" />
+            : <div className="cd-avatar-initials">{user?.email?.[0]?.toUpperCase()}</div>
+          }
           <span className="nav-email">{user?.email}</span>
           <button className="signout-btn" onClick={() => { signOut(auth); router.push('/'); }}>Sign Out</button>
         </div>
-      </nav>
+      </div>
 
-      <div className="admin-body">
-        <div className="stats-grid">
-          <div className="stat-card"><div className="stat-label">TOTAL REQUESTS</div><div className="stat-val">{requests.length}</div></div>
-          <div className="stat-card"><div className="stat-label">NEW</div><div className="stat-val">{newCount}</div><div className="stat-sub">Awaiting response</div></div>
-          <div className="stat-card"><div className="stat-label">AVG ESTIMATE</div><div className="stat-val">${avg}</div></div>
-          <div className="stat-card"><div className="stat-label">PIPELINE</div><div className="stat-val">${pipeline}</div></div>
-        </div>
+      {/* Stats bar */}
+      <div className="ad-stats">
+        <div className="ad-stat"><div className="ad-stat-val ad-stat-blue">{requests.length}</div><div className="ad-stat-label">Total Requests</div></div>
+        <div className="ad-stat"><div className="ad-stat-val ad-stat-yellow">{newCount}</div><div className="ad-stat-label">New</div></div>
+        <div className="ad-stat"><div className="ad-stat-val ad-stat-green">${avg}</div><div className="ad-stat-label">Avg Estimate</div></div>
+        <div className="ad-stat"><div className="ad-stat-val ad-stat-pink">${pipeline}</div><div className="ad-stat-label">Pipeline</div></div>
+      </div>
 
-        <div className="section-head">📋 All Requests</div>
+      {/* Table */}
+      <div className="ad-body">
         <div className="table-wrap">
           {requests.length === 0 ? (
             <div className="empty-state"><div style={{ fontSize: '2.4rem', marginBottom: '10px' }}>📭</div>No requests yet.</div>
@@ -88,7 +93,7 @@ export default function AdminPage() {
                     <td><strong>{r.name}</strong></td>
                     <td>{r.email}</td>
                     <td>{r.date}</td>
-                    <td><strong style={{ color: 'var(--blue)' }}>${r.estimate}</strong></td>
+                    <td><strong style={{ color: 'var(--blue-light)' }}>${r.estimate}</strong></td>
                     <td>
                       <span className={`badge badge-${r.status}`}>
                         {r.status === 'new' ? '🆕 New' : r.status === 'confirmed' ? '✅ Confirmed' : '🏁 Done'}
