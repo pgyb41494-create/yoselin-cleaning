@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 const BPRICES = { half: 15, small: 50, medium: 65, large: 80 };
@@ -76,10 +76,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   });
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'settings', 'pricing'), snap => {
+    getDoc(doc(db, 'settings', 'pricing')).then(snap => {
       if (snap.exists()) setLivePrices(snap.data());
-    });
-    return () => unsub();
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
