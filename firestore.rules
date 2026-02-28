@@ -5,31 +5,51 @@ service cloud.firestore {
     // Users can read/write their own user document
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
-      // Admin can read all users
       allow read: if request.auth != null && request.auth.token.email == 'pgyb41494@gmail.com';
     }
 
     // Requests
     match /requests/{reqId} {
-      // Customers can create and read their own requests
       allow create: if request.auth != null;
       allow read, update: if request.auth != null && (
         resource.data.uid == request.auth.uid ||
+        resource.data.userId == request.auth.uid ||
         request.auth.token.email == 'pgyb41494@gmail.com'
       );
-      // Admin can read and update all requests
       allow read, update, delete: if request.auth != null && request.auth.token.email == 'pgyb41494@gmail.com';
     }
 
     // Chat messages
     match /chats/{reqId}/messages/{msgId} {
-      // Allow read/write if user owns the request or is admin
       allow read, write: if request.auth != null;
     }
 
-    // Chat read receipts — tracks when each role last read a conversation
+    // Chat read receipts
     match /chatReads/{docId} {
       allow read, write: if request.auth != null;
+    }
+
+    // Chat unread counters
+    match /chatUnread/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Availability — admin can write, anyone logged in can read
+    match /availability/{slotId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.token.email == 'pgyb41494@gmail.com';
+    }
+
+    // Settings (pricing etc) — admin can write, anyone logged in can read
+    match /settings/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.token.email == 'pgyb41494@gmail.com';
+    }
+
+    // Reviews — anyone logged in can create, anyone can read
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if request.auth != null;
     }
   }
 }
