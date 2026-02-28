@@ -142,8 +142,8 @@ export default function AdminPage() {
               <div className="detail-cell"><span className="dk">Submitted</span><span className="dv">{selected.submittedAt}</span></div>
               <div className="detail-cell"><span className="dk">Email</span><span className="dv">{selected.email}</span></div>
               <div className="detail-cell full"><span className="dk">Address</span><span className="dv">{selected.address}</span></div>
-              <div className="detail-cell"><span className="dk">Bathrooms</span><span className="dv">{selected.bathrooms}</span></div>
-              <div className="detail-cell"><span className="dk">Rooms</span><span className="dv">{selected.rooms}</span></div>
+              <div className="detail-cell full"><span className="dk">Bathrooms</span><span className="dv">{selected.bathrooms}</span></div>
+              <div className="detail-cell full"><span className="dk">Rooms</span><span className="dv">{selected.rooms}</span></div>
               <div className="detail-cell full"><span className="dk">Add-Ons</span><span className="dv">{selected.addons || '—'}</span></div>
               <div className="detail-cell"><span className="dk">Pets</span><span className="dv">{selected.pets === 'yes' ? 'Yes' : 'No'}</span></div>
               <div className="detail-cell"><span className="dk">Walk-Through</span><span className="dv">{selected.walkthrough || 'No'}</span></div>
