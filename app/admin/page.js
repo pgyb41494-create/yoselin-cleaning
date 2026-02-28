@@ -1,4 +1,4 @@
-﻿'use client';
+﻿﻿﻿'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -52,16 +52,17 @@ const DEFAULT_PRICING = {
    type → unmounts the input → keyboard dismissed on mobile.
    Using defaultValue + onBlur (uncontrolled) means typing never triggers a parent re-render. ── */
 function PriceInput({ section, fieldKey, label, unit, value, onCommit }) {
+  const [local, setLocal] = useState(String(value));
+  useEffect(() => { setLocal(String(value)); }, [value]);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
       <label style={{ fontSize: '.7rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px' }}>{label}</label>
-      <div style={{ display: 'flex', alignItems: 'center', background: '#0d0d0d', border: '1.5px solid #2a2a2a', borderRadius: '10px', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', background: '#151515', border: '1.5px solid #2a2a2a', borderRadius: '10px', overflow: 'hidden' }}>
         <span style={{ padding: '0 10px', color: '#6b7280', fontWeight: '700', fontSize: '.85rem', borderRight: '1px solid #2a2a2a', height: '40px', display: 'flex', alignItems: 'center' }}>{unit || '$'}</span>
         <input
-          key={section + fieldKey}
           type="number" min="0" step="0.5"
-          defaultValue={value}
-          onBlur={e => onCommit(section, fieldKey, e.target.value)}
+          value={local}
+          onChange={e => { setLocal(e.target.value); onCommit(section, fieldKey, e.target.value); }}
           style={{ flex: 1, padding: '9px 12px', background: 'transparent', border: 'none', color: 'white', fontSize: '.9rem', fontWeight: '700', fontFamily: "'DM Sans',sans-serif", outline: 'none', width: '80px' }}
         />
       </div>
@@ -340,10 +341,10 @@ export default function AdminPage() {
   });
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
+    <div style={{ minHeight: '100vh', background: '#131313' }}>
 
       {/* Nav */}
-      <nav className="nav" style={{ background: '#0d0d0d', borderBottom: '1px solid #1f1f1f' }}>
+      <nav className="nav" style={{ background: '#151515', borderBottom: '1px solid #1f1f1f' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '100px', objectFit: 'contain' }} />
           <span className="nav-badge">ADMIN</span>
@@ -411,7 +412,7 @@ export default function AdminPage() {
                   <div style={{ fontSize: '.72rem', fontWeight: '700', color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '10px' }}>Today's Jobs</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                     {todayJobs.map(r => (
-                      <div key={r.id} onClick={() => setSelected(r)} style={{ background: '#0d0d0d', borderRadius: '10px', padding: '10px 14px', cursor: 'pointer', border: '1px solid #1f2f4f', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <div key={r.id} onClick={() => setSelected(r)} style={{ background: '#151515', borderRadius: '10px', padding: '10px 14px', cursor: 'pointer', border: '1px solid #1f2f4f', display: 'flex', alignItems: 'center', gap: '14px' }}>
                         <div>
                           <div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>{r.name}</div>
                           <div style={{ fontSize: '.75rem', color: '#9ca3af', marginTop: '2px' }}>{r.time || 'No time'} · {r.address?.split(',')[0] || 'No address'}</div>
@@ -457,7 +458,7 @@ export default function AdminPage() {
                     <thead>
                       <tr>
                         {['Client', 'Date', 'Estimate', 'Status', 'Actions'].map(h => (
-                          <th key={h} style={{ background: '#0d0d0d', color: '#9ca3af', padding: '12px 15px', textAlign: 'left', fontSize: '.75rem', fontWeight: '700' }}>{h}</th>
+                          <th key={h} style={{ background: '#151515', color: '#9ca3af', padding: '12px 15px', textAlign: 'left', fontSize: '.75rem', fontWeight: '700' }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -521,7 +522,7 @@ export default function AdminPage() {
                 {DAY_NAMES.map(d => <div key={d} style={{ padding: '10px 8px', textAlign: 'center', fontSize: '.72rem', fontWeight: '700', color: '#6b7280', letterSpacing: '.5px', textTransform: 'uppercase' }}>{d}</div>)}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
-                {Array.from({ length: calFirstDay }).map((_, i) => <div key={'e'+i} style={{ minHeight: '90px', borderRight: '1px solid #1a1a1a', borderBottom: '1px solid #1a1a1a', background: '#0d0d0d' }} />)}
+                {Array.from({ length: calFirstDay }).map((_, i) => <div key={'e'+i} style={{ minHeight: '90px', borderRight: '1px solid #1a1a1a', borderBottom: '1px solid #1a1a1a', background: '#151515' }} />)}
                 {Array.from({ length: calDaysInMonth }).map((_, i) => {
                   const day = i + 1;
                   const dayReqs = getRequestsForDay(day);
@@ -693,7 +694,7 @@ export default function AdminPage() {
                 </div>
 
                 {/* Repeat weeks */}
-                <div style={{ marginTop: '16px', padding: '12px 14px', background: '#0d0d0d', borderRadius: '12px', border: '1px solid #1f1f1f', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <div style={{ marginTop: '16px', padding: '12px 14px', background: '#151515', borderRadius: '12px', border: '1px solid #1f1f1f', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <div style={{ fontSize: '.8rem', fontWeight: '700', color: '#9ca3af' }}>Repeat for next</div>
                   <div style={{ display: 'flex', gap: '5px' }}>
                     {[0,1,2,3,4].map(n => (
@@ -741,7 +742,7 @@ export default function AdminPage() {
                     const grouped = {};
                     availability.forEach(s => { if (!grouped[s.date]) grouped[s.date]=[]; grouped[s.date].push(s); });
                     return Object.entries(grouped).sort(([a],[b]) => a.localeCompare(b)).map(([date, slots]) => (
-                      <div key={date} style={{ background: '#0d0d0d', borderRadius: '12px', border: '1px solid #222', padding: '10px 14px', minWidth: '160px' }}>
+                      <div key={date} style={{ background: '#151515', borderRadius: '12px', border: '1px solid #222', padding: '10px 14px', minWidth: '160px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '7px', gap: '8px' }}>
                           <div style={{ fontSize: '.72rem', fontWeight: '700', color: '#a855f7', textTransform: 'uppercase' }}>{date}</div>
                           <button onClick={() => clearDateSlots(slots)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.8rem', padding: '0', lineHeight: 1, fontWeight: '700' }}>🗑</button>
@@ -987,7 +988,7 @@ export default function AdminPage() {
                 ['Total Spent',   '$' + clientHistory.filter(r => r.status==='done').reduce((s,r) => s+(r.estimate||0), 0)],
                 ['Last Booking',  clientHistory[0]?.submittedAt?.split(',')[0] || 'N/A'],
               ].map(([label, val]) => (
-                <div key={label} style={{ background: '#0d0d0d', borderRadius: '10px', padding: '12px', textAlign: 'center', border: '1px solid #222' }}>
+                <div key={label} style={{ background: '#151515', borderRadius: '10px', padding: '12px', textAlign: 'center', border: '1px solid #222' }}>
                   <div style={{ fontSize: '.65rem', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '4px' }}>{label}</div>
                   <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '900', color: 'white' }}>{val}</div>
                 </div>
