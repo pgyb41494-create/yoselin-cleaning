@@ -830,18 +830,18 @@ export default function AdminPage() {
       {/* DETAIL MODAL */}
       {selected && (() => {
         const Row = ({ label, value, highlight }) => value ? (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', padding: '11px 0', borderBottom: '1px solid #1e1e1e' }}>
-            <span style={{ fontSize: '.78rem', fontWeight: '600', color: '#6b7280', minWidth: '120px', flexShrink: 0 }}>{label}</span>
-            <span style={{ fontSize: '.84rem', fontWeight: highlight ? '700' : '500', color: highlight ? 'white' : '#d1d5db', textAlign: 'right' }}>{value}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', padding: '14px 0', borderBottom: '1px solid #1e1e1e' }}>
+            <span style={{ fontSize: '.85rem', fontWeight: '600', color: '#9ca3af', minWidth: '130px', flexShrink: 0, lineHeight: 1.4 }}>{label}</span>
+            <span style={{ fontSize: '.92rem', fontWeight: highlight ? '700' : '400', color: highlight ? 'white' : '#d1d5db', textAlign: 'right', lineHeight: 1.5 }}>{value}</span>
           </div>
         ) : null;
 
         const Section = ({ title, children }) => (
-          <div style={{ background: '#141414', borderRadius: '14px', border: '1px solid #252525', overflow: 'hidden', marginBottom: '10px' }}>
-            <div style={{ padding: '13px 18px', borderBottom: '1px solid #222' }}>
-              <span style={{ fontSize: '.72rem', fontWeight: '800', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.6px' }}>{title}</span>
+          <div style={{ background: '#141414', borderRadius: '14px', border: '1px solid #252525', overflow: 'hidden', marginBottom: '14px' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid #222' }}>
+              <span style={{ fontSize: '.75rem', fontWeight: '800', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.8px' }}>{title}</span>
             </div>
-            <div style={{ padding: '4px 16px 10px' }}>{children}</div>
+            <div style={{ padding: '4px 20px 8px' }}>{children}</div>
           </div>
         );
 
@@ -850,14 +850,14 @@ export default function AdminPage() {
             <div className="modal" style={{ background: '#181818', border: '1px solid #2a2a2a', maxWidth: '700px', width: '95vw', padding: '0', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
 
               {/* Header */}
-              <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+              <div style={{ padding: '22px 26px 18px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                    <h3 style={{ color: 'white', fontFamily: 'Playfair Display, serif', fontSize: '1.15rem', fontWeight: '700', margin: 0 }}>{selected.name}</h3>
+                    <h3 style={{ color: 'white', fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', margin: 0 }}>{selected.name}</h3>
                     <span className={'badge badge-' + selected.status}>{selected.status === 'new' ? 'New' : selected.status === 'confirmed' ? 'Confirmed' : 'Done'}</span>
                     {selected.walkThrough === 'yes' && <span style={{ fontSize: '.65rem', fontWeight: '800', color: '#f59e0b', background: 'rgba(245,158,11,.15)', border: '1px solid rgba(245,158,11,.35)', padding: '2px 8px', borderRadius: '99px' }}>WALK-THROUGH</span>}
                   </div>
-                  <div style={{ fontSize: '.78rem', color: '#6b7280', marginTop: '4px' }}>{selected.submittedAt} — #{selected.id.slice(-6).toUpperCase()}</div>
+                  <div style={{ fontSize: '.82rem', color: '#6b7280', marginTop: '6px' }}>{selected.submittedAt} — #{selected.id.slice(-6).toUpperCase()}</div>
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '2rem', fontWeight: '900', color: '#60a5fa', lineHeight: 1 }}>${selected.estimate}</div>
@@ -866,7 +866,7 @@ export default function AdminPage() {
               </div>
 
               {/* Scrollable body */}
-              <div style={{ padding: '20px 22px 12px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ padding: '24px 26px 16px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
                 {selected.walkThrough === 'yes' && (
                   <div style={{ background: 'rgba(245,158,11,.08)', border: '1.5px solid rgba(245,158,11,.35)', borderRadius: '12px', padding: '12px 16px' }}>
