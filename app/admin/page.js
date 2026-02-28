@@ -47,10 +47,6 @@ const DEFAULT_PRICING = {
   discounts: { firstTime: 10, senior: 10, biweekly: 15, weekly: 17.5, monthly: 12.5 },
 };
 
-/* -- PriceInput/PriceCard MUST be defined OUTSIDE AdminPage.
-   If defined inside, every keystroke re-renders the parent ? React sees a new component
-   type ? unmounts the input ? keyboard dismissed on mobile.
-   Using defaultValue + onBlur (uncontrolled) means typing never triggers a parent re-render. -- */
 function PriceInput({ section, fieldKey, label, unit, value, onCommit }) {
   const [local, setLocal] = useState(String(value));
   useEffect(() => { setLocal(String(value)); }, [value]);
@@ -207,27 +203,17 @@ export default function AdminPage() {
     if (!freq || freq === 'once') return;
     const baseDate = parseDateString(req.date);
     if (!baseDate) return;
-
     const intervals = { weekly: { days: 7, count: 12 }, biweekly: { days: 14, count: 12 }, monthly: { days: 30, count: 6 } };
     const cfg = intervals[freq];
     if (!cfg) return;
-
-    const batch = writeBatch(db);
+    const b = writeBatch(db);
     for (let i = 1; i <= cfg.count; i++) {
       const d = new Date(baseDate);
       d.setDate(baseDate.getDate() + i * cfg.days);
-      const dateStr = formatDateKey(d);
       const ref = doc(collection(db, 'schedule'));
-      batch.set(ref, {
-        userId: req.userId, parentRequestId: req.id,
-        clientName: req.name, clientEmail: req.email,
-        date: dateStr, time: req.time || 'TBD',
-        address: req.address, estimate: req.estimate,
-        frequency: freq, sequenceIndex: i,
-        status: 'upcoming', createdAt: serverTimestamp(),
-      });
+      b.set(ref, { userId: req.userId, parentRequestId: req.id, clientName: req.name, clientEmail: req.email, date: formatDateKey(d), time: req.time || 'TBD', address: req.address, estimate: req.estimate, frequency: freq, sequenceIndex: i, status: 'upcoming', createdAt: serverTimestamp() });
     }
-    await batch.commit();
+    await b.commit();
   };
 
   const confirmReq = async (req) => {
@@ -252,67 +238,46 @@ export default function AdminPage() {
     setSelected(null);
   };
 
-  /* -- Availability: writeBatch for instant bulk writes/deletes -- */
   const applyAvailability = async () => {
     if (selectedDates.size === 0 || selectedTimes.length === 0) return;
     setSaving(true);
-
-    const allDatesToApply = new Set(selectedDates);
+    const allDates = new Set(selectedDates);
     if (repeatWeeks > 0) {
       [...selectedDates].forEach(dk => {
         const base = new Date(dk);
         if (isNaN(base)) return;
         for (let w = 1; w <= repeatWeeks; w++) {
-          const future = new Date(base);
-          future.setDate(base.getDate() + w * 7);
-          allDatesToApply.add(formatDateKey(future));
+          const f = new Date(base); f.setDate(base.getDate() + w * 7);
+          allDates.add(formatDateKey(f));
         }
       });
     }
-
-    const batch = writeBatch(db);
-    let opCount = 0;
-
-    const flush = async (b) => { await b.commit(); return writeBatch(db); };
-
-    let b = writeBatch(db);
-    for (const dk of allDatesToApply) {
-      const currentSlots = availability.filter(s => s.date === dk);
-      const existingTimes = currentSlots.map(s => s.time);
-      const toAdd    = selectedTimes.filter(t => !existingTimes.includes(t));
-      const toRemove = currentSlots.filter(s => !selectedTimes.includes(s.time));
-
-      for (const t of toAdd) {
-        const ref = doc(collection(db, 'availability'));
-        b.set(ref, { date: dk, time: t, createdAt: serverTimestamp() });
-        if (++opCount >= 490) { await b.commit(); b = writeBatch(db); opCount = 0; }
+    let b = writeBatch(db); let ops = 0;
+    for (const dk of allDates) {
+      const cur = availability.filter(s => s.date === dk);
+      const existing = cur.map(s => s.time);
+      for (const t of selectedTimes.filter(t => !existing.includes(t))) {
+        b.set(doc(collection(db, 'availability')), { date: dk, time: t, createdAt: serverTimestamp() });
+        if (++ops >= 490) { await b.commit(); b = writeBatch(db); ops = 0; }
       }
-      for (const s of toRemove) {
+      for (const s of cur.filter(s => !selectedTimes.includes(s.time))) {
         b.delete(doc(db, 'availability', s.id));
-        if (++opCount >= 490) { await b.commit(); b = writeBatch(db); opCount = 0; }
+        if (++ops >= 490) { await b.commit(); b = writeBatch(db); ops = 0; }
       }
     }
-    if (opCount > 0) await b.commit();
-
-    setSelectedDates(new Set());
-    setSelectedTimes([]);
-    setRepeatWeeks(0);
-    setSaving(false);
+    if (ops > 0) await b.commit();
+    setSelectedDates(new Set()); setSelectedTimes([]); setRepeatWeeks(0); setSaving(false);
   };
 
-  /* -- Clear all availability slots instantly via batch -- */
   const clearAllAvailability = async () => {
     if (!window.confirm('Delete ALL saved availability slots?')) return;
-    const chunks = [];
-    for (let i = 0; i < availability.length; i += 490) chunks.push(availability.slice(i, i + 490));
-    for (const chunk of chunks) {
+    for (let i = 0; i < availability.length; i += 490) {
       const b = writeBatch(db);
-      chunk.forEach(s => b.delete(doc(db, 'availability', s.id)));
+      availability.slice(i, i + 490).forEach(s => b.delete(doc(db, 'availability', s.id)));
       await b.commit();
     }
   };
 
-  /* -- Clear one date's slots via batch -- */
   const clearDateSlots = async (slots) => {
     const b = writeBatch(db);
     slots.forEach(s => b.delete(doc(db, 'availability', s.id)));
@@ -322,18 +287,14 @@ export default function AdminPage() {
   const savePricing = async () => {
     setPriceSaving(true);
     await setDoc(doc(db, 'settings', 'pricing'), editPrices);
-    setPriceSaving(false);
-    setPriceSaved(true);
+    setPriceSaving(false); setPriceSaved(true);
     setTimeout(() => setPriceSaved(false), 2500);
   };
 
-  /* onBlur handler for PriceInput ? called when admin leaves an input field */
   const setP = (section, key, val) =>
     setEditPrices(p => ({ ...p, [section]: { ...p[section], [key]: parseFloat(val) || 0 } }));
 
-  /* Weekday quick-select for availability calendar */
   const selectWeekday = (dayOfWeek) => {
-    const firstDay = new Date(availYear, availMonth, 1).getDay();
     const daysInMonth = getDaysInMonth(availYear, availMonth);
     const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
     const next = new Set(selectedDates);
@@ -347,7 +308,7 @@ export default function AdminPage() {
     setSelectedDates(next);
   };
 
-  const calFirstDay  = new Date(calYear, calMonth, 1).getDay();
+  const calFirstDay = new Date(calYear, calMonth, 1).getDay();
   const calDaysInMonth = getDaysInMonth(calYear, calMonth);
 
   const getRequestsForDay = (day) => requests.filter(r => {
@@ -361,9 +322,9 @@ export default function AdminPage() {
 
   if (loading) return <div className="spinner-page"><div className="spinner"></div></div>;
 
-  const newCount    = requests.filter(r => r.status === 'new').length;
+  const newCount = requests.filter(r => r.status === 'new').length;
   const datesWithSlots = new Set(availability.map(s => s.date));
-  const clientHistory  = historyClient
+  const clientHistory = historyClient
     ? requests.filter(r => r.email === historyClient.email || r.userId === historyClient.userId)
     : [];
 
@@ -372,7 +333,7 @@ export default function AdminPage() {
     { key: 'calendar',     label: 'Calendar'     },
     { key: 'availability', label: 'Availability' },
     { key: 'create',       label: 'Create Quote' },
-    { key: 'pricing',      label: '?? Pricing'   },
+    { key: 'pricing',      label: 'Pricing'      },
   ];
 
   const btnStyle = (color) => ({
@@ -384,7 +345,6 @@ export default function AdminPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#131313' }}>
 
-      {/* Nav */}
       <nav className="nav" style={{ background: '#151515', borderBottom: '1px solid #1f1f1f' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '100px', objectFit: 'contain' }} />
@@ -397,7 +357,6 @@ export default function AdminPage() {
         </div>
       </nav>
 
-      {/* Tab Bar */}
       <div style={{ background: '#111', borderBottom: '1px solid #222', padding: '0 26px', display: 'flex', overflowX: 'auto' }}>
         {TABS.map(({ key, label }) => (
           <button key={key} onClick={() => { setTab(key); setCreateDone(false); }} style={{
@@ -416,7 +375,7 @@ export default function AdminPage() {
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '28px 16px 80px' }}>
 
-        {/* -- REQUESTS TAB -- */}
+        {/* REQUESTS TAB */}
         {tab === 'requests' && (() => {
           const todayJobs = requests.filter(r => {
             if (r.status !== 'confirmed') return false;
@@ -442,7 +401,7 @@ export default function AdminPage() {
                 ].map(([label, val, sub]) => (
                   <div key={label} className="stat-card" style={{ background: '#111', border: '1px solid #222' }}>
                     <div className="stat-label" style={{ color: '#9ca3af' }}>{label}</div>
-                    <div className="stat-val"   style={{ color: 'white'   }}>{val}</div>
+                    <div className="stat-val" style={{ color: 'white' }}>{val}</div>
                     {sub && <div className="stat-sub" style={{ color: '#9ca3af' }}>{sub}</div>}
                   </div>
                 ))}
@@ -456,7 +415,7 @@ export default function AdminPage() {
                       <div key={r.id} onClick={() => setSelected(r)} style={{ background: '#151515', borderRadius: '10px', padding: '10px 14px', cursor: 'pointer', border: '1px solid #1f2f4f', display: 'flex', alignItems: 'center', gap: '14px' }}>
                         <div>
                           <div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>{r.name}</div>
-                          <div style={{ fontSize: '.75rem', color: '#9ca3af', marginTop: '2px' }}>{r.time || 'No time'} ? {r.address?.split(',')[0] || 'No address'}</div>
+                          <div style={{ fontSize: '.75rem', color: '#9ca3af', marginTop: '2px' }}>{r.time || 'No time'} - {r.address?.split(',')[0] || 'No address'}</div>
                         </div>
                         <strong style={{ color: '#60a5fa', fontFamily: 'Playfair Display, serif' }}>${r.estimate}</strong>
                       </div>
@@ -466,7 +425,7 @@ export default function AdminPage() {
               )}
 
               <div style={{ display: 'flex', gap: '10px', marginBottom: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
-                <input value={reqSearch} onChange={e => setReqSearch(e.target.value)} placeholder="Search by name, email, phone?"
+                <input value={reqSearch} onChange={e => setReqSearch(e.target.value)} placeholder="Search by name, email, phone..."
                   style={{ flex: 1, minWidth: '180px', padding: '9px 14px', background: '#111', border: '1px solid #2a2a2a', borderRadius: '10px', color: 'white', fontFamily: "'DM Sans',sans-serif", fontSize: '.84rem', outline: 'none' }} />
                 <div style={{ display: 'flex', gap: '4px', background: '#111', border: '1px solid #222', borderRadius: '10px', padding: '4px' }}>
                   {[['all', 'All'], ['new', 'New'], ['confirmed', 'Confirmed'], ['done', 'Done']].map(([val, label]) => (
@@ -510,13 +469,13 @@ export default function AdminPage() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '2px' }}>
                               <strong style={{ color: 'white', fontSize: '.88rem' }}>{r.name}</strong>
                               {r.createdByAdmin && <span style={{ fontSize: '.6rem', color: '#60a5fa', fontWeight: '700', background: 'rgba(96,165,250,.15)', padding: '1px 5px', borderRadius: '4px' }}>ADMIN</span>}
-                              {(unreadMap[r.id] || 0) > 0 && <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef4444', display: 'inline-block', flexShrink: 0 }} title="Unread messages" />}
+                              {(unreadMap[r.id] || 0) > 0 && <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef4444', display: 'inline-block', flexShrink: 0 }} />}
                             </div>
                             <div style={{ fontSize: '.75rem', color: '#6b7280' }}>{r.phone || r.email}</div>
-                            {r.adminNotes && <div style={{ fontSize: '.72rem', color: '#a855f7', marginTop: '2px' }}>Note: {r.adminNotes.slice(0, 45)}{r.adminNotes.length > 45 ? '?' : ''}</div>}
+                            {r.adminNotes && <div style={{ fontSize: '.72rem', color: '#a855f7', marginTop: '2px' }}>Note: {r.adminNotes.slice(0, 45)}{r.adminNotes.length > 45 ? '...' : ''}</div>}
                           </td>
                           <td style={{ padding: '12px 15px', fontSize: '.83rem', color: '#d1d5db', whiteSpace: 'nowrap' }}>
-                            {r.date || '?'}
+                            {r.date || '—'}
                             {r.time && r.time !== 'N/A' && <div style={{ fontSize: '.72rem', color: '#6b7280' }}>{r.time}</div>}
                           </td>
                           <td style={{ padding: '12px 15px' }}>
@@ -547,12 +506,12 @@ export default function AdminPage() {
           );
         })()}
 
-        {/* -- CALENDAR TAB -- */}
+        {/* CALENDAR TAB */}
         {tab === 'calendar' && (
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
               <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: '900', color: 'white' }}>{MONTH_NAMES[calMonth]} {calYear}</div>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y-1); } else setCalMonth(m => m-1); }} style={{ padding: '8px 14px', background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '.85rem' }}>Prev</button>
                 <button onClick={() => { setCalMonth(now.getMonth()); setCalYear(now.getFullYear()); }} style={{ padding: '8px 14px', background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '.85rem' }}>Today</button>
                 <button onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y+1); } else setCalMonth(m => m+1); }} style={{ padding: '8px 14px', background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '.85rem' }}>Next</button>
@@ -560,14 +519,14 @@ export default function AdminPage() {
             </div>
             <div style={{ background: '#111', borderRadius: '18px', border: '1px solid #222', overflow: 'hidden' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid #222' }}>
-                {DAY_NAMES.map(d => <div key={d} style={{ padding: '10px 8px', textAlign: 'center', fontSize: '.72rem', fontWeight: '700', color: '#6b7280', letterSpacing: '.5px', textTransform: 'uppercase' }}>{d}</div>)}
+                {DAY_NAMES.map(d => <div key={d} style={{ padding: '10px 8px', textAlign: 'center', fontSize: '.72rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase' }}>{d}</div>)}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
                 {Array.from({ length: calFirstDay }).map((_, i) => <div key={'e'+i} style={{ minHeight: '90px', borderRight: '1px solid #1a1a1a', borderBottom: '1px solid #1a1a1a', background: '#151515' }} />)}
                 {Array.from({ length: calDaysInMonth }).map((_, i) => {
                   const day = i + 1;
                   const dayReqs = getRequestsForDay(day);
-                  const isToday  = now.getFullYear() === calYear && now.getMonth() === calMonth && now.getDate() === day;
+                  const isToday = now.getFullYear() === calYear && now.getMonth() === calMonth && now.getDate() === day;
                   const isLastCol = (calFirstDay + i) % 7 === 6;
                   return (
                     <div key={day} style={{ minHeight: '90px', padding: '8px 6px', borderRight: isLastCol ? 'none' : '1px solid #1a1a1a', borderBottom: '1px solid #1a1a1a', background: calSelected === day ? 'rgba(168,85,247,.06)' : 'transparent', cursor: dayReqs.length > 0 ? 'pointer' : 'default' }}
@@ -588,7 +547,7 @@ export default function AdminPage() {
               <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #222', marginTop: '20px', overflow: 'hidden' }}>
                 <div style={{ padding: '14px 20px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ fontWeight: '700', color: 'white' }}>{MONTH_NAMES[calMonth]} {calSelected}</div>
-                  <button onClick={() => setCalSelected(null)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.1rem' }}>?</button>
+                  <button onClick={() => setCalSelected(null)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.1rem' }}>×</button>
                 </div>
                 {getRequestsForDay(calSelected).map(r => (
                   <div key={r.id} style={{ padding: '14px 20px', borderBottom: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
@@ -608,31 +567,26 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* -- AVAILABILITY TAB -- */}
+        {/* AVAILABILITY TAB */}
         {tab === 'availability' && (
           <div>
             <div style={{ marginBottom: '20px' }}>
               <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white' }}>Manage Availability</div>
-              <div style={{ fontSize: '.8rem', color: '#6b7280', marginTop: '3px' }}>Pick dates, choose times, hit Apply ? all done instantly</div>
+              <div style={{ fontSize: '.8rem', color: '#6b7280', marginTop: '3px' }}>Pick dates, choose times, hit Apply — all done instantly</div>
             </div>
-
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(270px, 1fr) minmax(320px, 2fr)', gap: '18px', alignItems: 'start' }}>
 
-              {/* -- Multi-select Calendar -- */}
               <div style={{ background: '#111', borderRadius: '20px', border: '1px solid #1f1f1f', padding: '18px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                   <button onClick={() => { if (availMonth===0){setAvailMonth(11);setAvailYear(y=>y-1);}else setAvailMonth(m=>m-1); }} style={{ background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', padding: '5px 11px', cursor: 'pointer', fontWeight: '700' }}>{'<'}</button>
                   <div style={{ fontWeight: '700', color: 'white', fontSize: '.88rem' }}>{MONTH_NAMES[availMonth]} {availYear}</div>
                   <button onClick={() => { if (availMonth===11){setAvailMonth(0);setAvailYear(y=>y+1);}else setAvailMonth(m=>m+1); }} style={{ background: '#1f1f1f', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', padding: '5px 11px', cursor: 'pointer', fontWeight: '700' }}>{'>'}</button>
                 </div>
-
-                {/* Weekday quick-select row */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '4px', gap: '2px' }}>
                   {DAY_NAMES.map((d, i) => (
-                    <button key={d} onClick={() => selectWeekday(i)} style={{ textAlign: 'center', fontSize: '.58rem', fontWeight: '800', color: '#a855f7', textTransform: 'uppercase', padding: '4px 0', background: 'rgba(168,85,247,.1)', borderRadius: '4px', border: '1px solid rgba(168,85,247,.2)', cursor: 'pointer' }} title={'Select all ' + d + 's'}>{d}</button>
+                    <button key={d} onClick={() => selectWeekday(i)} style={{ textAlign: 'center', fontSize: '.58rem', fontWeight: '800', color: '#a855f7', textTransform: 'uppercase', padding: '4px 0', background: 'rgba(168,85,247,.1)', borderRadius: '4px', border: '1px solid rgba(168,85,247,.2)', cursor: 'pointer' }}>{d}</button>
                   ))}
                 </div>
-
                 {(() => {
                   const firstDay = new Date(availYear, availMonth, 1).getDay();
                   const daysInMonth = getDaysInMonth(availYear, availMonth);
@@ -642,12 +596,12 @@ export default function AdminPage() {
                       {Array.from({ length: firstDay }).map((_, i) => <div key={'e'+i} />)}
                       {Array.from({ length: daysInMonth }).map((_, i) => {
                         const day = i + 1;
-                        const d   = new Date(availYear, availMonth, day);
+                        const d = new Date(availYear, availMonth, day);
                         const key = formatDateKey(d);
-                        const hasSlots  = datesWithSlots.has(key);
+                        const hasSlots = datesWithSlots.has(key);
                         const isSelected = selectedDates.has(key);
-                        const isPast    = d < todayMidnight;
-                        const isToday   = now.getDate()===day && now.getMonth()===availMonth && now.getFullYear()===availYear;
+                        const isPast = d < todayMidnight;
+                        const isToday = now.getDate()===day && now.getMonth()===availMonth && now.getFullYear()===availYear;
                         return (
                           <button key={day} onClick={() => {
                             if (isPast) return;
@@ -659,8 +613,7 @@ export default function AdminPage() {
                             background: isSelected ? 'rgba(168,85,247,.25)' : 'transparent',
                             color: isPast ? '#2a2a2a' : isSelected ? '#e9d5ff' : '#d1d5db',
                             cursor: isPast ? 'default' : 'pointer',
-                            fontWeight: isSelected ? '800' : '600', fontSize: '.78rem',
-                            position: 'relative', transition: 'all .1s',
+                            fontWeight: isSelected ? '800' : '600', fontSize: '.78rem', position: 'relative',
                           }}>
                             {day}
                             {hasSlots && !isPast && <span style={{ position: 'absolute', bottom: '2px', width: '4px', height: '4px', borderRadius: '50%', background: isSelected ? '#e9d5ff' : '#a855f7' }} />}
@@ -670,18 +623,14 @@ export default function AdminPage() {
                     </div>
                   );
                 })()}
-
                 <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: '.75rem', color: selectedDates.size > 0 ? '#a855f7' : '#555', fontWeight: '700' }}>
                     {selectedDates.size > 0 ? `${selectedDates.size} date${selectedDates.size!==1?'s':''} selected` : 'Tap dates to select'}
                   </span>
-                  {selectedDates.size > 0 && (
-                    <button onClick={() => setSelectedDates(new Set())} style={{ fontSize: '.7rem', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '700' }}>Clear</button>
-                  )}
+                  {selectedDates.size > 0 && <button onClick={() => setSelectedDates(new Set())} style={{ fontSize: '.7rem', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '700' }}>Clear</button>}
                 </div>
               </div>
 
-              {/* -- Time Setter -- */}
               <div style={{ background: '#111', borderRadius: '20px', border: '1px solid #1f1f1f', padding: '18px' }}>
                 <div style={{ marginBottom: '14px' }}>
                   <div style={{ fontWeight: '700', color: 'white', fontSize: '.95rem' }}>
@@ -691,25 +640,22 @@ export default function AdminPage() {
                     {selectedTimes.length > 0 ? `${selectedTimes.length} slot${selectedTimes.length!==1?'s':''} selected` : 'No times selected yet'}
                   </div>
                 </div>
-
-                {/* Quick preset buttons */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
                   {[
-                    { label: '?? Morning',   times: ALL_TIMES.slice(0, 12) },
-                    { label: '?? Afternoon', times: ALL_TIMES.slice(12, 22) },
-                    { label: '?? Evening',   times: ALL_TIMES.slice(22) },
-                    { label: '?? All Day',   times: ALL_TIMES },
-                    { label: '? Clear',      times: [] },
+                    { label: 'Morning',   times: ALL_TIMES.slice(0, 12) },
+                    { label: 'Afternoon', times: ALL_TIMES.slice(12, 22) },
+                    { label: 'Evening',   times: ALL_TIMES.slice(22) },
+                    { label: 'All Day',   times: ALL_TIMES },
+                    { label: 'Clear',     times: [] },
                   ].map(({ label, times }) => (
-                    <button key={label} onClick={() => setSelectedTimes(times)} style={{ padding: '7px 13px', borderRadius: '99px', border: '1px solid #2a2a2a', background: '#1a1a1a', color: '#d1d5db', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}>{label}</button>
+                    <button key={label} onClick={() => setSelectedTimes(times)} style={{ padding: '7px 13px', borderRadius: '99px', border: '1px solid #2a2a2a', background: '#1a1a1a', color: '#d1d5db', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer' }}>{label}</button>
                   ))}
                 </div>
-
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '260px', overflowY: 'auto', paddingRight: '4px' }}>
                   {[
-                    { label: 'Morning',   sub: '6am?11:30am', times: ALL_TIMES.slice(0, 12) },
-                    { label: 'Afternoon', sub: '12pm?4:30pm', times: ALL_TIMES.slice(12, 22) },
-                    { label: 'Evening',   sub: '5pm?8pm',     times: ALL_TIMES.slice(22) },
+                    { label: 'Morning',   sub: '6am-11:30am', times: ALL_TIMES.slice(0, 12) },
+                    { label: 'Afternoon', sub: '12pm-4:30pm', times: ALL_TIMES.slice(12, 22) },
+                    { label: 'Evening',   sub: '5pm-8pm',     times: ALL_TIMES.slice(22) },
                   ].map(({ label, sub, times }) => (
                     <div key={label}>
                       <div style={{ fontSize: '.68rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '7px' }}>
@@ -724,8 +670,7 @@ export default function AdminPage() {
                               border: on ? '2px solid #a855f7' : '1px solid #2a2a2a',
                               background: on ? 'rgba(168,85,247,.22)' : '#151515',
                               color: on ? '#d8b4fe' : '#6b7280',
-                              fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.75rem',
-                              cursor: 'pointer', transition: 'all .1s',
+                              fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.75rem', cursor: 'pointer',
                             }}>{t}</button>
                           );
                         })}
@@ -733,8 +678,6 @@ export default function AdminPage() {
                     </div>
                   ))}
                 </div>
-
-                {/* Repeat weeks */}
                 <div style={{ marginTop: '16px', padding: '12px 14px', background: '#151515', borderRadius: '12px', border: '1px solid #1f1f1f', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <div style={{ fontSize: '.8rem', fontWeight: '700', color: '#9ca3af' }}>Repeat for next</div>
                   <div style={{ display: 'flex', gap: '5px' }}>
@@ -745,38 +688,33 @@ export default function AdminPage() {
                         background: repeatWeeks===n ? 'rgba(168,85,247,.2)' : '#1a1a1a',
                         color: repeatWeeks===n ? '#d8b4fe' : '#9ca3af',
                         fontWeight: '700', fontSize: '.82rem', cursor: 'pointer',
-                      }}>{n===0?'?':n}</button>
+                      }}>{n===0 ? '-' : n}</button>
                     ))}
                   </div>
                   <div style={{ fontSize: '.75rem', color: '#555' }}>
-                    {repeatWeeks===0 ? 'weeks (no repeat)' : `week${repeatWeeks!==1?'s':''} ? ${selectedDates.size*(1+repeatWeeks)} dates total`}
+                    {repeatWeeks===0 ? 'weeks (no repeat)' : `week${repeatWeeks!==1?'s':''} — ${selectedDates.size*(1+repeatWeeks)} dates total`}
                   </div>
                 </div>
-
                 <button onClick={applyAvailability} disabled={saving || selectedDates.size===0 || selectedTimes.length===0} style={{
                   marginTop: '14px', width: '100%', padding: '14px',
                   background: selectedDates.size>0 && selectedTimes.length>0 ? 'linear-gradient(135deg,#a855f7,#db2777)' : '#1f1f1f',
                   color: selectedDates.size>0 && selectedTimes.length>0 ? 'white' : '#444',
-                  border: 'none', borderRadius: '12px',
-                  fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.92rem',
-                  cursor: selectedDates.size>0 && selectedTimes.length>0 ? 'pointer' : 'not-allowed',
-                  opacity: saving ? .7 : 1, transition: 'all .2s',
+                  border: 'none', borderRadius: '12px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.92rem',
+                  cursor: selectedDates.size>0 && selectedTimes.length>0 ? 'pointer' : 'not-allowed', opacity: saving ? .7 : 1,
                 }}>
-                  {saving
-                    ? '? Saving?'
+                  {saving ? 'Saving...'
                     : selectedDates.size===0 ? 'Select dates first'
                     : selectedTimes.length===0 ? 'Select times first'
-                    : `? Apply ${selectedTimes.length} slot${selectedTimes.length!==1?'s':''} to ${selectedDates.size*(1+repeatWeeks)} date${selectedDates.size*(1+repeatWeeks)!==1?'s':''}`}
+                    : `Apply ${selectedTimes.length} slot${selectedTimes.length!==1?'s':''} to ${selectedDates.size*(1+repeatWeeks)} date${selectedDates.size*(1+repeatWeeks)!==1?'s':''}`}
                 </button>
               </div>
             </div>
 
-            {/* Saved slots */}
             {availability.length > 0 && (
               <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #1f1f1f', overflow: 'hidden', marginTop: '20px' }}>
                 <div style={{ padding: '14px 18px', borderBottom: '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ color: '#9ca3af', fontSize: '.75rem', fontWeight: '700', letterSpacing: '.4px', textTransform: 'uppercase' }}>Saved Slots ({availability.length} total)</div>
-                  <button onClick={clearAllAvailability} style={{ padding: '6px 14px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.4)', color: '#ef4444', borderRadius: '8px', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer' }}>?? Clear All</button>
+                  <div style={{ color: '#9ca3af', fontSize: '.75rem', fontWeight: '700', textTransform: 'uppercase' }}>Saved Slots ({availability.length} total)</div>
+                  <button onClick={clearAllAvailability} style={{ padding: '6px 14px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.4)', color: '#ef4444', borderRadius: '8px', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer' }}>Clear All</button>
                 </div>
                 <div style={{ padding: '14px 18px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {(() => {
@@ -786,13 +724,13 @@ export default function AdminPage() {
                       <div key={date} style={{ background: '#151515', borderRadius: '12px', border: '1px solid #222', padding: '10px 14px', minWidth: '160px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '7px', gap: '8px' }}>
                           <div style={{ fontSize: '.72rem', fontWeight: '700', color: '#a855f7', textTransform: 'uppercase' }}>{date}</div>
-                          <button onClick={() => clearDateSlots(slots)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.8rem', padding: '0', lineHeight: 1, fontWeight: '700' }}>??</button>
+                          <button onClick={() => clearDateSlots(slots)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.8rem', padding: '0', lineHeight: 1, fontWeight: '700' }}>×</button>
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                           {slots.map(s => (
                             <span key={s.id} style={{ background: '#1a1a1a', color: '#d1d5db', fontSize: '.7rem', fontWeight: '700', padding: '3px 8px', borderRadius: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               {s.time}
-                              <button onClick={() => deleteDoc(doc(db, 'availability', s.id))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.72rem', padding: '0', lineHeight: 1 }}>?</button>
+                              <button onClick={() => deleteDoc(doc(db, 'availability', s.id))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.72rem', padding: '0', lineHeight: 1 }}>×</button>
                             </span>
                           ))}
                         </div>
@@ -805,38 +743,35 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* -- PRICING TAB -- */}
+        {/* PRICING TAB */}
         {tab === 'pricing' && (
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
               <div>
                 <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white' }}>Live Pricing Editor</div>
-                <div style={{ fontSize: '.8rem', color: '#6b7280', marginTop: '3px' }}>Tap a field, type the new price, then tap outside ? changes are saved when you press Save</div>
+                <div style={{ fontSize: '.8rem', color: '#6b7280', marginTop: '3px' }}>Edit any field then hit Save — changes apply instantly on the booking form</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {priceSaved && <span style={{ fontSize: '.82rem', color: '#10b981', fontWeight: '700' }}>? Saved!</span>}
+                {priceSaved && <span style={{ fontSize: '.82rem', color: '#10b981', fontWeight: '700' }}>Saved!</span>}
                 <button onClick={savePricing} disabled={priceSaving} style={{ padding: '11px 24px', background: 'linear-gradient(135deg,#a855f7,#db2777)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer', opacity: priceSaving ? .6 : 1 }}>
                   {priceSaving ? 'Saving...' : 'Save All Prices'}
                 </button>
               </div>
             </div>
-
             <PriceCard title="Bathrooms" desc="Price per bathroom">
               <PriceInput section="bathrooms" fieldKey="half"   label="Half Bath"         value={editPrices.bathrooms.half}   onCommit={setP} />
               <PriceInput section="bathrooms" fieldKey="small"  label="Small Full Bath"   value={editPrices.bathrooms.small}  onCommit={setP} />
               <PriceInput section="bathrooms" fieldKey="medium" label="Medium Full Bath"  value={editPrices.bathrooms.medium} onCommit={setP} />
               <PriceInput section="bathrooms" fieldKey="large"  label="Large/Master Bath" value={editPrices.bathrooms.large}  onCommit={setP} />
             </PriceCard>
-
             <PriceCard title="Bedrooms & Living Rooms" desc="Price per room">
-              <PriceInput section="rooms" fieldKey="bed_small"  label="Small Bedroom"     value={editPrices.rooms.bed_small}  onCommit={setP} />
-              <PriceInput section="rooms" fieldKey="bed_medium" label="Medium Bedroom"    value={editPrices.rooms.bed_medium} onCommit={setP} />
-              <PriceInput section="rooms" fieldKey="bed_large"  label="Large/Master Bed"  value={editPrices.rooms.bed_large}  onCommit={setP} />
-              <PriceInput section="rooms" fieldKey="liv_medium" label="Medium Living Rm"  value={editPrices.rooms.liv_medium} onCommit={setP} />
-              <PriceInput section="rooms" fieldKey="liv_large"  label="Large Living Rm"   value={editPrices.rooms.liv_large}  onCommit={setP} />
-              <PriceInput section="rooms" fieldKey="office"     label="Office/Study"      value={editPrices.rooms.office}     onCommit={setP} />
+              <PriceInput section="rooms" fieldKey="bed_small"  label="Small Bedroom"    value={editPrices.rooms.bed_small}  onCommit={setP} />
+              <PriceInput section="rooms" fieldKey="bed_medium" label="Medium Bedroom"   value={editPrices.rooms.bed_medium} onCommit={setP} />
+              <PriceInput section="rooms" fieldKey="bed_large"  label="Large/Master Bed" value={editPrices.rooms.bed_large}  onCommit={setP} />
+              <PriceInput section="rooms" fieldKey="liv_medium" label="Medium Living Rm" value={editPrices.rooms.liv_medium} onCommit={setP} />
+              <PriceInput section="rooms" fieldKey="liv_large"  label="Large Living Rm"  value={editPrices.rooms.liv_large}  onCommit={setP} />
+              <PriceInput section="rooms" fieldKey="office"     label="Office/Study"     value={editPrices.rooms.office}     onCommit={setP} />
             </PriceCard>
-
             <PriceCard title="Kitchen & Utility" desc="Price per room">
               <PriceInput section="rooms" fieldKey="kit_small"  label="Small Kitchen"  value={editPrices.rooms.kit_small}  onCommit={setP} />
               <PriceInput section="rooms" fieldKey="kit_medium" label="Medium Kitchen" value={editPrices.rooms.kit_medium} onCommit={setP} />
@@ -844,34 +779,25 @@ export default function AdminPage() {
               <PriceInput section="rooms" fieldKey="laundry"    label="Laundry Room"   value={editPrices.rooms.laundry}    onCommit={setP} />
               <PriceInput section="rooms" fieldKey="basement"   label="Basement"       value={editPrices.rooms.basement}   onCommit={setP} />
             </PriceCard>
-
             <PriceCard title="Add-On Services" desc="Price per add-on">
-              <PriceInput section="extras" fieldKey="cabinets"  label="Inside Cabinets"     value={editPrices.extras.cabinets}  onCommit={setP} />
-              <PriceInput section="extras" fieldKey="pantry"    label="Inside Pantry"        value={editPrices.extras.pantry}    onCommit={setP} />
-              <PriceInput section="extras" fieldKey="oven"      label="Inside Oven"          value={editPrices.extras.oven}      onCommit={setP} />
-              <PriceInput section="extras" fieldKey="fridge"    label="Inside Fridge"        value={editPrices.extras.fridge}    onCommit={setP} />
-              <PriceInput section="extras" fieldKey="baseboard" label="Baseboard Clean"      value={editPrices.extras.baseboard} onCommit={setP} />
-              <PriceInput section="extras" fieldKey="windows"   label="Window Trim (each)"   value={editPrices.extras.windows}   onCommit={setP} />
+              <PriceInput section="extras" fieldKey="cabinets"  label="Inside Cabinets"   value={editPrices.extras.cabinets}  onCommit={setP} />
+              <PriceInput section="extras" fieldKey="pantry"    label="Inside Pantry"      value={editPrices.extras.pantry}    onCommit={setP} />
+              <PriceInput section="extras" fieldKey="oven"      label="Inside Oven"        value={editPrices.extras.oven}      onCommit={setP} />
+              <PriceInput section="extras" fieldKey="fridge"    label="Inside Fridge"      value={editPrices.extras.fridge}    onCommit={setP} />
+              <PriceInput section="extras" fieldKey="baseboard" label="Baseboard Clean"    value={editPrices.extras.baseboard} onCommit={setP} />
+              <PriceInput section="extras" fieldKey="windows"   label="Window Trim (each)" value={editPrices.extras.windows}   onCommit={setP} />
             </PriceCard>
-
             <PriceCard title="Discounts" desc="Percentage off subtotal">
-              <PriceInput section="discounts" fieldKey="firstTime" label="First-Time Client"  unit="%" value={editPrices.discounts.firstTime} onCommit={setP} />
-              <PriceInput section="discounts" fieldKey="senior"    label="Senior Discount"    unit="%" value={editPrices.discounts.senior}    onCommit={setP} />
-              <PriceInput section="discounts" fieldKey="biweekly"  label="Bi-Weekly Repeat"   unit="%" value={editPrices.discounts.biweekly}  onCommit={setP} />
-              <PriceInput section="discounts" fieldKey="weekly"    label="Weekly Repeat"      unit="%" value={editPrices.discounts.weekly}    onCommit={setP} />
-              <PriceInput section="discounts" fieldKey="monthly"   label="2-3x/Month Repeat"  unit="%" value={editPrices.discounts.monthly}   onCommit={setP} />
+              <PriceInput section="discounts" fieldKey="firstTime" label="First-Time Client" unit="%" value={editPrices.discounts.firstTime} onCommit={setP} />
+              <PriceInput section="discounts" fieldKey="senior"    label="Senior Discount"   unit="%" value={editPrices.discounts.senior}    onCommit={setP} />
+              <PriceInput section="discounts" fieldKey="biweekly"  label="Bi-Weekly Repeat"  unit="%" value={editPrices.discounts.biweekly}  onCommit={setP} />
+              <PriceInput section="discounts" fieldKey="weekly"    label="Weekly Repeat"     unit="%" value={editPrices.discounts.weekly}    onCommit={setP} />
+              <PriceInput section="discounts" fieldKey="monthly"   label="2-3x/Month Repeat" unit="%" value={editPrices.discounts.monthly}   onCommit={setP} />
             </PriceCard>
-
-            <div style={{ background: 'rgba(168,85,247,.06)', border: '1px solid rgba(168,85,247,.2)', borderRadius: '14px', padding: '14px 18px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>??</span>
-              <div style={{ fontSize: '.82rem', color: '#9ca3af', lineHeight: 1.6 }}>
-                Tap any field and type the new value. The keyboard stays open while you move between fields. Hit <strong style={{ color: 'white' }}>Save All Prices</strong> when done ? changes apply instantly on the booking form.
-              </div>
-            </div>
           </div>
         )}
 
-        {/* -- CREATE QUOTE TAB -- */}
+        {/* CREATE QUOTE TAB */}
         {tab === 'create' && (
           <>
             {createDone ? (
@@ -880,7 +806,7 @@ export default function AdminPage() {
                 <p style={{ color: '#9ca3af', fontSize: '.87rem', marginBottom: '24px' }}>The new request has been added to your requests list.</p>
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
                   <button className="act-btn act-confirm" onClick={() => { setTab('requests'); setCreateDone(false); }} style={{ flex: 'none', padding: '12px 24px' }}>View Requests</button>
-                  <button className="act-btn act-chat"    onClick={() => setCreateDone(false)}                       style={{ flex: 'none', padding: '12px 24px' }}>Create Another</button>
+                  <button className="act-btn act-chat" onClick={() => setCreateDone(false)} style={{ flex: 'none', padding: '12px 24px' }}>Create Another</button>
                 </div>
               </div>
             ) : (
@@ -901,7 +827,7 @@ export default function AdminPage() {
 
       </div>
 
-      {/* -- DETAIL MODAL -- */}
+      {/* DETAIL MODAL */}
       {selected && (() => {
         const Row = ({ label, value, highlight }) => value ? (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', padding: '11px 0', borderBottom: '1px solid #1e1e1e' }}>
@@ -910,10 +836,9 @@ export default function AdminPage() {
           </div>
         ) : null;
 
-        const Section = ({ title, icon, children }) => (
+        const Section = ({ title, children }) => (
           <div style={{ background: '#141414', borderRadius: '14px', border: '1px solid #252525', overflow: 'hidden', marginBottom: '10px' }}>
-            <div style={{ padding: '13px 18px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', gap: '7px' }}>
-              <span style={{ fontSize: '.85rem' }}>{icon}</span>
+            <div style={{ padding: '13px 18px', borderBottom: '1px solid #222' }}>
               <span style={{ fontSize: '.72rem', fontWeight: '800', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.6px' }}>{title}</span>
             </div>
             <div style={{ padding: '4px 16px 10px' }}>{children}</div>
@@ -930,9 +855,9 @@ export default function AdminPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                     <h3 style={{ color: 'white', fontFamily: 'Playfair Display, serif', fontSize: '1.15rem', fontWeight: '700', margin: 0 }}>{selected.name}</h3>
                     <span className={'badge badge-' + selected.status}>{selected.status === 'new' ? 'New' : selected.status === 'confirmed' ? 'Confirmed' : 'Done'}</span>
-                    {selected.walkThrough === 'yes' && <span style={{ fontSize: '.65rem', fontWeight: '800', color: '#f59e0b', background: 'rgba(245,158,11,.15)', border: '1px solid rgba(245,158,11,.35)', padding: '2px 8px', borderRadius: '99px' }}>?? WALK-THROUGH</span>}
+                    {selected.walkThrough === 'yes' && <span style={{ fontSize: '.65rem', fontWeight: '800', color: '#f59e0b', background: 'rgba(245,158,11,.15)', border: '1px solid rgba(245,158,11,.35)', padding: '2px 8px', borderRadius: '99px' }}>WALK-THROUGH</span>}
                   </div>
-                  <div style={{ fontSize: '.78rem', color: '#6b7280', marginTop: '4px' }}>{selected.submittedAt} ? #{selected.id.slice(-6).toUpperCase()}</div>
+                  <div style={{ fontSize: '.78rem', color: '#6b7280', marginTop: '4px' }}>{selected.submittedAt} — #{selected.id.slice(-6).toUpperCase()}</div>
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '2rem', fontWeight: '900', color: '#60a5fa', lineHeight: 1 }}>${selected.estimate}</div>
@@ -941,69 +866,55 @@ export default function AdminPage() {
               </div>
 
               {/* Scrollable body */}
-              <div style={{ padding: '20px 22px 12px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ padding: '20px 22px 12px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
-                {/* Walk-through banner */}
                 {selected.walkThrough === 'yes' && (
-                  <div style={{ background: 'rgba(245,158,11,.08)', border: '1.5px solid rgba(245,158,11,.35)', borderRadius: '12px', padding: '12px 16px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '1.4rem' }}>??</span>
-                    <div>
-                      <div style={{ fontWeight: '800', color: '#f59e0b', fontSize: '.85rem' }}>Walk-Through Requested</div>
-                      <div style={{ fontSize: '.76rem', color: '#d1d5db', marginTop: '2px' }}>Client wants you to visit first to assess the job before booking.</div>
-                    </div>
+                  <div style={{ background: 'rgba(245,158,11,.08)', border: '1.5px solid rgba(245,158,11,.35)', borderRadius: '12px', padding: '12px 16px' }}>
+                    <div style={{ fontWeight: '800', color: '#f59e0b', fontSize: '.85rem' }}>Walk-Through Requested</div>
+                    <div style={{ fontSize: '.76rem', color: '#d1d5db', marginTop: '2px' }}>Client wants you to visit first to assess the job before booking.</div>
                   </div>
                 )}
 
-                {/* Reschedule request banner */}
                 {selected.rescheduleRequested && (
-                  <div style={{ background: 'rgba(239,68,68,.08)', border: '1.5px solid rgba(239,68,68,.3)', borderRadius: '12px', padding: '12px 16px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '1.4rem' }}>??</span>
-                    <div>
-                      <div style={{ fontWeight: '800', color: '#ef4444', fontSize: '.85rem' }}>Client Requested a Reschedule</div>
-                      {selected.reschedulePreferredDates && <div style={{ fontSize: '.76rem', color: '#d1d5db', marginTop: '2px' }}>Preferred: {selected.reschedulePreferredDates}</div>}
-                      {selected.rescheduleReason && <div style={{ fontSize: '.73rem', color: '#9ca3af', marginTop: '1px' }}>Reason: {selected.rescheduleReason}</div>}
-                    </div>
+                  <div style={{ background: 'rgba(239,68,68,.08)', border: '1.5px solid rgba(239,68,68,.3)', borderRadius: '12px', padding: '12px 16px' }}>
+                    <div style={{ fontWeight: '800', color: '#ef4444', fontSize: '.85rem' }}>Client Requested a Reschedule</div>
+                    {selected.reschedulePreferredDates && <div style={{ fontSize: '.76rem', color: '#d1d5db', marginTop: '2px' }}>Preferred: {selected.reschedulePreferredDates}</div>}
+                    {selected.rescheduleReason && <div style={{ fontSize: '.73rem', color: '#9ca3af', marginTop: '1px' }}>Reason: {selected.rescheduleReason}</div>}
                   </div>
                 )}
 
-                {/* Contact */}
-                <Section title="Contact" icon="??">
+                <Section title="Contact">
                   <Row label="Phone"   value={selected.phone} highlight />
                   <Row label="Email"   value={selected.email} />
                   <Row label="Address" value={selected.address} />
                   <Row label="Referral" value={selected.referral} />
                 </Section>
 
-                {/* Appointment */}
-                <Section title="Appointment" icon="??">
+                <Section title="Appointment">
                   <Row label="Date"      value={selected.date} highlight />
                   <Row label="Time"      value={selected.time} highlight />
                   <Row label="Frequency" value={selected.frequency} />
                   <Row label="Access"    value={selected.access} />
                 </Section>
 
-                {/* Job Details */}
-                <Section title="Job Details" icon="??">
+                <Section title="Job Details">
                   <Row label="Bathrooms" value={selected.bathrooms} />
                   <Row label="Rooms"     value={selected.rooms} />
                   <Row label="Add-Ons"   value={selected.addons || 'None'} />
-                  <Row label="Pets"      value={selected.pets === 'yes' ? '?? Yes' : 'No'} />
-                  <Row label="Walk-Through" value={selected.walkThrough === 'yes' ? '? Yes ? visit requested' : 'No'} highlight={selected.walkThrough === 'yes'} />
+                  <Row label="Pets"      value={selected.pets === 'yes' ? 'Yes' : 'No'} />
+                  {selected.walkThrough === 'yes' && <Row label="Walk-Through" value="Yes — visit requested" highlight />}
                   {selected.otherRequests && <Row label="Special Requests" value={selected.otherRequests} />}
                 </Section>
 
-                {/* Discounts */}
-                <Section title="Discounts" icon="??">
-                  <Row label="First-Time"  value={selected.firstTime === 'yes' ? '? Applied' : 'No'} highlight={selected.firstTime === 'yes'} />
-                  <Row label="Senior"      value={selected.senior === 'yes' ? '? Applied' : 'No'}     highlight={selected.senior === 'yes'} />
+                <Section title="Discounts">
+                  <Row label="First-Time" value={selected.firstTime === 'yes' ? 'Applied (10%)' : 'No'} highlight={selected.firstTime === 'yes'} />
+                  <Row label="Senior"     value={selected.senior === 'yes' ? 'Applied (10%)' : 'No'}     highlight={selected.senior === 'yes'} />
                 </Section>
 
-                {/* Recurring Schedule */}
                 {selected.frequency && selected.frequency !== 'once' && scheduleEntries.length > 0 && (
                   <div style={{ background: '#141414', borderRadius: '14px', border: '1px solid #252525', overflow: 'hidden' }}>
                     <div style={{ padding: '13px 18px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                        <span style={{ fontSize: '.85rem' }}>&#x1F501;</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontSize: '.72rem', fontWeight: '800', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.6px' }}>Recurring Schedule</span>
                         <span style={{ fontSize: '.68rem', background: 'rgba(168,85,247,.15)', color: '#a855f7', border: '1px solid rgba(168,85,247,.3)', borderRadius: '99px', padding: '2px 8px', fontWeight: '700' }}>{selected.frequency}</span>
                       </div>
@@ -1013,7 +924,7 @@ export default function AdminPage() {
                       {scheduleEntries.map((entry, i) => (
                         <div key={entry.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: entry.status === 'done' ? '#111' : '#1a1a2e', borderRadius: '9px', border: '1px solid ' + (entry.status === 'done' ? '#222' : '#2a3a5a') }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span style={{ fontSize: '.68rem', fontWeight: '800', color: '#555', minWidth: '18px' }}>#{i + 1}</span>
+                            <span style={{ fontSize: '.68rem', fontWeight: '800', color: '#555', minWidth: '18px' }}>#{i+1}</span>
                             <div>
                               <div style={{ fontSize: '.8rem', fontWeight: '700', color: entry.status === 'done' ? '#6b7280' : 'white' }}>{entry.date}</div>
                               <div style={{ fontSize: '.7rem', color: '#6b7280' }}>{entry.time}</div>
@@ -1037,13 +948,10 @@ export default function AdminPage() {
                   </div>
                 )}
 
-                {/* Reschedule tool */}
-                <div style={{ background: '#141414', borderRadius: '14px', border: '1px solid #252525', overflow: 'hidden', marginBottom: '10px' }}>
+                {/* Reschedule */}
+                <div style={{ background: '#141414', borderRadius: '14px', border: '1px solid #252525', overflow: 'hidden' }}>
                   <div style={{ padding: '10px 16px', borderBottom: reschedMode ? '1px solid #222' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                      <span style={{ fontSize: '.85rem' }}>??</span>
-                      <span style={{ fontSize: '.72rem', fontWeight: '800', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.6px' }}>Reschedule</span>
-                    </div>
+                    <span style={{ fontSize: '.72rem', fontWeight: '800', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.6px' }}>Reschedule</span>
                     <button onClick={() => setReschedMode(m => !m)} style={{ background: reschedMode ? '#2a2a2a' : 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '8px', padding: '5px 13px', fontSize: '.73rem', fontWeight: '700', cursor: 'pointer' }}>
                       {reschedMode ? 'Cancel' : 'Change Date / Time'}
                     </button>
@@ -1068,74 +976,70 @@ export default function AdminPage() {
                       </div>
                       <button onClick={saveReschedule} disabled={reschedSaving || !reschedDate.trim()}
                         style={{ padding: '9px 20px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '9px', fontWeight: '700', fontSize: '.82rem', cursor: 'pointer', opacity: reschedSaving ? .6 : 1 }}>
-                        {reschedSaving ? 'Saving?' : 'Save New Date'}
+                        {reschedSaving ? 'Saving...' : 'Save New Date'}
                       </button>
                     </div>
                   )}
                 </div>
 
                 {/* Admin Notes */}
-                <div style={{ background: '#141414', borderRadius: '14px', border: '1px solid #252525', overflow: 'hidden', marginBottom: '10px' }}>
-                  <div style={{ padding: '13px 18px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', gap: '7px' }}>
-                    <span style={{ fontSize: '.85rem' }}>??</span>
+                <div style={{ background: '#141414', borderRadius: '14px', border: '1px solid #252525', overflow: 'hidden' }}>
+                  <div style={{ padding: '13px 18px', borderBottom: '1px solid #222' }}>
                     <span style={{ fontSize: '.72rem', fontWeight: '800', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.6px' }}>Admin Notes (private)</span>
                   </div>
                   <div style={{ padding: '12px 16px' }}>
-                    <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add private notes about this client or job?" rows={3}
+                    <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add private notes about this client or job..." rows={3}
                       style={{ width: '100%', padding: '10px 12px', background: '#1a1a1a', border: '1.5px solid #2a2a2a', borderRadius: '9px', color: 'white', fontSize: '.83rem', fontFamily: "'DM Sans',sans-serif", outline: 'none', resize: 'vertical' }} />
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
                       <button onClick={saveNote} disabled={noteSaving}
                         style={{ padding: '8px 20px', background: '#a855f7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '.8rem', cursor: 'pointer', opacity: noteSaving ? .6 : 1 }}>
-                        {noteSaving ? 'Saving?' : 'Save Note'}
+                        {noteSaving ? 'Saving...' : 'Save Note'}
                       </button>
-                      {noteSaved && <span style={{ fontSize: '.78rem', color: '#10b981', fontWeight: '700' }}>? Saved!</span>}
+                      {noteSaved && <span style={{ fontSize: '.78rem', color: '#10b981', fontWeight: '700' }}>Saved!</span>}
                     </div>
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
-                  {selected.status === 'new'       && <button className="act-btn act-confirm" onClick={() => confirmReq(selected)} style={{ flex: 1, minWidth: '140px' }}>? Confirm Appointment</button>}
-                  {selected.status === 'confirmed' && <button className="act-btn act-done"    onClick={() => markDone(selected)}   style={{ flex: 1, minWidth: '140px' }}>? Mark Done</button>}
-                  <button className="act-btn act-chat" onClick={() => { setChatReq(selected); setSelected(null); }} style={{ flex: 1, minWidth: '110px' }}>?? Chat</button>
+                {/* Action buttons */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {selected.status === 'new'       && <button className="act-btn act-confirm" onClick={() => confirmReq(selected)} style={{ flex: 1, minWidth: '140px' }}>Confirm Appointment</button>}
+                  {selected.status === 'confirmed' && <button className="act-btn act-done"    onClick={() => markDone(selected)}   style={{ flex: 1, minWidth: '140px' }}>Mark Done</button>}
+                  <button className="act-btn act-chat" onClick={() => { setChatReq(selected); setSelected(null); }} style={{ flex: 1, minWidth: '110px' }}>Chat</button>
                   <a href={'mailto:' + selected.email + '?subject=Your Cleaning Appointment Reminder&body=Hi ' + (selected.name ? selected.name.split(' ')[0] : '') + '%2C%0A%0AThis is a friendly reminder that your cleaning appointment is scheduled for ' + encodeURIComponent(selected.date) + ' at ' + encodeURIComponent(selected.time) + '.%0A%0AAddress%3A ' + encodeURIComponent(selected.address) + '%0A%0APlease reach out if you have any questions!%0A%0A- Yoselin%27s Cleaning Service'}
                     style={{ flex: 1, minWidth: '110px', padding: '11px', borderRadius: '12px', fontSize: '.82rem', fontWeight: '700', cursor: 'pointer', border: 'none', background: '#1e3a5f', color: '#60a5fa', textAlign: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    ?? Reminder
+                    Email Reminder
                   </a>
                   <button onClick={() => { setHistoryClient(selected); setSelected(null); }} style={{ flex: 1, minWidth: '110px', padding: '11px', borderRadius: '12px', fontSize: '.82rem', fontWeight: '700', cursor: 'pointer', border: '1px solid #2a2a2a', background: '#1a1a1a', color: '#d1d5db' }}>
-                    ?? History
+                    History
                   </button>
                 </div>
 
                 {selected.status === 'done' && (
                   <div style={{ paddingTop: '8px', borderTop: '1px solid #2a2a2a' }}>
                     <button onClick={() => deleteRequest(selected)} style={{ width: '100%', padding: '11px', background: 'rgba(239,68,68,.1)', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '12px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.84rem', cursor: 'pointer' }}>
-                      ?? Delete This Request
+                      Delete This Request
                     </button>
                     <div style={{ fontSize: '.72rem', color: '#6b7280', textAlign: 'center', marginTop: '6px' }}>Only available for completed requests. Cannot be undone.</div>
                   </div>
                 )}
+              </div>
 
-              </div>{/* end scrollable body */}
-
-              {/* Close button footer */}
               <div style={{ padding: '12px 16px', borderTop: '1px solid #222', display: 'flex', justifyContent: 'flex-end' }}>
                 <button onClick={() => setSelected(null)} style={{ padding: '8px 22px', background: '#2a2a2a', border: 'none', borderRadius: '9px', color: '#9ca3af', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.82rem', cursor: 'pointer' }}>Close</button>
               </div>
-
             </div>
           </div>
         );
       })()}
 
-      {/* -- CLIENT HISTORY MODAL -- */}
+      {/* CLIENT HISTORY MODAL */}
       {historyClient && (
         <div className="overlay show" onClick={e => e.target === e.currentTarget && setHistoryClient(null)}>
           <div className="modal" style={{ background: '#181818', border: '1px solid #2a2a2a', maxWidth: '620px' }}>
             <div className="modal-head">
               <div>
                 <h3 style={{ color: 'white' }}>Client History</h3>
-                <div style={{ fontSize: '.78rem', color: '#9ca3af', marginTop: '2px' }}>{historyClient.name} ? {historyClient.email}</div>
+                <div style={{ fontSize: '.78rem', color: '#9ca3af', marginTop: '2px' }}>{historyClient.name} — {historyClient.email}</div>
               </div>
               <button className="modal-close" onClick={() => setHistoryClient(null)}>X</button>
             </div>
@@ -1162,7 +1066,7 @@ export default function AdminPage() {
                       <div>
                         <div style={{ fontSize: '.82rem', color: '#9ca3af', marginBottom: '3px' }}>{r.submittedAt}</div>
                         <div style={{ fontWeight: '700', color: 'white', marginBottom: '3px' }}>{r.date} at {r.time}</div>
-                        <div style={{ fontSize: '.78rem', color: '#6b7280' }}>{r.rooms} ? {r.bathrooms}</div>
+                        <div style={{ fontSize: '.78rem', color: '#6b7280' }}>{r.rooms} — {r.bathrooms}</div>
                         {r.adminNotes && <div style={{ fontSize: '.75rem', color: '#a855f7', marginTop: '4px' }}>Note: {r.adminNotes}</div>}
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
