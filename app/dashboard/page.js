@@ -69,6 +69,9 @@ export default function DashboardPage() {
   useEffect(() => {
     const reqId = requests[0]?.id;
     if (activeTab === 'messages' && reqId) {
+      // useUnreadCount reads from chatReads/{id}_customer lastReadAt
+      setDoc(doc(db, 'chatReads', `${reqId}_customer`), { lastReadAt: new Date() }, { merge: true }).catch(() => {});
+      // Also zero out the legacy chatUnread counter
       setDoc(doc(db, 'chatUnread', reqId), { unreadByCustomer: 0 }, { merge: true }).catch(() => {});
     }
   }, [activeTab, requests]);

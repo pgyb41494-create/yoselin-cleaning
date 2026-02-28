@@ -206,11 +206,14 @@ export default function Chat({
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  /* Mark as read */
+  /* Mark as read — updates both the chatUnread counter AND the chatReads lastReadAt
+     so that useUnreadCount (which reads chatReads) correctly zeroes the badge */
   useEffect(() => {
     if (!requestId) return;
     const field = senderRole === 'admin' ? 'unreadByAdmin' : 'unreadByCustomer';
     setDoc(doc(db, 'chatUnread', requestId), { [field]: 0 }, { merge: true }).catch(() => {});
+    // Update the timestamp-based read receipt that useUnreadCount relies on
+    setDoc(doc(db, 'chatReads', `${requestId}_${senderRole}`), { lastReadAt: new Date() }, { merge: true }).catch(() => {});
   }, [requestId, senderRole, messages.length]);
 
   /* Send message — useCallback so it never changes reference */
