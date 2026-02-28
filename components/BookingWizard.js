@@ -1,11 +1,11 @@
-'use client';
+﻿'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 const BPRICES = { half: 15, small: 50, medium: 65, large: 80 };
-const RPRICES = { bed_small: 25, bed_medium: 30, bed_large: 35, liv_medium: 15, liv_large: 35, office: 10, kit_small: 45, kit_medium: 55, kit_large: 70, laundry: 10, basement: 75 };
-const RNAMES  = { bed_small: 'Small Bedroom', bed_medium: 'Medium Bedroom', bed_large: 'Large/Master Bedroom', liv_medium: 'Medium Living Room', liv_large: 'Large Living Room', office: 'Office/Study', kit_small: 'Small Kitchen', kit_medium: 'Medium Kitchen', kit_large: 'Large Kitchen', laundry: 'Laundry Room', basement: 'Basement' };
+const RPRICES = { bed_small: 25, bed_medium: 30, bed_large: 35, liv_small: 20, liv_medium: 25, liv_large: 35, office: 10, kit_small: 45, kit_medium: 55, kit_large: 70, laundry: 10, basement: 75 };
+const RNAMES  = { bed_small: 'Small Bedroom', bed_medium: 'Medium Bedroom', bed_large: 'Large/Master Bedroom', liv_small: 'Small Living Room', liv_medium: 'Medium Living Room', liv_large: 'Large Living Room', office: 'Office/Study', kit_small: 'Small Kitchen', kit_medium: 'Medium Kitchen', kit_large: 'Large Kitchen', laundry: 'Laundry Room', basement: 'Basement' };
 const BNAMES  = { half: 'Half Bath', small: 'Small Full Bath', medium: 'Medium Full Bath', large: 'Large/Master Bath' };
 
 const EXTRAS = [
@@ -19,16 +19,17 @@ const EXTRAS = [
 
 // pct kept for discount calculation — labels intentionally omitted
 const FREQS = [
-  { val: 'once',     label: 'One-Time',     pct: 0     },
-  { val: 'biweekly', label: 'Bi-Weekly',    pct: 0.15  },
-  { val: 'weekly',   label: 'Weekly',       pct: 0.175 },
-  { val: 'monthly',  label: '2-3x / Month', pct: 0.125 },
+  { val: 'once',     label: 'One-Time',  pct: 0     },
+  { val: 'weekly',   label: 'Weekly',    pct: 0.175 },
+  { val: 'biweekly', label: 'Bi-Weekly', pct: 0.15  },
+  { val: 'monthly',  label: 'Monthly',   pct: 0.125 },
 ];
 
 const BEDROOMS = [
   { key: 'bed_small',  name: 'Small Bedroom',        desc: 'Guest room or compact space'   },
   { key: 'bed_medium', name: 'Medium Bedroom',       desc: 'Standard bedroom with closet'  },
   { key: 'bed_large',  name: 'Large/Master Bedroom', desc: 'Spacious with en-suite'        },
+  { key: 'liv_small',  name: 'Small Living Room',    desc: 'Cozy or compact space'         },
   { key: 'liv_medium', name: 'Medium Living Room',   desc: 'Standard family room'          },
   { key: 'liv_large',  name: 'Large Living Room',    desc: 'Open-concept space'            },
   { key: 'office',     name: 'Office/Study',         desc: 'Home office or reading room'   },
@@ -48,7 +49,7 @@ const KITCHEN = [
 ];
 
 const initBaths = () => ({ half: 0, small: 0, medium: 0, large: 0 });
-const initRooms = () => ({ bed_small: 0, bed_medium: 0, bed_large: 0, liv_medium: 0, liv_large: 0, office: 0, kit_small: 0, kit_medium: 0, kit_large: 0, laundry: 0, basement: 0 });
+const initRooms = () => ({ bed_small: 0, bed_medium: 0, bed_large: 0, liv_small: 0, liv_medium: 0, liv_large: 0, office: 0, kit_small: 0, kit_medium: 0, kit_large: 0, laundry: 0, basement: 0 });
 
 export default function BookingWizard({ user, onDone, adminMode = false }) {
   const [step,         setStep]         = useState(0);
@@ -598,26 +599,40 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               <div className="card-body">
                 <div className="row2">
                   <div className="fg">
-                    <label>First time with us?</label>
-                    <select value={firstTime} onChange={e => setFirstTime(e.target.value)}>
-                      <option value="no">No, returning client</option>
-                      <option value="yes">Yes — 10% first-time discount</option>
-                    </select>
+                    <label style={{ marginBottom: '8px', display: 'block' }}>First-time client?</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {['no', 'yes'].map(v => (
+                        <button key={v} type="button" onClick={() => setFirstTime(v)} style={{
+                          flex: 1, padding: '11px 0', borderRadius: '10px', cursor: 'pointer',
+                          fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.92rem',
+                          border: firstTime === v ? (v === 'yes' ? '2px solid #10b981' : '2px solid #555') : '2px solid #2a2a2a',
+                          background: firstTime === v ? (v === 'yes' ? 'rgba(16,185,129,.18)' : '#252525') : '#1a1a1a',
+                          color: firstTime === v ? (v === 'yes' ? '#10b981' : '#d1d5db') : '#4b5563',
+                          transition: 'all .15s',
+                        }}>{v === 'yes' ? 'Yes' : 'No'}</button>
+                      ))}
+                    </div>
                   </div>
                   <div className="fg">
-                    <label>Senior discount?</label>
-                    <select value={senior} onChange={e => setSenior(e.target.value)}>
-                      <option value="no">No</option>
-                      <option value="yes">Yes — 10% senior discount</option>
-                    </select>
+                    <label style={{ marginBottom: '8px', display: 'block' }}>Senior discount?</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {['no', 'yes'].map(v => (
+                        <button key={v} type="button" onClick={() => setSenior(v)} style={{
+                          flex: 1, padding: '11px 0', borderRadius: '10px', cursor: 'pointer',
+                          fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.92rem',
+                          border: senior === v ? (v === 'yes' ? '2px solid #10b981' : '2px solid #555') : '2px solid #2a2a2a',
+                          background: senior === v ? (v === 'yes' ? 'rgba(16,185,129,.18)' : '#252525') : '#1a1a1a',
+                          color: senior === v ? (v === 'yes' ? '#10b981' : '#d1d5db') : '#4b5563',
+                          transition: 'all .15s',
+                        }}>{v === 'yes' ? 'Yes' : 'No'}</button>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 {(firstTime === 'yes' || senior === 'yes') && (
-                  <div style={{ marginTop: '10px', background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.25)', borderRadius: '10px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '1.1rem' }}>✅</span>
-                    <span style={{ fontSize: '.82rem', fontWeight: '700', color: '#10b981' }}>
-                      Discount applied — your estimate already reflects the savings!
-                    </span>
+                  <div style={{ marginTop: '12px', background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.25)', borderRadius: '10px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '1rem' }}>✅</span>
+                    <span style={{ fontSize: '.82rem', fontWeight: '700', color: '#10b981' }}>Discount applied!</span>
                   </div>
                 )}
               </div>
