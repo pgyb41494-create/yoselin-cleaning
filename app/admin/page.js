@@ -372,7 +372,7 @@ export default function AdminPage() {
     { key: 'calendar',     label: 'Calendar'     },
     { key: 'availability', label: 'Availability' },
     { key: 'create',       label: 'Create Quote' },
-    { key: 'pricing',      label: '?? Pricing'   },
+    { key: 'pricing',      label: '💰 Pricing'   },
   ];
 
   const btnStyle = (color) => ({
@@ -588,7 +588,7 @@ export default function AdminPage() {
               <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #222', marginTop: '20px', overflow: 'hidden' }}>
                 <div style={{ padding: '14px 20px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ fontWeight: '700', color: 'white' }}>{MONTH_NAMES[calMonth]} {calSelected}</div>
-                  <button onClick={() => setCalSelected(null)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.1rem' }}>?</button>
+                  <button onClick={() => setCalSelected(null)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.1rem' }}>×</button>
                 </div>
                 {getRequestsForDay(calSelected).map(r => (
                   <div key={r.id} style={{ padding: '14px 20px', borderBottom: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
@@ -695,11 +695,11 @@ export default function AdminPage() {
                 {/* Quick preset buttons */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
                   {[
-                    { label: '?? Morning',   times: ALL_TIMES.slice(0, 12) },
-                    { label: '?? Afternoon', times: ALL_TIMES.slice(12, 22) },
-                    { label: '?? Evening',   times: ALL_TIMES.slice(22) },
-                    { label: '?? All Day',   times: ALL_TIMES },
-                    { label: '? Clear',      times: [] },
+                    { label: '🌅 Morning',   times: ALL_TIMES.slice(0, 12) },
+                    { label: '☀ Afternoon', times: ALL_TIMES.slice(12, 22) },
+                    { label: '🌆 Evening',   times: ALL_TIMES.slice(22) },
+                    { label: '📅 All Day',   times: ALL_TIMES },
+                    { label: '✕ Clear',      times: [] },
                   ].map(({ label, times }) => (
                     <button key={label} onClick={() => setSelectedTimes(times)} style={{ padding: '7px 13px', borderRadius: '99px', border: '1px solid #2a2a2a', background: '#1a1a1a', color: '#d1d5db', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}>{label}</button>
                   ))}
@@ -776,7 +776,7 @@ export default function AdminPage() {
               <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #1f1f1f', overflow: 'hidden', marginTop: '20px' }}>
                 <div style={{ padding: '14px 18px', borderBottom: '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ color: '#9ca3af', fontSize: '.75rem', fontWeight: '700', letterSpacing: '.4px', textTransform: 'uppercase' }}>Saved Slots ({availability.length} total)</div>
-                  <button onClick={clearAllAvailability} style={{ padding: '6px 14px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.4)', color: '#ef4444', borderRadius: '8px', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer' }}>?? Clear All</button>
+                  <button onClick={clearAllAvailability} style={{ padding: '6px 14px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.4)', color: '#ef4444', borderRadius: '8px', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer' }}>🗑 Clear All</button>
                 </div>
                 <div style={{ padding: '14px 18px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {(() => {
@@ -786,13 +786,13 @@ export default function AdminPage() {
                       <div key={date} style={{ background: '#151515', borderRadius: '12px', border: '1px solid #222', padding: '10px 14px', minWidth: '160px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '7px', gap: '8px' }}>
                           <div style={{ fontSize: '.72rem', fontWeight: '700', color: '#a855f7', textTransform: 'uppercase' }}>{date}</div>
-                          <button onClick={() => clearDateSlots(slots)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.8rem', padding: '0', lineHeight: 1, fontWeight: '700' }}>??</button>
+                          <button onClick={() => clearDateSlots(slots)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.8rem', padding: '0', lineHeight: 1, fontWeight: '700' }}>🗑</button>
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                           {slots.map(s => (
                             <span key={s.id} style={{ background: '#1a1a1a', color: '#d1d5db', fontSize: '.7rem', fontWeight: '700', padding: '3px 8px', borderRadius: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               {s.time}
-                              <button onClick={() => deleteDoc(doc(db, 'availability', s.id))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.72rem', padding: '0', lineHeight: 1 }}>?</button>
+                              <button onClick={() => deleteDoc(doc(db, 'availability', s.id))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.72rem', padding: '0', lineHeight: 1 }}>×</button>
                             </span>
                           ))}
                         </div>
@@ -814,7 +814,7 @@ export default function AdminPage() {
                 <div style={{ fontSize: '.8rem', color: '#6b7280', marginTop: '3px' }}>Tap a field, type the new price, then tap outside ? changes are saved when you press Save</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {priceSaved && <span style={{ fontSize: '.82rem', color: '#10b981', fontWeight: '700' }}>? Saved!</span>}
+                {priceSaved && <span style={{ fontSize: '.82rem', color: '#10b981', fontWeight: '700' }}>✅ Saved!</span>}
                 <button onClick={savePricing} disabled={priceSaving} style={{ padding: '11px 24px', background: 'linear-gradient(135deg,#a855f7,#db2777)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer', opacity: priceSaving ? .6 : 1 }}>
                   {priceSaving ? 'Saving...' : 'Save All Prices'}
                 </button>
@@ -863,7 +863,7 @@ export default function AdminPage() {
             </PriceCard>
 
             <div style={{ background: 'rgba(168,85,247,.06)', border: '1px solid rgba(168,85,247,.2)', borderRadius: '14px', padding: '14px 18px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>??</span>
+              <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>💡</span>
               <div style={{ fontSize: '.82rem', color: '#9ca3af', lineHeight: 1.6 }}>
                 Tap any field and type the new value. The keyboard stays open while you move between fields. Hit <strong style={{ color: 'white' }}>Save All Prices</strong> when done ? changes apply instantly on the booking form.
               </div>
@@ -902,231 +902,176 @@ export default function AdminPage() {
       </div>
 
       {/* -- DETAIL MODAL -- */}
-      {selected && (() => {
-        const Row = ({ label, value, highlight }) => value ? (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', padding: '11px 0', borderBottom: '1px solid #1e1e1e' }}>
-            <span style={{ fontSize: '.78rem', fontWeight: '600', color: '#6b7280', minWidth: '120px', flexShrink: 0 }}>{label}</span>
-            <span style={{ fontSize: '.84rem', fontWeight: highlight ? '700' : '500', color: highlight ? 'white' : '#d1d5db', textAlign: 'right' }}>{value}</span>
-          </div>
-        ) : null;
+      {selected && (
+        <div className="overlay show" onClick={e => e.target === e.currentTarget && setSelected(null)}>
+          <div style={{ background: '#141822', border: '1px solid #232a3a', borderRadius: '22px', maxWidth: '620px', width: '95vw', maxHeight: '92vh', overflowY: 'auto', position: 'relative', margin: 'auto' }}>
 
-        const Section = ({ title, icon, children }) => (
-          <div style={{ background: '#141414', borderRadius: '14px', border: '1px solid #252525', overflow: 'hidden', marginBottom: '10px' }}>
-            <div style={{ padding: '13px 18px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', gap: '7px' }}>
-              <span style={{ fontSize: '.85rem' }}>{icon}</span>
-              <span style={{ fontSize: '.72rem', fontWeight: '800', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.6px' }}>{title}</span>
-            </div>
-            <div style={{ padding: '4px 16px 10px' }}>{children}</div>
-          </div>
-        );
-
-        return (
-          <div className="overlay show" onClick={e => e.target === e.currentTarget && setSelected(null)}>
-            <div className="modal" style={{ background: '#181818', border: '1px solid #2a2a2a', maxWidth: '700px', width: '95vw', padding: '0', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
-
-              {/* Header */}
-              <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                    <h3 style={{ color: 'white', fontFamily: 'Playfair Display, serif', fontSize: '1.15rem', fontWeight: '700', margin: 0 }}>{selected.name}</h3>
-                    <span className={'badge badge-' + selected.status}>{selected.status === 'new' ? 'New' : selected.status === 'confirmed' ? 'Confirmed' : 'Done'}</span>
-                    {selected.walkThrough === 'yes' && <span style={{ fontSize: '.65rem', fontWeight: '800', color: '#f59e0b', background: 'rgba(245,158,11,.15)', border: '1px solid rgba(245,158,11,.35)', padding: '2px 8px', borderRadius: '99px' }}>?? WALK-THROUGH</span>}
-                  </div>
-                  <div style={{ fontSize: '.78rem', color: '#6b7280', marginTop: '4px' }}>{selected.submittedAt} ? #{selected.id.slice(-6).toUpperCase()}</div>
-                </div>
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '2rem', fontWeight: '900', color: '#60a5fa', lineHeight: 1 }}>${selected.estimate}</div>
-                  <div style={{ fontSize: '.68rem', color: '#6b7280', marginTop: '2px' }}>estimate</div>
+            {/* Header: Name + Close */}
+            <div style={{ padding: '24px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: '800', color: 'white', margin: 0, lineHeight: 1.2 }}>{selected.name}</h2>
+                <div style={{ marginTop: '8px' }}>
+                  <span className={'badge badge-' + selected.status} style={{ fontSize: '.72rem' }}>{selected.status === 'new' ? 'New' : selected.status === 'confirmed' ? 'Confirmed' : 'Done'}</span>
                 </div>
               </div>
+              <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: '1.4rem', cursor: 'pointer', padding: '4px', lineHeight: 1 }}>&times;</button>
+            </div>
 
-              {/* Scrollable body */}
-              <div style={{ padding: '20px 22px 12px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-
-                {/* Walk-through banner */}
-                {selected.walkThrough === 'yes' && (
-                  <div style={{ background: 'rgba(245,158,11,.08)', border: '1.5px solid rgba(245,158,11,.35)', borderRadius: '12px', padding: '12px 16px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '1.4rem' }}>??</span>
-                    <div>
-                      <div style={{ fontWeight: '800', color: '#f59e0b', fontSize: '.85rem' }}>Walk-Through Requested</div>
-                      <div style={{ fontSize: '.76rem', color: '#d1d5db', marginTop: '2px' }}>Client wants you to visit first to assess the job before booking.</div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Reschedule request banner */}
-                {selected.rescheduleRequested && (
-                  <div style={{ background: 'rgba(239,68,68,.08)', border: '1.5px solid rgba(239,68,68,.3)', borderRadius: '12px', padding: '12px 16px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '1.4rem' }}>??</span>
-                    <div>
-                      <div style={{ fontWeight: '800', color: '#ef4444', fontSize: '.85rem' }}>Client Requested a Reschedule</div>
-                      {selected.reschedulePreferredDates && <div style={{ fontSize: '.76rem', color: '#d1d5db', marginTop: '2px' }}>Preferred: {selected.reschedulePreferredDates}</div>}
-                      {selected.rescheduleReason && <div style={{ fontSize: '.73rem', color: '#9ca3af', marginTop: '1px' }}>Reason: {selected.rescheduleReason}</div>}
-                    </div>
-                  </div>
-                )}
-
-                {/* Contact */}
-                <Section title="Contact" icon="??">
-                  <Row label="Phone"   value={selected.phone} highlight />
-                  <Row label="Email"   value={selected.email} />
-                  <Row label="Address" value={selected.address} />
-                  <Row label="Referral" value={selected.referral} />
-                </Section>
-
-                {/* Appointment */}
-                <Section title="Appointment" icon="??">
-                  <Row label="Date"      value={selected.date} highlight />
-                  <Row label="Time"      value={selected.time} highlight />
-                  <Row label="Frequency" value={selected.frequency} />
-                  <Row label="Access"    value={selected.access} />
-                </Section>
-
-                {/* Job Details */}
-                <Section title="Job Details" icon="??">
-                  <Row label="Bathrooms" value={selected.bathrooms} />
-                  <Row label="Rooms"     value={selected.rooms} />
-                  <Row label="Add-Ons"   value={selected.addons || 'None'} />
-                  <Row label="Pets"      value={selected.pets === 'yes' ? '?? Yes' : 'No'} />
-                  <Row label="Walk-Through" value={selected.walkThrough === 'yes' ? '? Yes ? visit requested' : 'No'} highlight={selected.walkThrough === 'yes'} />
-                  {selected.otherRequests && <Row label="Special Requests" value={selected.otherRequests} />}
-                </Section>
-
-                {/* Discounts */}
-                <Section title="Discounts" icon="??">
-                  <Row label="First-Time"  value={selected.firstTime === 'yes' ? '? Applied' : 'No'} highlight={selected.firstTime === 'yes'} />
-                  <Row label="Senior"      value={selected.senior === 'yes' ? '? Applied' : 'No'}     highlight={selected.senior === 'yes'} />
-                </Section>
-
-                {/* Recurring Schedule */}
-                {selected.frequency && selected.frequency !== 'once' && scheduleEntries.length > 0 && (
-                  <div style={{ background: '#141414', borderRadius: '14px', border: '1px solid #252525', overflow: 'hidden' }}>
-                    <div style={{ padding: '13px 18px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                        <span style={{ fontSize: '.85rem' }}>&#x1F501;</span>
-                        <span style={{ fontSize: '.72rem', fontWeight: '800', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.6px' }}>Recurring Schedule</span>
-                        <span style={{ fontSize: '.68rem', background: 'rgba(168,85,247,.15)', color: '#a855f7', border: '1px solid rgba(168,85,247,.3)', borderRadius: '99px', padding: '2px 8px', fontWeight: '700' }}>{selected.frequency}</span>
-                      </div>
-                      <span style={{ fontSize: '.72rem', color: '#6b7280' }}>{scheduleEntries.filter(e => e.status === 'upcoming').length} upcoming</span>
-                    </div>
-                    <div style={{ padding: '10px 18px 14px', maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {scheduleEntries.map((entry, i) => (
-                        <div key={entry.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: entry.status === 'done' ? '#111' : '#1a1a2e', borderRadius: '9px', border: '1px solid ' + (entry.status === 'done' ? '#222' : '#2a3a5a') }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span style={{ fontSize: '.68rem', fontWeight: '800', color: '#555', minWidth: '18px' }}>#{i + 1}</span>
-                            <div>
-                              <div style={{ fontSize: '.8rem', fontWeight: '700', color: entry.status === 'done' ? '#6b7280' : 'white' }}>{entry.date}</div>
-                              <div style={{ fontSize: '.7rem', color: '#6b7280' }}>{entry.time}</div>
-                            </div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {entry.status === 'done'
-                              ? <span style={{ fontSize: '.68rem', background: 'rgba(16,185,129,.12)', color: '#10b981', padding: '2px 8px', borderRadius: '99px', fontWeight: '700' }}>Done</span>
-                              : <span style={{ fontSize: '.68rem', background: 'rgba(96,165,250,.12)', color: '#60a5fa', padding: '2px 8px', borderRadius: '99px', fontWeight: '700' }}>Upcoming</span>
-                            }
-                            {entry.status !== 'done' && (
-                              <button onClick={async () => {
-                                await updateDoc(doc(db, 'schedule', entry.id), { status: 'done' });
-                                setScheduleEntries(prev => prev.map(e => e.id === entry.id ? { ...e, status: 'done' } : e));
-                              }} style={{ fontSize: '.68rem', background: 'rgba(16,185,129,.1)', color: '#10b981', border: '1px solid rgba(16,185,129,.3)', borderRadius: '6px', padding: '3px 8px', cursor: 'pointer', fontWeight: '700' }}>Mark Done</button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Reschedule tool */}
-                <div style={{ background: '#141414', borderRadius: '14px', border: '1px solid #252525', overflow: 'hidden', marginBottom: '10px' }}>
-                  <div style={{ padding: '10px 16px', borderBottom: reschedMode ? '1px solid #222' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                      <span style={{ fontSize: '.85rem' }}>??</span>
-                      <span style={{ fontSize: '.72rem', fontWeight: '800', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.6px' }}>Reschedule</span>
-                    </div>
-                    <button onClick={() => setReschedMode(m => !m)} style={{ background: reschedMode ? '#2a2a2a' : 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '8px', padding: '5px 13px', fontSize: '.73rem', fontWeight: '700', cursor: 'pointer' }}>
-                      {reschedMode ? 'Cancel' : 'Change Date / Time'}
-                    </button>
-                  </div>
-                  {reschedMode && (
-                    <div style={{ padding: '12px 16px' }}>
-                      <div style={{ fontSize: '.74rem', color: '#6b7280', marginBottom: '10px' }}>Current: {selected.date} at {selected.time}</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '.73rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>New Date</label>
-                          <input value={reschedDate} onChange={e => setReschedDate(e.target.value)} placeholder="e.g. March 5, 2026"
-                            style={{ width: '100%', padding: '8px 11px', background: '#1a1a1a', border: '1.5px solid #333', borderRadius: '9px', color: 'white', fontSize: '.82rem', outline: 'none' }} />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '.73rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>New Time</label>
-                          <select value={reschedTime} onChange={e => setReschedTime(e.target.value)}
-                            style={{ width: '100%', padding: '8px 11px', background: '#1a1a1a', border: '1.5px solid #333', borderRadius: '9px', color: 'white', fontSize: '.82rem', outline: 'none' }}>
-                            <option value="">Select time</option>
-                            {ALL_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
-                          </select>
-                        </div>
-                      </div>
-                      <button onClick={saveReschedule} disabled={reschedSaving || !reschedDate.trim()}
-                        style={{ padding: '9px 20px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '9px', fontWeight: '700', fontSize: '.82rem', cursor: 'pointer', opacity: reschedSaving ? .6 : 1 }}>
-                        {reschedSaving ? 'Saving?' : 'Save New Date'}
-                      </button>
-                    </div>
-                  )}
+            {/* Estimate + Quick Info Card */}
+            <div style={{ margin: '18px 24px', background: '#1a2030', borderRadius: '16px', border: '1px solid #2a3345', overflow: 'hidden' }}>
+              <div style={{ display: 'flex' }}>
+                <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center', borderRight: '1px solid #2a3345' }}>
+                  <div style={{ fontSize: '.65rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '4px' }}>Estimate</div>
+                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '2.4rem', fontWeight: '900', background: 'linear-gradient(135deg, #c084fc, #60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', lineHeight: 1 }}>${selected.estimate}</div>
                 </div>
+                <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
+                  {[
+                    ['\uD83D\uDCC5', 'Date', selected.date || 'TBD'],
+                    ['\uD83D\uDD52', 'Time', selected.time || 'TBD'],
+                    ['\uD83D\uDCF1', 'Phone', selected.phone || 'N/A'],
+                    ['\uD83D\uDD01', 'Frequency', selected.frequency || 'once'],
+                  ].map(([ico, label, val], i) => (
+                    <div key={label} style={{ padding: '12px 16px', borderBottom: i < 2 ? '1px solid #2a3345' : 'none', borderRight: i % 2 === 0 ? '1px solid #2a3345' : 'none' }}>
+                      <div style={{ fontSize: '.62rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '3px' }}>{ico} {label}</div>
+                      <div style={{ fontSize: '.88rem', fontWeight: '700', color: 'white' }}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
 
-                {/* Admin Notes */}
-                <div style={{ background: '#141414', borderRadius: '14px', border: '1px solid #252525', overflow: 'hidden', marginBottom: '10px' }}>
-                  <div style={{ padding: '13px 18px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', gap: '7px' }}>
-                    <span style={{ fontSize: '.85rem' }}>??</span>
-                    <span style={{ fontSize: '.72rem', fontWeight: '800', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.6px' }}>Admin Notes (private)</span>
-                  </div>
-                  <div style={{ padding: '12px 16px' }}>
-                    <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add private notes about this client or job?" rows={3}
-                      style={{ width: '100%', padding: '10px 12px', background: '#1a1a1a', border: '1.5px solid #2a2a2a', borderRadius: '9px', color: 'white', fontSize: '.83rem', fontFamily: "'DM Sans',sans-serif", outline: 'none', resize: 'vertical' }} />
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
-                      <button onClick={saveNote} disabled={noteSaving}
-                        style={{ padding: '8px 20px', background: '#a855f7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '.8rem', cursor: 'pointer', opacity: noteSaving ? .6 : 1 }}>
-                        {noteSaving ? 'Saving?' : 'Save Note'}
-                      </button>
-                      {noteSaved && <span style={{ fontSize: '.78rem', color: '#10b981', fontWeight: '700' }}>? Saved!</span>}
+            {/* Details Grid */}
+            <div style={{ margin: '0 24px', borderRadius: '14px', border: '1px solid #232a3a', overflow: 'hidden', background: '#161c28' }}>
+              {[
+                [['Submitted', selected.submittedAt], ['Email', selected.email]],
+                [['Address', selected.address || 'N/A', true]],
+                [['Bathrooms', selected.bathrooms || 'None'], ['Rooms', selected.rooms || 'None']],
+                [['Add-Ons', selected.addons || 'None', true]],
+                [['Pets', selected.pets === 'yes' ? 'Yes' : 'No'], ['Walk-Through', selected.walkthrough === 'Yes' || selected.walkThrough === 'yes' ? 'Yes' : 'No']],
+                [['First-Time?', selected.firstTime === 'yes' ? 'Yes (10% disc)' : 'No'], ['Senior?', selected.senior === 'yes' ? 'Yes (10% disc)' : 'No']],
+                [['Home Access', selected.access || 'N/A'], ['Referral', selected.referral || 'N/A']],
+                [['Other Requests', selected.otherRequests || 'None', true]],
+              ].map((row, ri) => (
+                <div key={ri} style={{ display: 'grid', gridTemplateColumns: row.length === 1 && row[0][2] ? '1fr' : '1fr 1fr', borderBottom: '1px solid #232a3a' }}>
+                  {row.map(([label, val, full], ci) => (
+                    <div key={label} style={{ padding: '12px 18px', borderRight: ci === 0 && row.length > 1 ? '1px solid #232a3a' : 'none' }}>
+                      <div style={{ fontSize: '.62rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>{label}</div>
+                      <div style={{ fontSize: '.86rem', fontWeight: '600', color: '#d1d5db', lineHeight: 1.4 }}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            {/* Walk-through banner */}
+            {(selected.walkthrough === 'Yes' || selected.walkThrough === 'yes') && (
+              <div style={{ margin: '14px 24px 0', background: 'rgba(245,158,11,.08)', border: '1.5px solid rgba(245,158,11,.35)', borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '1.3rem' }}>&#x1F3E0;</span>
+                <div>
+                  <div style={{ fontWeight: '800', color: '#f59e0b', fontSize: '.85rem' }}>Walk-Through Requested</div>
+                  <div style={{ fontSize: '.76rem', color: '#d1d5db', marginTop: '2px' }}>Client wants you to visit first to assess the job.</div>
+                </div>
+              </div>
+            )}
+
+            {/* Reschedule request banner */}
+            {selected.rescheduleRequested && (
+              <div style={{ margin: '14px 24px 0', background: 'rgba(239,68,68,.08)', border: '1.5px solid rgba(239,68,68,.3)', borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '1.3rem' }}>&#x26A0;&#xFE0F;</span>
+                <div>
+                  <div style={{ fontWeight: '800', color: '#ef4444', fontSize: '.85rem' }}>Client Requested a Reschedule</div>
+                  {selected.reschedulePreferredDates && <div style={{ fontSize: '.76rem', color: '#d1d5db', marginTop: '2px' }}>Preferred: {selected.reschedulePreferredDates}</div>}
+                  {selected.rescheduleReason && <div style={{ fontSize: '.73rem', color: '#9ca3af', marginTop: '1px' }}>Reason: {selected.rescheduleReason}</div>}
+                </div>
+              </div>
+            )}
+
+            {/* Reschedule Tool */}
+            <div style={{ margin: '14px 24px 0', background: '#1a2030', borderRadius: '14px', border: '1px solid #232a3a', overflow: 'hidden' }}>
+              <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: reschedMode ? '1px solid #232a3a' : 'none' }}>
+                <span style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af' }}>&#x1F4C5; Reschedule</span>
+                <button onClick={() => setReschedMode(m => !m)} style={{ background: reschedMode ? '#2a2a2a' : 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '8px', padding: '5px 13px', fontSize: '.73rem', fontWeight: '700', cursor: 'pointer' }}>
+                  {reschedMode ? 'Cancel' : 'Change Date / Time'}
+                </button>
+              </div>
+              {reschedMode && (
+                <div style={{ padding: '12px 16px' }}>
+                  <div style={{ fontSize: '.74rem', color: '#6b7280', marginBottom: '10px' }}>Current: {selected.date} at {selected.time}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '.73rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>New Date</label>
+                      <input value={reschedDate} onChange={e => setReschedDate(e.target.value)} placeholder="e.g. March 5, 2026"
+                        style={{ width: '100%', padding: '8px 11px', background: '#141822', border: '1.5px solid #333', borderRadius: '9px', color: 'white', fontSize: '.82rem', outline: 'none' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '.73rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>New Time</label>
+                      <select value={reschedTime} onChange={e => setReschedTime(e.target.value)}
+                        style={{ width: '100%', padding: '8px 11px', background: '#141822', border: '1.5px solid #333', borderRadius: '9px', color: 'white', fontSize: '.82rem', outline: 'none' }}>
+                        <option value="">Select time</option>
+                        {ALL_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
                     </div>
                   </div>
-                </div>
-
-                {/* Actions */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
-                  {selected.status === 'new'       && <button className="act-btn act-confirm" onClick={() => confirmReq(selected)} style={{ flex: 1, minWidth: '140px' }}>? Confirm Appointment</button>}
-                  {selected.status === 'confirmed' && <button className="act-btn act-done"    onClick={() => markDone(selected)}   style={{ flex: 1, minWidth: '140px' }}>? Mark Done</button>}
-                  <button className="act-btn act-chat" onClick={() => { setChatReq(selected); setSelected(null); }} style={{ flex: 1, minWidth: '110px' }}>?? Chat</button>
-                  <a href={'mailto:' + selected.email + '?subject=Your Cleaning Appointment Reminder&body=Hi ' + (selected.name ? selected.name.split(' ')[0] : '') + '%2C%0A%0AThis is a friendly reminder that your cleaning appointment is scheduled for ' + encodeURIComponent(selected.date) + ' at ' + encodeURIComponent(selected.time) + '.%0A%0AAddress%3A ' + encodeURIComponent(selected.address) + '%0A%0APlease reach out if you have any questions!%0A%0A- Yoselin%27s Cleaning Service'}
-                    style={{ flex: 1, minWidth: '110px', padding: '11px', borderRadius: '12px', fontSize: '.82rem', fontWeight: '700', cursor: 'pointer', border: 'none', background: '#1e3a5f', color: '#60a5fa', textAlign: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    ?? Reminder
-                  </a>
-                  <button onClick={() => { setHistoryClient(selected); setSelected(null); }} style={{ flex: 1, minWidth: '110px', padding: '11px', borderRadius: '12px', fontSize: '.82rem', fontWeight: '700', cursor: 'pointer', border: '1px solid #2a2a2a', background: '#1a1a1a', color: '#d1d5db' }}>
-                    ?? History
+                  <button onClick={saveReschedule} disabled={reschedSaving || !reschedDate.trim()}
+                    style={{ padding: '9px 20px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '9px', fontWeight: '700', fontSize: '.82rem', cursor: 'pointer', opacity: reschedSaving ? .6 : 1 }}>
+                    {reschedSaving ? 'Saving...' : 'Save New Date'}
                   </button>
                 </div>
-
-                {selected.status === 'done' && (
-                  <div style={{ paddingTop: '8px', borderTop: '1px solid #2a2a2a' }}>
-                    <button onClick={() => deleteRequest(selected)} style={{ width: '100%', padding: '11px', background: 'rgba(239,68,68,.1)', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '12px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.84rem', cursor: 'pointer' }}>
-                      ?? Delete This Request
-                    </button>
-                    <div style={{ fontSize: '.72rem', color: '#6b7280', textAlign: 'center', marginTop: '6px' }}>Only available for completed requests. Cannot be undone.</div>
-                  </div>
-                )}
-
-              </div>{/* end scrollable body */}
-
-              {/* Close button footer */}
-              <div style={{ padding: '12px 16px', borderTop: '1px solid #222', display: 'flex', justifyContent: 'flex-end' }}>
-                <button onClick={() => setSelected(null)} style={{ padding: '8px 22px', background: '#2a2a2a', border: 'none', borderRadius: '9px', color: '#9ca3af', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.82rem', cursor: 'pointer' }}>Close</button>
-              </div>
-
+              )}
             </div>
+
+            {/* Admin Notes */}
+            <div style={{ margin: '14px 24px 0', background: '#1a2030', borderRadius: '14px', border: '1px solid #232a3a', overflow: 'hidden' }}>
+              <div style={{ padding: '10px 16px', borderBottom: '1px solid #232a3a', display: 'flex', alignItems: 'center', gap: '7px' }}>
+                <span style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af' }}>&#x1F4DD; Admin Notes (private)</span>
+              </div>
+              <div style={{ padding: '12px 16px' }}>
+                <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add private notes..." rows={3}
+                  style={{ width: '100%', padding: '10px 12px', background: '#141822', border: '1.5px solid #2a3345', borderRadius: '9px', color: 'white', fontSize: '.83rem', fontFamily: "'DM Sans',sans-serif", outline: 'none', resize: 'vertical' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
+                  <button onClick={saveNote} disabled={noteSaving}
+                    style={{ padding: '8px 20px', background: '#a855f7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '.8rem', cursor: 'pointer', opacity: noteSaving ? .6 : 1 }}>
+                    {noteSaving ? 'Saving...' : 'Save Note'}
+                  </button>
+                  {noteSaved && <span style={{ fontSize: '.78rem', color: '#10b981', fontWeight: '700' }}>Saved!</span>}
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ padding: '18px 24px 24px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              {selected.status === 'new' && (
+                <button onClick={() => confirmReq(selected)} style={{ flex: 1, minWidth: '160px', padding: '14px', borderRadius: '14px', border: 'none', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', fontSize: '.9rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  &#x2705; Confirm Appointment
+                </button>
+              )}
+              {selected.status === 'confirmed' && (
+                <button onClick={() => markDone(selected)} style={{ flex: 1, minWidth: '160px', padding: '14px', borderRadius: '14px', border: 'none', background: 'linear-gradient(135deg, #a855f7, #7c3aed)', color: 'white', fontSize: '.9rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  &#x2705; Mark Done
+                </button>
+              )}
+              <button onClick={() => { setChatReq(selected); setSelected(null); }} style={{ flex: 1, minWidth: '140px', padding: '14px', borderRadius: '14px', border: 'none', background: 'linear-gradient(135deg, #1e3a5f, #1e40af)', color: '#93c5fd', fontSize: '.9rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                &#x1F4AC; Chat with Client
+              </button>
+              <a href={'mailto:' + selected.email + '?subject=Your Cleaning Appointment Reminder&body=Hi ' + (selected.name ? selected.name.split(' ')[0] : '') + '%2C%0A%0AReminder: your cleaning is scheduled for ' + encodeURIComponent(selected.date) + ' at ' + encodeURIComponent(selected.time) + '.%0A%0A- Yoselin%27s Cleaning'}
+                style={{ flex: 1, minWidth: '110px', padding: '14px', borderRadius: '14px', border: '1px solid #2a3345', background: '#1a2030', color: '#60a5fa', fontSize: '.85rem', fontWeight: '700', cursor: 'pointer', textAlign: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                &#x2709;&#xFE0F; Reminder
+              </a>
+              <button onClick={() => { setHistoryClient(selected); setSelected(null); }} style={{ flex: 1, minWidth: '110px', padding: '14px', borderRadius: '14px', border: '1px solid #2a3345', background: '#1a2030', color: '#d1d5db', fontSize: '.85rem', fontWeight: '700', cursor: 'pointer' }}>
+                &#x1F4CB; History
+              </button>
+              {selected.status === 'done' && (
+                <button onClick={() => deleteRequest(selected)} style={{ flex: '1 1 100%', padding: '12px', borderRadius: '12px', border: '1.5px solid rgba(239,68,68,.3)', background: 'rgba(239,68,68,.08)', color: '#ef4444', fontSize: '.84rem', fontWeight: '700', cursor: 'pointer' }}>
+                  &#x1F5D1; Delete Request
+                </button>
+              )}
+            </div>
+
           </div>
-        );
-      })()}
+        </div>
+      )}
+
+
 
       {/* -- CLIENT HISTORY MODAL -- */}
       {historyClient && (
