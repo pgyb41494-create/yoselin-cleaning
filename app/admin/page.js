@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, orderBy, query } from 'firebase/firestore';
-import { auth, db, ADMIN_EMAIL } from '../../lib/firebase';
+import { auth, db, ADMIN_EMAILS } from '../../lib/firebase';
 import Chat from '../../components/Chat';
 
 export default function AdminPage() {
@@ -16,7 +16,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
-      if (!u || u.email !== ADMIN_EMAIL) { router.push('/'); return; }
+      if (!u || !ADMIN_EMAILS.includes(u.email)) { router.push('/'); return; }
       setUser(u);
       setLoading(false);
     });
