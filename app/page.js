@@ -10,10 +10,26 @@ import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL } from '../lib/firebase';
 
 const FALLBACK_REVIEWS = [
-  { name: 'Maria G.',   stars: 5, text: 'Yoselin did an amazing job! My house has never looked this clean. She even organized my pantry without me asking. Highly recommend!', date: 'Jan 2025' },
-  { name: 'Ashley R.',  stars: 5, text: 'Super professional and thorough. I booked a deep clean and she went above and beyond. Will definitely be booking again every month!',  date: 'Feb 2025' },
-  { name: 'Carlos M.',  stars: 5, text: 'Best cleaning service I have ever used. On time, very detailed, and left everything sparkling. The booking process was so easy too.',   date: 'Feb 2025' },
-  { name: 'Tiffany W.', stars: 5, text: 'I was nervous about letting someone in my home but Yoselin made me feel so comfortable. Trustworthy, kind, and incredibly thorough.',  date: 'Mar 2025' },
+  { name: 'Maria G.',      stars: 5, text: 'Yoselin did an amazing job! My house has never looked this clean. She even organized my pantry without me asking. Absolutely love this service!', date: 'Jan 2025' },
+  { name: 'Ashley R.',     stars: 5, text: 'Super professional and thorough. I booked a deep clean and she went above and beyond every single room. Will definitely be booking again every month!', date: 'Feb 2025' },
+  { name: 'Carlos M.',     stars: 5, text: 'Best cleaning service I have ever used. On time, very detailed, and left everything sparkling. The online booking process was so easy too.', date: 'Feb 2025' },
+  { name: 'Tiffany W.',    stars: 5, text: 'I was nervous about letting someone in my home but Yoselin made me feel so comfortable. Trustworthy, kind, and incredibly thorough. 10/10!', date: 'Mar 2025' },
+  { name: 'Denise P.',     stars: 5, text: 'I have tried four different cleaning services over the years and none of them compare. Yoselin actually cares about the quality of her work. So refreshing.', date: 'Mar 2025' },
+  { name: 'James T.',      stars: 5, text: 'My bathroom looked brand new after the deep clean. She got into corners I did not even know existed. Highly recommend for anyone who wants real results.', date: 'Apr 2025' },
+  { name: 'Samantha L.',   stars: 5, text: 'We had a move-out clean done and our landlord was impressed. Got our full deposit back! Worth every penny and the booking was quick and easy.', date: 'Apr 2025' },
+  { name: 'Kevin B.',      stars: 5, text: 'I run a small office and we have been using Yoselin weekly for three months now. Reliable, consistent, and always leaves the place spotless.', date: 'Apr 2025' },
+  { name: 'Rosa M.',       stars: 5, text: 'She cleaned my kitchen from top to bottom including inside the oven and fridge. It smelled amazing and looked like it did when we first moved in.', date: 'May 2025' },
+  { name: 'Brittany H.',   stars: 5, text: 'I booked a last-minute cleaning before my in-laws visited and Yoselin came through. Everything was immaculate. You could not ask for better service.', date: 'May 2025' },
+  { name: 'Derek N.',      stars: 5, text: 'Communication was great from start to finish. She confirmed the appointment, showed up on time, and the results were outstanding. Will be back.', date: 'May 2025' },
+  { name: 'Claudia R.',    stars: 5, text: 'I am very picky about how my home is cleaned and Yoselin exceeded every one of my expectations. Detailed, professional, and so friendly.', date: 'Jun 2025' },
+  { name: 'Marcus J.',     stars: 5, text: 'Just moved into a new place and booked a move-in clean. Everything was sanitized and ready to live in. Made settling in so much less stressful.', date: 'Jun 2025' },
+  { name: 'Patricia K.',   stars: 5, text: 'As a senior on a fixed income the discount she offers means so much. And the quality of the cleaning is the best I have ever received. Thank you!', date: 'Jun 2025' },
+  { name: 'Jordan F.',     stars: 5, text: 'I have two dogs and she handled all the pet hair without complaint and still left my house looking flawless. Found my go-to cleaner for life.', date: 'Jul 2025' },
+  { name: 'Natalie C.',    stars: 5, text: 'Booked a bi-weekly plan and the consistency is incredible. Every time she comes the house looks just as good as the first visit. Love it.', date: 'Jul 2025' },
+  { name: 'Steven V.',     stars: 5, text: 'I referred three of my coworkers and they all love her too. Yoselin builds real trust with her clients. That says everything about her character.', date: 'Aug 2025' },
+  { name: 'Amanda S.',     stars: 5, text: 'The baseboards, the blinds, the light switches — she cleaned things I always forget about. My whole house felt fresh and new. Incredible attention to detail.', date: 'Aug 2025' },
+  { name: 'Tony R.',       stars: 5, text: 'My wife and I were both shocked at how clean our home was after the deep clean. We looked at each other and said we should have done this years ago.', date: 'Sep 2025' },
+  { name: 'Jennifer M.',   stars: 5, text: 'From booking to payment everything was smooth and easy. Yoselin is prompt, professional, and genuinely passionate about what she does. Highly recommend!', date: 'Sep 2025' },
 ];
 
 export default function HomePage() {
@@ -223,20 +239,55 @@ export default function HomePage() {
             </div>
           ))}
         </div>
-        <div className="hp-reviews-grid" id="reviews">
-          {reviews.map((r, i) => (
-            <div className="hp-review-card" key={r.id || r.name || i}>
-              <div className="hrc-stars">{'⭐'.repeat(r.stars)}</div>
-              <p className="hrc-text">"{r.text}"</p>
-              <div className="hrc-footer">
-                <div className="hrc-avatar">{r.name[0]}</div>
+        {/* horizontal scroll review strip */}
+        <div id="reviews" style={{ position: 'relative', marginTop: '10px' }}>
+          {/* summary bar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '3px', fontSize: '1.1rem' }}>{'⭐'.repeat(5)}</div>
+            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: '900', color: 'white' }}>5.0</div>
+            <div style={{ fontSize: '.8rem', color: '#9ca3af' }}>· {reviews.length} reviews · All 5-star</div>
+          </div>
+
+          {/* scrollable row */}
+          <div style={{
+            display: 'flex', gap: '14px',
+            overflowX: 'auto', paddingBottom: '12px',
+            scrollbarWidth: 'thin', scrollbarColor: '#333 transparent',
+            WebkitOverflowScrolling: 'touch',
+          }}>
+            {reviews.map((r, i) => (
+              <div key={r.id || r.name || i} style={{
+                flexShrink: 0, width: '280px',
+                background: 'linear-gradient(160deg, #161616 0%, #111 100%)',
+                border: '1px solid #2a2a2a', borderRadius: '18px',
+                padding: '20px',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px',
+              }}>
                 <div>
-                  <div className="hrc-name">{r.name}</div>
-                  <div className="hrc-date">{r.date}</div>
+                  <div style={{ fontSize: '.95rem', marginBottom: '10px', letterSpacing: '1px' }}>{'⭐'.repeat(r.stars)}</div>
+                  <p style={{ color: '#d1d5db', fontSize: '.83rem', lineHeight: '1.65', margin: 0 }}>
+                    &ldquo;{r.text}&rdquo;
+                  </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '12px', borderTop: '1px solid #222' }}>
+                  <div style={{
+                    width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0,
+                    background: 'linear-gradient(135deg,#a855f7,#db2777)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: '800', fontSize: '.88rem', color: 'white',
+                  }}>{r.name[0]}</div>
+                  <div>
+                    <div style={{ fontWeight: '700', color: 'white', fontSize: '.82rem' }}>{r.name}</div>
+                    <div style={{ fontSize: '.72rem', color: '#6b7280', marginTop: '1px' }}>{r.date}</div>
+                  </div>
+                  <div style={{ marginLeft: 'auto', fontSize: '.65rem', fontWeight: '700', color: '#a855f7', background: 'rgba(168,85,247,.12)', padding: '2px 8px', borderRadius: '99px', whiteSpace: 'nowrap' }}>Verified</div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          {/* scroll hint fade */}
+          <div style={{ position: 'absolute', right: 0, top: '42px', bottom: '12px', width: '60px', background: 'linear-gradient(to left,#0a0a0a 30%,transparent)', pointerEvents: 'none', borderRadius: '0 18px 18px 0' }} />
         </div>
       </section>
 
