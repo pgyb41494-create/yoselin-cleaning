@@ -1,4 +1,4 @@
-﻿﻿'use client';
+?'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
@@ -8,11 +8,11 @@ import Chat from '../../components/Chat';
 import { useUnreadCount } from '../../lib/useUnreadCount';
 
 function getLoyaltyTier(count) {
-  if (count >= 8) return { label: 'VIP Client',       icon: '🏆', color: '#7c3aed', bg: 'rgba(124,58,237,.15)', next: null,        nextAt: null };
-  if (count >= 5) return { label: 'Gold Client',      icon: '🥇', color: '#f59e0b', bg: 'rgba(245,158,11,.15)', next: 'VIP',       nextAt: 8 };
-  if (count >= 3) return { label: 'Regular Client',   icon: '🥈', color: '#9ca3af', bg: 'rgba(156,163,175,.15)',next: 'Gold',      nextAt: 5 };
-  if (count >= 1) return { label: 'Returning Client', icon: '✨', color: '#10b981', bg: 'rgba(16,185,129,.15)', next: 'Regular',   nextAt: 3 };
-  return                  { label: 'New Client',       icon: '🌱', color: '#60a5fa', bg: 'rgba(96,165,250,.15)', next: 'Returning', nextAt: 1 };
+  if (count >= 8) return { label: 'VIP Client',       icon: '??', color: '#7c3aed', bg: 'rgba(124,58,237,.15)', next: null,        nextAt: null };
+  if (count >= 5) return { label: 'Gold Client',      icon: '??', color: '#f59e0b', bg: 'rgba(245,158,11,.15)', next: 'VIP',       nextAt: 8 };
+  if (count >= 3) return { label: 'Regular Client',   icon: '??', color: '#9ca3af', bg: 'rgba(156,163,175,.15)',next: 'Gold',      nextAt: 5 };
+  if (count >= 1) return { label: 'Returning Client', icon: '?', color: '#10b981', bg: 'rgba(16,185,129,.15)', next: 'Regular',   nextAt: 3 };
+  return                  { label: 'New Client',       icon: '??', color: '#60a5fa', bg: 'rgba(96,165,250,.15)', next: 'Returning', nextAt: 1 };
 }
 
 function getCountdown(dateStr) {
@@ -60,6 +60,7 @@ export default function DashboardPage() {
   const [reschedDone,   setReschedDone]   = useState(false);
 
   const [, setTick] = useState(0);
+  const [schedule, setSchedule] = useState([]);
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 60000);
     return () => clearInterval(id);
@@ -89,6 +90,14 @@ export default function DashboardPage() {
         setRequests(docs);
         setLoading(false);
       }, () => setLoading(false));
+
+      // Load recurring schedule for this user
+      getDocs(query(collection(db, 'schedule'), where('userId', '==', u.uid)))
+        .then(snap => {
+          const entries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          entries.sort((a, b) => (a.sequenceIndex || 0) - (b.sequenceIndex || 0));
+          setSchedule(entries);
+        }).catch(() => {});
       unsubReqRef.current = unsubReq;
     });
     return () => { unsubAuth(); if (unsubReqRef.current) unsubReqRef.current(); };
@@ -170,12 +179,14 @@ export default function DashboardPage() {
   const countdown    = isConfirmed ? getCountdown(latest?.date) : null;
   const isGoogleUser = user?.providerData?.[0]?.providerId === 'google.com';
 
+  const upcomingSchedule = schedule.filter(e => e.status === 'upcoming');
   const TABS = [
     { id: 'home',     label: 'Home'     },
     ...(latest && !isDone ? [
       { id: 'messages', label: 'Messages', badge: unreadFromAdmin },
       { id: 'request',  label: 'My Quote' },
     ] : []),
+    ...(upcomingSchedule.length > 0 ? [{ id: 'schedule', label: 'Schedule (' + upcomingSchedule.length + ')' }] : []),
     { id: 'settings', label: 'Settings' },
   ];
   const safeTab = TABS.find(t => t.id === activeTab) ? activeTab : 'home';
@@ -215,7 +226,7 @@ export default function DashboardPage() {
               Hey, {firstName}!
             </h1>
             <p style={{ color: '#6b7280', fontSize: '.85rem' }}>
-              {isDone      ? 'Your cleaning is complete — thank you!' :
+              {isDone      ? 'Your cleaning is complete ? thank you!' :
                isConfirmed ? 'Your appointment is confirmed!' :
                latest      ? 'We are reviewing your request.' :
                'Welcome to your cleaning portal.'}
@@ -267,7 +278,7 @@ export default function DashboardPage() {
 
       <div style={{ maxWidth: '760px', margin: '0 auto', padding: '20px 16px 80px' }}>
 
-        {/* ── HOME TAB ── */}
+        {/* -- HOME TAB -- */}
         {safeTab === 'home' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
@@ -280,7 +291,7 @@ export default function DashboardPage() {
               }}>
                 <div style={{ width: '54px', height: '54px', borderRadius: '50%', flexShrink: 0, background: countdown.urgent ? 'rgba(16,185,129,.18)' : 'rgba(26,111,212,.18)', border: '2px solid ' + (countdown.urgent ? '#10b981' : '#1a6fd4'), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                   {countdown.days <= 1
-                    ? <span style={{ fontSize: '1.5rem' }}>🔥</span>
+                    ? <span style={{ fontSize: '1.5rem' }}>??</span>
                     : <>
                         <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: '900', fontSize: '1.4rem', color: 'white', lineHeight: 1 }}>{countdown.days}</span>
                         <span style={{ fontSize: '.55rem', color: '#9ca3af', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px' }}>days</span>
@@ -304,14 +315,14 @@ export default function DashboardPage() {
             {/* Main card */}
             {!latest ? (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '18px', padding: '40px 24px', textAlign: 'center' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>✨</div>
+                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>?</div>
                 <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white', marginBottom: '8px' }}>Get Your Free Quote</h2>
                 <p style={{ color: '#9ca3af', fontSize: '.85rem', marginBottom: '24px', lineHeight: '1.6' }}>Fill out a quick form and get a custom estimate. No commitment needed.</p>
                 {btn('Get a Quote', () => router.push('/book'))}
               </div>
             ) : isDone ? (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '18px', padding: '36px 24px', textAlign: 'center' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>🎉</div>
+                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>??</div>
                 <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white', marginBottom: '8px' }}>Job Complete!</h2>
                 <p style={{ color: '#9ca3af', fontSize: '.85rem', marginBottom: '24px', lineHeight: '1.6' }}>Your cleaning has been marked complete. Hope everything is sparkling!</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
@@ -351,7 +362,7 @@ export default function DashboardPage() {
                     <div key={s.label} style={{ display: 'flex', alignItems: 'center', flex: i < arr.length - 1 ? 1 : 'none' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
                         <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: s.done ? '#db2777' : '#2a2a2a', border: '2px solid ' + (s.done ? '#db2777' : '#3a3a3a'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.72rem', color: s.done ? 'white' : '#555', fontWeight: '700' }}>
-                          {s.done ? '✓' : i + 1}
+                          {s.done ? '?' : i + 1}
                         </div>
                         <span style={{ fontSize: '.6rem', color: s.done ? '#d1d5db' : '#555', fontWeight: '600', textAlign: 'center', width: '52px' }}>{s.label}</span>
                       </div>
@@ -369,7 +380,7 @@ export default function DashboardPage() {
                 <div style={{ padding: '18px 20px' }}>
                   {reviewDone ? (
                     <div style={{ textAlign: 'center', padding: '16px 0' }}>
-                      <div style={{ fontSize: '2.4rem', marginBottom: '10px' }}>❤️</div>
+                      <div style={{ fontSize: '2.4rem', marginBottom: '10px' }}>??</div>
                       <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: '700', color: 'white', fontSize: '1.05rem', marginBottom: '5px' }}>Thank you for your review!</div>
                       <div style={{ color: '#9ca3af', fontSize: '.83rem' }}>It will appear on our homepage.</div>
                     </div>
@@ -379,7 +390,7 @@ export default function DashboardPage() {
                         {[1, 2, 3, 4, 5].map(s => (
                           <button key={s} onMouseEnter={() => setHoverStar(s)} onMouseLeave={() => setHoverStar(0)} onClick={() => setReviewStars(s)}
                             style={{ fontSize: '1.8rem', background: 'none', border: 'none', cursor: 'pointer', opacity: s <= (hoverStar || reviewStars) ? 1 : 0.25, transition: 'all .12s', lineHeight: 1, padding: '2px' }}>
-                            ⭐
+                            ?
                           </button>
                         ))}
                         <span style={{ color: '#9ca3af', fontSize: '.82rem', marginLeft: '6px' }}>{reviewStars} star{reviewStars !== 1 ? 's' : ''}</span>
@@ -397,8 +408,8 @@ export default function DashboardPage() {
 
             {isDone && alreadyReview && !reviewDone && (
               <div style={{ background: 'rgba(16,185,129,.07)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '12px', padding: '13px 18px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '1.2rem' }}>✅</span>
-                <div style={{ fontWeight: '700', color: '#10b981', fontSize: '.87rem' }}>Review Submitted — Thank you!</div>
+                <span style={{ fontSize: '1.2rem' }}>?</span>
+                <div style={{ fontWeight: '700', color: '#10b981', fontSize: '.87rem' }}>Review Submitted ? Thank you!</div>
               </div>
             )}
 
@@ -428,30 +439,45 @@ export default function DashboardPage() {
                   </div>
                 </>
               ) : (
-                <div style={{ fontSize: '.78rem', color: loyalty.color, fontWeight: '700', textAlign: 'center' }}>Highest tier — thank you for your loyalty!</div>
+                <div style={{ fontSize: '.78rem', color: loyalty.color, fontWeight: '700', textAlign: 'center' }}>Highest tier ? thank you for your loyalty!</div>
               )}
             </div>
+
+            {/* Next recurring cleaning card */}
+            {upcomingSchedule.length > 0 && (
+              <div onClick={() => setActiveTab('schedule')} style={{ background: '#181818', border: '1.5px solid rgba(168,85,247,.3)', borderRadius: '16px', padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(168,85,247,.15)', border: '1px solid rgba(168,85,247,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', flexShrink: 0 }}>&#x1F501;</div>
+                  <div>
+                    <div style={{ fontSize: '.7rem', fontWeight: '700', color: '#a855f7', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '2px' }}>Next Recurring Cleaning</div>
+                    <div style={{ fontWeight: '700', color: 'white', fontSize: '.9rem' }}>{upcomingSchedule[0].date}</div>
+                    <div style={{ fontSize: '.72rem', color: '#9ca3af' }}>{upcomingSchedule[0].time !== 'TBD' ? upcomingSchedule[0].time + ' \u00b7 ' : ''}{upcomingSchedule.length} cleanings scheduled</div>
+                  </div>
+                </div>
+                <span style={{ color: '#a855f7', fontSize: '1rem', flexShrink: 0 }}>&#x2192;</span>
+              </div>
+            )}
 
             {/* Quick tiles */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               {latest && !isDone && (
                 <div onClick={() => setActiveTab('messages')} style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(26,111,212,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>💬</div>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(26,111,212,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>??</div>
                   <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>Messages</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>Chat with us</div></div>
                 </div>
               )}
               {latest && !isDone && (
                 <div onClick={() => setActiveTab('request')} style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(219,39,119,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>📋</div>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(219,39,119,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>??</div>
                   <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>My Quote</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>View details</div></div>
                 </div>
               )}
               <div onClick={() => router.push('/book')} style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(16,185,129,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>✨</div>
+                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(16,185,129,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>?</div>
                 <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>{latest ? 'New Quote' : 'Get a Quote'}</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>Instant estimate</div></div>
               </div>
               <div onClick={() => setActiveTab('settings')} style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(156,163,175,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>⚙️</div>
+                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(156,163,175,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>??</div>
                 <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>Settings</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>Update your info</div></div>
               </div>
             </div>
@@ -459,7 +485,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ── MESSAGES TAB ── */}
+        {/* -- MESSAGES TAB -- */}
         {safeTab === 'messages' && latest && !isDone && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>Messages</div>
@@ -469,7 +495,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ── MY QUOTE TAB ── */}
+        {/* -- MY QUOTE TAB -- */}
         {safeTab === 'request' && latest && !isDone && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>Quote Details</div>
@@ -533,7 +559,7 @@ export default function DashboardPage() {
                   )
                 ) : (
                   <div style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.25)', borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '1.2rem' }}>✅</span>
+                    <span style={{ fontSize: '1.2rem' }}>?</span>
                     <div style={{ fontWeight: '700', color: '#10b981', fontSize: '.85rem' }}>Reschedule request sent! We will be in touch soon.</div>
                   </div>
                 )}
@@ -542,12 +568,84 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ── SETTINGS TAB ── */}
+        {/* -- SCHEDULE TAB -- */}
+        {safeTab === 'schedule' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>
+              &#x1F501; Your Recurring Schedule
+            </div>
+            <div style={{ background: 'rgba(168,85,247,.07)', border: '1px solid rgba(168,85,247,.2)', borderRadius: '12px', padding: '13px 18px', fontSize: '.83rem', color: '#c4b5fd' }}>
+              These are your automatically scheduled future cleanings based on your <strong style={{ color: 'white' }}>{schedule[0]?.frequency}</strong> plan.
+            </div>
+
+            {/* Upcoming */}
+            {upcomingSchedule.length > 0 && (
+              <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
+                <div style={{ padding: '13px 20px', borderBottom: '1px solid #2a2a2a', fontSize: '.72rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.5px' }}>
+                  Upcoming ({upcomingSchedule.length})
+                </div>
+                {upcomingSchedule.map((entry, i) => {
+                  const isNext = i === 0;
+                  const now2 = new Date();
+                  const apptDate = new Date(entry.date);
+                  const diff = Math.round((new Date(entry.date).setHours(0,0,0,0) - now2.setHours(0,0,0,0)) / 86400000);
+                  return (
+                    <div key={entry.id} style={{ padding: '14px 20px', borderBottom: '1px solid #1e1e1e', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      {/* Number circle */}
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Playfair Display, serif', fontWeight: '900', fontSize: '.95rem', background: isNext ? 'linear-gradient(135deg,#1a6fd4,#db2777)' : '#1f1f1f', color: isNext ? 'white' : '#6b7280' }}>
+                        {i + 1}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '700', color: isNext ? 'white' : '#d1d5db', fontSize: '.88rem', marginBottom: '2px' }}>
+                          {entry.date}
+                          {isNext && <span style={{ marginLeft: '8px', fontSize: '.65rem', background: 'rgba(26,111,212,.2)', color: '#60a5fa', border: '1px solid rgba(26,111,212,.3)', borderRadius: '99px', padding: '2px 7px', fontWeight: '700' }}>NEXT</span>}
+                        </div>
+                        <div style={{ fontSize: '.75rem', color: '#6b7280' }}>
+                          {entry.time !== 'TBD' ? entry.time + ' \u00b7 ' : ''}{entry.address}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        {diff >= 0 && diff <= 30
+                          ? <div style={{ fontSize: '.75rem', fontWeight: '700', color: diff <= 3 ? '#f59e0b' : '#9ca3af' }}>
+                              {diff === 0 ? 'Today!' : diff === 1 ? 'Tomorrow' : 'In ' + diff + ' days'}
+                            </div>
+                          : null
+                        }
+                        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '.95rem', fontWeight: '900', color: '#60a5fa' }}>${entry.estimate}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Completed */}
+            {schedule.filter(e => e.status === 'done').length > 0 && (
+              <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
+                <div style={{ padding: '13px 20px', borderBottom: '1px solid #2a2a2a', fontSize: '.72rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.5px' }}>
+                  Completed ({schedule.filter(e => e.status === 'done').length})
+                </div>
+                {schedule.filter(e => e.status === 'done').map(entry => (
+                  <div key={entry.id} style={{ padding: '12px 20px', borderBottom: '1px solid #1e1e1e', display: 'flex', alignItems: 'center', gap: '12px', opacity: 0.6 }}>
+                    <span style={{ fontSize: '1rem' }}>&#x2705;</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: '600', color: '#6b7280', fontSize: '.83rem' }}>{entry.date}</div>
+                      <div style={{ fontSize: '.72rem', color: '#555' }}>{entry.time}</div>
+                    </div>
+                    <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '.9rem', fontWeight: '700', color: '#555' }}>${entry.estimate}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* -- SETTINGS TAB -- */}
         {safeTab === 'settings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>Account Settings</div>
-            {settingsMsg && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: 'rgba(16,185,129,.12)', color: '#10b981', border: '1px solid rgba(16,185,129,.2)' }}>✅ {settingsMsg}</div>}
-            {settingsErr && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: 'rgba(239,68,68,.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,.2)' }}>⚠️ {settingsErr}</div>}
+            {settingsMsg && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: 'rgba(16,185,129,.12)', color: '#10b981', border: '1px solid rgba(16,185,129,.2)' }}>? {settingsMsg}</div>}
+            {settingsErr && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: 'rgba(239,68,68,.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,.2)' }}>?? {settingsErr}</div>}
 
             <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '20px' }}>
               <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '16px' }}>Profile</div>
