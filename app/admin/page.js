@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, orderBy, query, setDoc, writeBatch, getDoc } from 'firebase/firestore';
-import { auth, db, ADMIN_EMAIL } from '../../lib/firebase';
+import { auth, db, ADMIN_EMAIL, ADMIN_EMAILS } from '../../lib/firebase';
 import { notifyBookingConfirmed } from '../../lib/notifications';
 import Chat from '../../components/Chat';
 import BookingWizard from '../../components/BookingWizard';
@@ -126,7 +126,8 @@ export default function AdminPage() {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
-      if (!u || u.email !== ADMIN_EMAIL) { router.push('/'); return; }
+      const isAdmin = ADMIN_EMAILS.includes(u?.email?.toLowerCase()) || ADMIN_EMAILS.includes(u?.email);
+      if (!u || !isAdmin) { router.push('/'); return; }
       setUser(u);
       setLoading(false);
     });

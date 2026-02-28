@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { auth, db, ADMIN_EMAIL } from '../../lib/firebase';
+import { auth, db, ADMIN_EMAIL, ADMIN_EMAILS } from '../../lib/firebase';
 import BookingWizard from '../../components/BookingWizard';
 
 export default function BookPage() {
@@ -15,7 +15,7 @@ export default function BookPage() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (!u) { router.push('/'); return; }
-      if (u.email === ADMIN_EMAIL) { router.push('/admin'); return; }
+      if (ADMIN_EMAILS.includes(u.email?.toLowerCase()) || ADMIN_EMAILS.includes(u.email)) { router.push('/admin'); return; }
       const q = query(collection(db, 'requests'), where('userId', '==', u.uid));
       const snap = await getDocs(q);
       if (!snap.empty) {
