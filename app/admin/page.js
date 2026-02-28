@@ -42,7 +42,7 @@ function getDaysInMonth(year, month) {
 
 const DEFAULT_PRICING = {
   bathrooms: { half: 15, small: 50, medium: 65, large: 80 },
-  rooms: { bed_small: 25, bed_medium: 30, bed_large: 35, liv_medium: 15, liv_large: 35, office: 10, kit_small: 45, kit_medium: 55, kit_large: 70, laundry: 10, basement: 75 },
+  rooms: { bed_small: 25, bed_medium: 30, bed_large: 35, liv_small: 20, liv_medium: 25, liv_large: 35, office: 10, kit_small: 45, kit_medium: 55, kit_large: 70, laundry: 10, basement: 75 },
   extras: { cabinets: 16, pantry: 20, oven: 16, fridge: 16, baseboard: 5, windows: 5 },
   discounts: { firstTime: 10, senior: 10, biweekly: 15, weekly: 17.5, monthly: 12.5 },
 };
@@ -246,6 +246,19 @@ export default function AdminPage() {
     setSelected(r => r ? { ...r, status: 'done' } : r);
   };
 
+  const cancelReq = async (req) => {
+    if (!window.confirm('Cancel this booking for ' + req.name + '? The status will be set to cancelled.')) return;
+    await updateDoc(doc(db, 'requests', req.id), { status: 'cancelled' });
+    setSelected(r => r ? { ...r, status: 'cancelled' } : r);
+    // Also cancel any future recurring schedule entries
+    try {
+      const schedSnap = await getDocs(query(collection(db, 'schedule'), where('parentRequestId', '==', req.id), where('status', '==', 'upcoming')));
+      const b = writeBatch(db);
+      schedSnap.docs.forEach(d => b.update(doc(db, 'schedule', d.id), { status: 'cancelled' }));
+      if (!schedSnap.empty) await b.commit();
+    } catch(e) { console.warn('Could not cancel schedule entries:', e); }
+  };
+
   const deleteRequest = async (req) => {
     if (!window.confirm('Permanently delete this request for ' + req.name + '? This cannot be undone.')) return;
     await deleteDoc(doc(db, 'requests', req.id));
@@ -349,6 +362,22 @@ export default function AdminPage() {
 
   const calFirstDay  = new Date(calYear, calMonth, 1).getDay();
   const calDaysInMonth = getDaysInMonth(calYear, calMonth);
+
+  /* Schedule entries for a given calendar day (recurring) */
+  const [calScheduleAll, setCalScheduleAll] = useState([]);
+  useEffect(() => {
+    if (!user) return;
+    getDocs(collection(db, 'schedule'))
+      .then(snap => setCalScheduleAll(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
+      .catch(() => {});
+  }, [user]);
+
+  const getScheduleForDay = (day) => calScheduleAll.filter(e => {
+    if (!e.date || e.status === 'cancelled') return false;
+    const d = parseDateString(e.date);
+    if (d) return d.getFullYear() === calYear && d.getMonth() === calMonth && d.getDate() === day;
+    return e.date.includes(MONTH_NAMES[calMonth]) && e.date.includes(String(day)) && e.date.includes(String(calYear));
+  });
 
   const getRequestsForDay = (day) => requests.filter(r => {
     if (!r.date || r.date === 'N/A' || r.date === 'TBD') return false;
@@ -469,7 +498,7 @@ export default function AdminPage() {
                 <input value={reqSearch} onChange={e => setReqSearch(e.target.value)} placeholder="Search by name, email, phone?"
                   style={{ flex: 1, minWidth: '180px', padding: '9px 14px', background: '#111', border: '1px solid #2a2a2a', borderRadius: '10px', color: 'white', fontFamily: "'DM Sans',sans-serif", fontSize: '.84rem', outline: 'none' }} />
                 <div style={{ display: 'flex', gap: '4px', background: '#111', border: '1px solid #222', borderRadius: '10px', padding: '4px' }}>
-                  {[['all', 'All'], ['new', 'New'], ['confirmed', 'Confirmed'], ['done', 'Done']].map(([val, label]) => (
+                  {[['all', 'All'], ['new', 'New'], ['confirmed', 'Confirmed'], ['done', 'Done'], ['cancelled', 'Cancelled']].map(([val, label]) => (
                     <button key={val} onClick={() => setReqFilter(val)} style={{
                       padding: '6px 13px', borderRadius: '7px', border: 'none', cursor: 'pointer',
                       background: reqFilter === val ? '#a855f7' : 'transparent',
@@ -566,19 +595,26 @@ export default function AdminPage() {
                 {Array.from({ length: calFirstDay }).map((_, i) => <div key={'e'+i} style={{ minHeight: '90px', borderRight: '1px solid #1a1a1a', borderBottom: '1px solid #1a1a1a', background: '#151515' }} />)}
                 {Array.from({ length: calDaysInMonth }).map((_, i) => {
                   const day = i + 1;
-                  const dayReqs = getRequestsForDay(day);
+                  const dayReqs  = getRequestsForDay(day);
+                  const daySched = getScheduleForDay(day);
+                  const totalDots = dayReqs.length + daySched.length;
                   const isToday  = now.getFullYear() === calYear && now.getMonth() === calMonth && now.getDate() === day;
                   const isLastCol = (calFirstDay + i) % 7 === 6;
                   return (
-                    <div key={day} style={{ minHeight: '90px', padding: '8px 6px', borderRight: isLastCol ? 'none' : '1px solid #1a1a1a', borderBottom: '1px solid #1a1a1a', background: calSelected === day ? 'rgba(168,85,247,.06)' : 'transparent', cursor: dayReqs.length > 0 ? 'pointer' : 'default' }}
+                    <div key={day} style={{ minHeight: '90px', padding: '8px 6px', borderRight: isLastCol ? 'none' : '1px solid #1a1a1a', borderBottom: '1px solid #1a1a1a', background: calSelected === day ? 'rgba(168,85,247,.06)' : 'transparent', cursor: totalDots > 0 ? 'pointer' : 'default' }}
                       onClick={() => setCalSelected(calSelected === day ? null : day)}>
                       <div style={{ width: '26px', height: '26px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '5px', fontSize: '.82rem', fontWeight: '700', background: isToday ? '#a855f7' : 'transparent', color: isToday ? 'white' : '#9ca3af' }}>{day}</div>
-                      {dayReqs.slice(0, 3).map(r => (
-                        <div key={r.id} onClick={e => { e.stopPropagation(); setSelected(r); }} style={{ background: statusColor[r.status]+'22', border: '1px solid '+statusColor[r.status]+'55', color: statusColor[r.status], fontSize: '.65rem', fontWeight: '700', padding: '2px 6px', borderRadius: '5px', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                      {dayReqs.slice(0, 2).map(r => (
+                        <div key={r.id} onClick={e => { e.stopPropagation(); setSelected(r); }} style={{ background: (statusColor[r.status]||'#555')+'22', border: '1px solid '+(statusColor[r.status]||'#555')+'55', color: statusColor[r.status]||'#9ca3af', fontSize: '.65rem', fontWeight: '700', padding: '2px 6px', borderRadius: '5px', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}>
                           {r.name.split(' ')[0]} - ${r.estimate}
                         </div>
                       ))}
-                      {dayReqs.length > 3 && <div style={{ fontSize: '.62rem', color: '#6b7280', fontWeight: '700', marginTop: '2px' }}>+{dayReqs.length-3} more</div>}
+                      {daySched.slice(0, 1).map(e => (
+                        <div key={e.id} style={{ background: 'rgba(168,85,247,.15)', border: '1px solid rgba(168,85,247,.35)', color: '#c084fc', fontSize: '.63rem', fontWeight: '700', padding: '2px 6px', borderRadius: '5px', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          ↻ {e.clientName?.split(' ')[0] || 'Recurring'}
+                        </div>
+                      ))}
+                      {totalDots > 3 && <div style={{ fontSize: '.62rem', color: '#6b7280', fontWeight: '700', marginTop: '2px' }}>+{totalDots-3} more</div>}
                     </div>
                   );
                 })}
@@ -832,6 +868,7 @@ export default function AdminPage() {
               <PriceInput section="rooms" fieldKey="bed_small"  label="Small Bedroom"     value={editPrices.rooms.bed_small}  onCommit={setP} />
               <PriceInput section="rooms" fieldKey="bed_medium" label="Medium Bedroom"    value={editPrices.rooms.bed_medium} onCommit={setP} />
               <PriceInput section="rooms" fieldKey="bed_large"  label="Large/Master Bed"  value={editPrices.rooms.bed_large}  onCommit={setP} />
+              <PriceInput section="rooms" fieldKey="liv_small"  label="Small Living Rm"  value={editPrices.rooms.liv_small || 20} onCommit={setP} />
               <PriceInput section="rooms" fieldKey="liv_medium" label="Medium Living Rm"  value={editPrices.rooms.liv_medium} onCommit={setP} />
               <PriceInput section="rooms" fieldKey="liv_large"  label="Large Living Rm"   value={editPrices.rooms.liv_large}  onCommit={setP} />
               <PriceInput section="rooms" fieldKey="office"     label="Office/Study"      value={editPrices.rooms.office}     onCommit={setP} />
@@ -1050,6 +1087,11 @@ export default function AdminPage() {
                   &#x2705; Mark Done
                 </button>
               )}
+              {(selected.status === 'new' || selected.status === 'confirmed') && (
+                <button onClick={() => cancelReq(selected)} style={{ flex: 1, minWidth: '140px', padding: '14px', borderRadius: '14px', border: '1.5px solid rgba(239,68,68,.35)', background: 'rgba(239,68,68,.08)', color: '#ef4444', fontSize: '.9rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  &#x274C; Cancel Booking
+                </button>
+              )}
               <button onClick={() => { setChatReq(selected); setSelected(null); }} style={{ flex: 1, minWidth: '140px', padding: '14px', borderRadius: '14px', border: 'none', background: 'linear-gradient(135deg, #1e3a5f, #1e40af)', color: '#93c5fd', fontSize: '.9rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                 &#x1F4AC; Chat with Client
               </button>
@@ -1060,7 +1102,7 @@ export default function AdminPage() {
               <button onClick={() => { setHistoryClient(selected); setSelected(null); }} style={{ flex: 1, minWidth: '110px', padding: '14px', borderRadius: '14px', border: '1px solid #2a3345', background: '#1a2030', color: '#d1d5db', fontSize: '.85rem', fontWeight: '700', cursor: 'pointer' }}>
                 &#x1F4CB; History
               </button>
-              {selected.status === 'done' && (
+              {(selected.status === 'done' || selected.status === 'cancelled') && (
                 <button onClick={() => deleteRequest(selected)} style={{ flex: '1 1 100%', padding: '12px', borderRadius: '12px', border: '1.5px solid rgba(239,68,68,.3)', background: 'rgba(239,68,68,.08)', color: '#ef4444', fontSize: '.84rem', fontWeight: '700', cursor: 'pointer' }}>
                   &#x1F5D1; Delete Request
                 </button>
