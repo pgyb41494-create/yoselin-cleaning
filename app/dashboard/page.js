@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { collection, query, where, onSnapshot, addDoc, getDocs, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, getDocs, serverTimestamp, doc, updateDoc, setDoc } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL } from '../../lib/firebase';
 import Chat from '../../components/Chat';
 import { useUnreadCount } from '../../lib/useUnreadCount';
@@ -64,6 +64,14 @@ export default function DashboardPage() {
     const id = setInterval(() => setTick(t => t + 1), 60000);
     return () => clearInterval(id);
   }, []);
+
+  // Clear the unread badge the instant the Messages tab is opened
+  useEffect(() => {
+    const reqId = requests[0]?.id;
+    if (activeTab === 'messages' && reqId) {
+      setDoc(doc(db, 'chatUnread', reqId), { unreadByCustomer: 0 }, { merge: true }).catch(() => {});
+    }
+  }, [activeTab, requests]);
 
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (u) => {
