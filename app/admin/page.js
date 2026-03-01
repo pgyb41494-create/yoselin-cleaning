@@ -977,7 +977,21 @@ export default function AdminPage() {
               <div style={{ display: 'flex' }}>
                 <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center', borderRight: '1px solid #2a3345' }}>
                   <div style={{ fontSize: '.65rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '4px' }}>Estimate</div>
-                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '2.4rem', fontWeight: '900', background: 'linear-gradient(135deg, #c084fc, #60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', lineHeight: 1 }}>${selected.estimate}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '2rem', fontWeight: '900', color: '#c084fc', lineHeight: 1 }}>$</span>
+                    <input
+                      type="number" min="0" step="1"
+                      value={editEstimate}
+                      onChange={e => setEditEstimate(e.target.value)}
+                      style={{ width: '110px', background: 'transparent', border: 'none', borderBottom: '2px solid rgba(168,85,247,.4)', color: 'white', fontFamily: 'Playfair Display, serif', fontSize: '2rem', fontWeight: '900', outline: 'none', padding: '0 4px' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                    <button onClick={saveEstimate} disabled={estimateSaving} style={{ padding: '5px 14px', background: 'linear-gradient(135deg,#a855f7,#db2777)', color: 'white', border: 'none', borderRadius: '7px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.72rem', cursor: 'pointer', opacity: estimateSaving ? .6 : 1 }}>
+                      {estimateSaving ? 'Saving...' : 'Save Price'}
+                    </button>
+                    {estimateSaved && <span style={{ fontSize: '.72rem', color: '#10b981', fontWeight: '700' }}>Saved!</span>}
+                  </div>
                 </div>
                 <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
                   {[
