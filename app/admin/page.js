@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, orderBy, query, setDoc, writeBatch, getDoc, getDocs, where } from 'firebase/firestore';
-import { auth, db, ADMIN_EMAIL, ADMIN_EMAILS } from '../../lib/firebase';
+import { auth, db, storage, ADMIN_EMAIL, ADMIN_EMAILS } from '../../lib/firebase';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { notifyBookingConfirmed } from '../../lib/notifications';
 import Chat from '../../components/Chat';
 import BookingWizard from '../../components/BookingWizard';
@@ -126,6 +127,23 @@ export default function AdminPage() {
 
   const [scheduleEntries, setScheduleEntries] = useState([]);
   const [editPrices, setEditPrices] = useState(DEFAULT_PRICING);
+
+  // Gallery state
+  const [galleryPhotos, setGalleryPhotos] = useState([]);
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const [galleryLabel, setGalleryLabel] = useState('');
+  const [galleryDesc, setGalleryDesc] = useState('');
+  const [galleryCategory, setGalleryCategory] = useState('before');
+  const [galleryFiles, setGalleryFiles] = useState([]);
+  const [galleryUploadDone, setGalleryUploadDone] = useState(false);
+
+  useEffect(() => {
+    const unsub = onSnapshot(
+      query(collection(db, 'galleryPhotos'), orderBy('createdAt', 'desc')),
+      snap => setGalleryPhotos(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    );
+    return () => unsub();
+  }, []);
   const [priceSaving, setPriceSaving] = useState(false);
   const [priceSaved, setPriceSaved] = useState(false);
 
@@ -367,6 +385,40 @@ export default function AdminPage() {
   };
 
   /* onBlur handler for PriceInput ? called when admin leaves an input field */
+  const uploadGalleryPhotos = async () => {
+    if (galleryFiles.length === 0) return;
+    setGalleryUploading(true);
+    try {
+      for (const file of galleryFiles) {
+        const storageRef = ref(storage, `gallery/${Date.now()}_${file.name}`);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        await addDoc(collection(db, 'galleryPhotos'), {
+          url,
+          label: galleryLabel.trim() || file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '),
+          description: galleryDesc.trim(),
+          category: galleryCategory,
+          storagePath: storageRef.fullPath,
+          createdAt: serverTimestamp(),
+        });
+      }
+      setGalleryLabel('');
+      setGalleryDesc('');
+      setGalleryFiles([]);
+      setGalleryUploadDone(true);
+      setTimeout(() => setGalleryUploadDone(false), 3000);
+    } catch (e) { console.error('Gallery upload error:', e); }
+    setGalleryUploading(false);
+  };
+
+  const deleteGalleryPhoto = async (photo) => {
+    if (!window.confirm('Delete this photo?')) return;
+    try {
+      if (photo.storagePath) await deleteObject(ref(storage, photo.storagePath));
+    } catch (e) {}
+    await deleteDoc(doc(db, 'galleryPhotos', photo.id));
+  };
+
   const setP = (section, key, val) =>
     setEditPrices(p => ({ ...p, [section]: { ...p[section], [key]: parseFloat(val) || 0 } }));
 
@@ -427,6 +479,7 @@ export default function AdminPage() {
     { key: 'calendar',     label: 'Calendar'     },
     { key: 'availability', label: 'Availability' },
     { key: 'create',       label: 'Create Quote' },
+    { key: 'gallery',      label: '📷 Gallery'   },
     { key: 'pricing',      label: '💰 Pricing'   },
   ];
 
@@ -878,6 +931,87 @@ export default function AdminPage() {
                       </div>
                     ));
                   })()}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* -- GALLERY TAB -- */}
+        {tab === 'gallery' && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white' }}>📷 Gallery Manager</div>
+                <div style={{ fontSize: '.8rem', color: '#6b7280', marginTop: '3px' }}>{galleryPhotos.length} photo{galleryPhotos.length !== 1 ? 's' : ''} · visible at <a href="/gallery" target="_blank" style={{ color: '#a855f7', textDecoration: 'none' }}>/gallery</a></div>
+              </div>
+              {galleryUploadDone && <span style={{ fontSize: '.85rem', color: '#10b981', fontWeight: '700' }}>✅ Uploaded!</span>}
+            </div>
+
+            {/* Upload Box */}
+            <div style={{ background: '#111', borderRadius: '18px', border: '2px dashed #2a2a2a', padding: '24px', marginBottom: '24px' }}>
+              <div style={{ fontWeight: '700', color: 'white', fontSize: '.95rem', marginBottom: '16px' }}>Upload New Photos</div>
+
+              {/* File picker */}
+              <label style={{ display: 'block', marginBottom: '16px', cursor: 'pointer' }}>
+                <div style={{ background: '#1a1a1a', border: '1.5px solid #333', borderRadius: '12px', padding: '20px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📁</div>
+                  <div style={{ fontWeight: '700', color: '#a855f7', fontSize: '.88rem', marginBottom: '4px' }}>Click to choose photos</div>
+                  <div style={{ fontSize: '.75rem', color: '#6b7280' }}>JPG, PNG · Multiple allowed · From your phone or computer</div>
+                  {galleryFiles.length > 0 && <div style={{ marginTop: '10px', fontSize: '.82rem', color: '#10b981', fontWeight: '700' }}>✅ {galleryFiles.length} file{galleryFiles.length !== 1 ? 's' : ''} selected</div>}
+                </div>
+                <input type="file" accept="image/*" multiple onChange={e => setGalleryFiles(Array.from(e.target.files))} style={{ display: 'none' }} />
+              </label>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>Label / Title</label>
+                  <input value={galleryLabel} onChange={e => setGalleryLabel(e.target.value)} placeholder="e.g. Kitchen Deep Clean"
+                    style={{ width: '100%', padding: '9px 13px', background: '#1a1a1a', border: '1.5px solid #2a2a2a', borderRadius: '9px', color: 'white', fontSize: '.83rem', fontFamily: "'DM Sans',sans-serif", outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>Category</label>
+                  <select value={galleryCategory} onChange={e => setGalleryCategory(e.target.value)}
+                    style={{ width: '100%', padding: '9px 13px', background: '#1a1a1a', border: '1.5px solid #2a2a2a', borderRadius: '9px', color: 'white', fontSize: '.83rem', outline: 'none' }}>
+                    <option value="before">🔴 Before</option>
+                    <option value="after">✅ After</option>
+                    <option value="featured">⭐ Featured</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>Short Description (optional)</label>
+                <input value={galleryDesc} onChange={e => setGalleryDesc(e.target.value)} placeholder="e.g. Move-out clean in Fairfield, Ohio"
+                  style={{ width: '100%', padding: '9px 13px', background: '#1a1a1a', border: '1.5px solid #2a2a2a', borderRadius: '9px', color: 'white', fontSize: '.83rem', fontFamily: "'DM Sans',sans-serif", outline: 'none' }} />
+              </div>
+
+              <button onClick={uploadGalleryPhotos} disabled={galleryUploading || galleryFiles.length === 0}
+                style={{ width: '100%', padding: '14px', background: galleryFiles.length > 0 ? 'linear-gradient(135deg,#a855f7,#db2777)' : '#1f1f1f', color: galleryFiles.length > 0 ? 'white' : '#555', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.92rem', cursor: galleryFiles.length > 0 ? 'pointer' : 'not-allowed', opacity: galleryUploading ? .7 : 1 }}>
+                {galleryUploading ? '⏳ Uploading...' : galleryFiles.length === 0 ? 'Select photos first' : `📤 Upload ${galleryFiles.length} Photo${galleryFiles.length !== 1 ? 's' : ''}`}
+              </button>
+            </div>
+
+            {/* Photo Grid */}
+            {galleryPhotos.length > 0 && (
+              <div>
+                <div style={{ fontSize: '.72rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '14px' }}>Published Photos ({galleryPhotos.length})</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
+                  {galleryPhotos.map(photo => (
+                    <div key={photo.id} style={{ background: '#111', borderRadius: '14px', border: '1px solid #222', overflow: 'hidden' }}>
+                      <div style={{ aspectRatio: '4/3', overflow: 'hidden', background: '#1a1a1a', position: 'relative' }}>
+                        <img src={photo.url} alt={photo.label} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        <div style={{ position: 'absolute', top: '6px', left: '6px', background: photo.category === 'before' ? '#ef4444' : photo.category === 'after' ? '#10b981' : '#a855f7', color: 'white', fontSize: '.6rem', fontWeight: '800', padding: '2px 7px', borderRadius: '99px', textTransform: 'uppercase' }}>
+                          {photo.category}
+                        </div>
+                        <button onClick={() => deleteGalleryPhoto(photo)} style={{ position: 'absolute', top: '6px', right: '6px', width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(239,68,68,.85)', border: 'none', color: 'white', cursor: 'pointer', fontSize: '.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                      </div>
+                      <div style={{ padding: '9px 12px' }}>
+                        <div style={{ fontWeight: '700', color: 'white', fontSize: '.78rem', marginBottom: '2px' }}>{photo.label}</div>
+                        {photo.description && <div style={{ fontSize: '.7rem', color: '#6b7280' }}>{photo.description}</div>}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
