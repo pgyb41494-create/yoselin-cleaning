@@ -1,6 +1,6 @@
 export default function PolicyPage() {
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: 'white', fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: 'transparent', color: 'white', fontFamily: "'DM Sans', sans-serif" }}>
 
       {/* NAV */}
       <nav style={{ background: '#0d0d0d', borderBottom: '1px solid #1f1f1f', padding: '0 24px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
