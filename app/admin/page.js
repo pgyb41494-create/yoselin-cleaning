@@ -265,16 +265,24 @@ export default function AdminPage() {
   };
 
   const cancelReq = async (req) => {
-    if (!window.confirm('Cancel this booking for ' + req.name + '? The status will be set to cancelled.')) return;
-    await updateDoc(doc(db, 'requests', req.id), { status: 'cancelled' });
-    setSelected(r => r ? { ...r, status: 'cancelled' } : r);
-    // Also cancel any future recurring schedule entries
+    if (!window.confirm('Cancel and delete this booking for ' + req.name + '? This will remove it from the customer\'s view immediately.')) return;
+    // Delete the request entirely so it vanishes from customer dashboard
+    await deleteDoc(doc(db, 'requests', req.id));
+    // Delete chat messages for this request
     try {
-      const schedSnap = await getDocs(query(collection(db, 'schedule'), where('parentRequestId', '==', req.id), where('status', '==', 'upcoming')));
+      const chatSnap = await getDocs(collection(db, 'chats', req.id, 'messages'));
+      const cb = writeBatch(db);
+      chatSnap.docs.forEach(d => cb.delete(d.ref));
+      if (!chatSnap.empty) await cb.commit();
+    } catch(e) { console.warn('Could not delete chat:', e); }
+    setSelected(null);
+    // Also delete any future recurring schedule entries
+    try {
+      const schedSnap = await getDocs(query(collection(db, 'schedule'), where('parentRequestId', '==', req.id)));
       const b = writeBatch(db);
-      schedSnap.docs.forEach(d => b.update(doc(db, 'schedule', d.id), { status: 'cancelled' }));
+      schedSnap.docs.forEach(d => b.delete(doc(db, 'schedule', d.id)));
       if (!schedSnap.empty) await b.commit();
-    } catch(e) { console.warn('Could not cancel schedule entries:', e); }
+    } catch(e) { console.warn('Could not delete schedule entries:', e); }
   };
 
   const deleteRequest = async (req) => {

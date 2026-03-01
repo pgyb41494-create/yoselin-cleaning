@@ -82,13 +82,7 @@ export default function HomePage() {
       const unsub = onAuthStateChanged(auth, (user) => {
         clearTimeout(timeout);
         setCurrentUser(user || null);
-        if (user) {
-          if (ADMIN_EMAILS.includes(user.email?.toLowerCase()) || ADMIN_EMAILS.includes(user.email)) { router.push('/admin'); }
-          else if (user.emailVerified)    { router.push('/dashboard'); }
-          else { setLoading(false); setAuthMode('verify'); }
-        } else {
-          setLoading(false);
-        }
+        setLoading(false);
       });
       timeout = setTimeout(() => { setLoading(false); setAuthError(true); }, 8000);
       return () => { unsub(); clearTimeout(timeout); };
@@ -203,7 +197,14 @@ export default function HomePage() {
           <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '140px', objectFit: 'contain' }} />
         </div>
 
-        <button className="hp-nav-login" onClick={() => setAuthMode('login')}>Login</button>
+        {currentUser ? (
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button className="hp-nav-login" onClick={() => router.push(isAdmin ? '/admin' : '/dashboard')}>{isAdmin ? 'Admin' : 'Dashboard'}</button>
+            <button onClick={() => signOut(auth)} style={{ background: 'none', border: '1px solid rgba(255,255,255,.15)', color: '#9ca3af', padding: '6px 14px', borderRadius: '99px', fontSize: '.78rem', cursor: 'pointer' }}>Sign Out</button>
+          </div>
+        ) : (
+          <button className="hp-nav-login" onClick={() => setAuthMode('login')}>Login</button>
+        )}
       </nav>
 
       {/* HERO */}
@@ -215,8 +216,14 @@ export default function HomePage() {
           Based in Fairfield, Ohio serving the surrounding area.
         </p>
         <div className="hp-hero-btns">
-          <button className="hp-btn-primary" onClick={() => setAuthMode('signup')}>Create Account</button>
-          <button className="hp-btn-outline" onClick={() => setAuthMode('login')}>Log In</button>
+          {currentUser ? (
+            <button className="hp-btn-primary" onClick={() => router.push(isAdmin ? '/admin' : '/dashboard')}>{isAdmin ? 'Go to Admin Panel' : 'Go to Dashboard'}</button>
+          ) : (
+            <>
+              <button className="hp-btn-primary" onClick={() => setAuthMode('signup')}>Create Account</button>
+              <button className="hp-btn-outline" onClick={() => setAuthMode('login')}>Log In</button>
+            </>
+          )}
         </div>
       </section>
 
@@ -252,8 +259,7 @@ export default function HomePage() {
       <section style={{ padding: '70px 24px 60px', maxWidth: '900px', margin: '0 auto' }}>
         <div className="hp-section-label">How It Works</div>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '0', position: 'relative', marginTop: '10px', flexWrap: 'wrap' }}>
-          {/* Connecting line */}
-          <div style={{ position: 'absolute', top: '44px', left: '20%', right: '20%', height: '2px', background: 'linear-gradient(90deg, #a855f7, #db2777, #60a5fa)', opacity: 0.3, zIndex: 0, display: 'var(--hiw-line, block)' }} />
+
           {[
             { step: '1', icon: '\uD83D\uDCCB', title: 'Book Online', desc: 'Fill out a quick form with your details and get an instant estimate. No phone calls needed.' },
             { step: '2', icon: '\u2728', title: 'We Clean', desc: 'Our team arrives on time with all supplies. Sit back while we make your space sparkle.' },
