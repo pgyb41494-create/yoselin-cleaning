@@ -248,6 +248,29 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* HOW IT WORKS */}
+      <section style={{ padding: '70px 24px 60px', maxWidth: '900px', margin: '0 auto' }}>
+        <div className="hp-section-label">How It Works</div>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '0', position: 'relative', marginTop: '10px', flexWrap: 'wrap' }}>
+          {/* Connecting line */}
+          <div style={{ position: 'absolute', top: '44px', left: '20%', right: '20%', height: '2px', background: 'linear-gradient(90deg, #a855f7, #db2777, #60a5fa)', opacity: 0.3, zIndex: 0, display: 'var(--hiw-line, block)' }} />
+          {[
+            { step: '1', icon: '\uD83D\uDCCB', title: 'Book Online', desc: 'Fill out a quick form with your details and get an instant estimate. No phone calls needed.' },
+            { step: '2', icon: '\u2728', title: 'We Clean', desc: 'Our team arrives on time with all supplies. Sit back while we make your space sparkle.' },
+            { step: '3', icon: '\uD83D\uDE0A', title: 'You Relax', desc: 'Come home to a spotless space. Love it or we\'ll make it right \u2014 guaranteed.' },
+          ].map((s, i) => (
+            <div key={i} style={{ flex: '1 1 250px', maxWidth: '280px', textAlign: 'center', padding: '20px 20px', position: 'relative', zIndex: 1 }}>
+              <div style={{ width: '88px', height: '88px', borderRadius: '50%', margin: '0 auto 18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', background: i === 0 ? 'rgba(168,85,247,.12)' : i === 1 ? 'rgba(219,39,119,.12)' : 'rgba(96,165,250,.12)', border: '2px solid ' + (i === 0 ? 'rgba(168,85,247,.3)' : i === 1 ? 'rgba(219,39,119,.3)' : 'rgba(96,165,250,.3)'), boxShadow: '0 0 30px ' + (i === 0 ? 'rgba(168,85,247,.15)' : i === 1 ? 'rgba(219,39,119,.15)' : 'rgba(96,165,250,.15)') }}>
+                {s.icon}
+              </div>
+              <div style={{ fontSize: '.65rem', fontWeight: '800', letterSpacing: '1.5px', textTransform: 'uppercase', color: i === 0 ? '#a855f7' : i === 1 ? '#db2777' : '#60a5fa', marginBottom: '8px' }}>Step {s.step}</div>
+              <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.15rem', fontWeight: '700', color: 'white', margin: '0 0 8px' }}>{s.title}</h3>
+              <p style={{ fontSize: '.84rem', color: '#9ca3af', lineHeight: '1.65', margin: 0 }}>{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* PICS / REVIEWS */}
       <section className="hp-gallery" id="pics">
         <div className="hp-section-label">Pics / Reviews</div>

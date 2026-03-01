@@ -87,21 +87,34 @@ export default function DashboardPage() {
       if (ADMIN_EMAILS.includes(u.email?.toLowerCase()) || ADMIN_EMAILS.includes(u.email)) { router.push('/admin'); return; }
       setUser(u);
       setSettingsName(u.displayName || '');
-      const q = query(collection(db, 'requests'), where('userId', '==', u.uid));
-      const unsubReq = onSnapshot(q, (snap) => {
-        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      // Query by userId (self-created) AND by email (admin-created for this user)
+      const qById = query(collection(db, 'requests'), where('userId', '==', u.uid));
+      const qByEmail = query(collection(db, 'requests'), where('userEmail', '==', u.email));
+      const merge = (snaps) => {
+        const map = new Map();
+        snaps.forEach(snap => snap.docs.forEach(d => map.set(d.id, { id: d.id, ...d.data() })));
+        const docs = Array.from(map.values());
         docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
         setRequests(docs);
         setLoading(false);
-      }, () => setLoading(false));
+      };
+      let snapA = null, snapB = null;
+      const unsubA = onSnapshot(qById, s => { snapA = s; if (snapB) merge([snapA, snapB]); else { setRequests(s.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); } }, () => setLoading(false));
+      const unsubB = onSnapshot(qByEmail, s => { snapB = s; if (snapA) merge([snapA, snapB]); }, () => {});
+      const unsubReq = () => { unsubA(); unsubB(); };
 
-      // Load recurring schedule for this user
-      getDocs(query(collection(db, 'schedule'), where('userId', '==', u.uid)))
-        .then(snap => {
-          const entries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-          entries.sort((a, b) => (a.sequenceIndex || 0) - (b.sequenceIndex || 0));
-          setSchedule(entries);
-        }).catch(() => {});
+      // Load recurring schedule for this user (by userId OR email)
+      Promise.all([
+        getDocs(query(collection(db, 'schedule'), where('userId', '==', u.uid))),
+        getDocs(query(collection(db, 'schedule'), where('clientEmail', '==', u.email))),
+      ]).then(([snapA, snapB]) => {
+        const map = new Map();
+        snapA.docs.forEach(d => map.set(d.id, { id: d.id, ...d.data() }));
+        snapB.docs.forEach(d => map.set(d.id, { id: d.id, ...d.data() }));
+        const entries = Array.from(map.values());
+        entries.sort((a, b) => (a.sequenceIndex || 0) - (b.sequenceIndex || 0));
+        setSchedule(entries);
+      }).catch(() => {});
       unsubReqRef.current = unsubReq;
     });
     return () => { unsubAuth(); if (unsubReqRef.current) unsubReqRef.current(); };
