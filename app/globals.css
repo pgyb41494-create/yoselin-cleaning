@@ -629,7 +629,7 @@ tr:hover td { background: var(--soft); }
 
 /* Home tab */
 .cd-home { display: flex; flex-direction: column; gap: 16px; }
-.cd-welcome-card { background: var(--black); border-radius: 20px; overflow: hidden; position: relative; min-height: 180px; display: flex; align-items: center; }
+.cd-welcome-card { background: rgba(8,5,14,0.75); border-radius: 20px; overflow: hidden; position: relative; min-height: 180px; display: flex; align-items: center; }
 .cwc-bg { position: absolute; inset: 0; background: radial-gradient(circle at 80% 50%, rgba(244,114,182,.15), rgba(26,111,212,.08), transparent 70%); }
 .cwc-content { position: relative; z-index: 1; padding: 28px 24px; }
 .cwc-icon { font-size: 2rem; margin-bottom: 10px; }
@@ -637,7 +637,7 @@ tr:hover td { background: var(--soft); }
 .cwc-content p { color: #9ca3af; font-size: .85rem; line-height: 1.6; max-width: 400px; margin-bottom: 18px; }
 .cwc-btn { padding: 13px 26px; border-radius: 12px; }
 
-.cd-booking-banner { background: var(--black); border-radius: 18px; padding: 20px 22px; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.cd-booking-banner { background: rgba(8,5,14,0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255,90,160,0.09); border-radius: 18px; padding: 20px 22px; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 .cbb-left { flex: 1; }
 .cbb-ref { font-size: .72rem; color: #6b7280; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 6px; }
 .cbb-date { color: #d1d5db; font-size: .85rem; margin-bottom: 4px; }
