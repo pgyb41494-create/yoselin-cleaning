@@ -959,7 +959,7 @@ export default function AdminPage() {
       {/* -- DETAIL MODAL -- */}
       {selected && (
         <div className="overlay show" onClick={e => e.target === e.currentTarget && setSelected(null)}>
-          <div style={{ background: '#141822', border: '1px solid #232a3a', borderRadius: '22px', maxWidth: '620px', width: '95vw', maxHeight: '92vh', overflowY: 'auto', position: 'relative', margin: 'auto' }}>
+          <div style={{ background: '#141822', border: '1px solid #232a3a', borderRadius: '22px', maxWidth: '700px', width: '95vw', maxHeight: '92vh', overflowY: 'auto', position: 'relative', margin: 'auto' }}>
 
             {/* Header: Name + Close */}
             <div style={{ padding: '24px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -1009,27 +1009,80 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Details Grid */}
+            {/* Details Grid — two clean columns */}
             <div style={{ margin: '0 24px', borderRadius: '14px', border: '1px solid #232a3a', overflow: 'hidden', background: '#161c28' }}>
-              {[
-                [['Submitted', selected.submittedAt], ['Email', selected.email]],
-                [['Address', selected.address || 'N/A', true]],
-                [['Bathrooms', selected.bathrooms || 'None'], ['Rooms', selected.rooms || 'None']],
-                [['Add-Ons', selected.addons || 'None', true]],
-                [['Pets', selected.pets === 'yes' ? 'Yes' : 'No'], ['Walk-Through', selected.walkthrough === 'Yes' || selected.walkThrough === 'yes' ? 'Yes' : 'No']],
-                [['First-Time?', selected.firstTime === 'yes' ? 'Yes (10% disc)' : 'No'], ['Senior?', selected.senior === 'yes' ? 'Yes (10% disc)' : 'No']],
-                [['Home Access', selected.access || 'N/A'], ['Referral', selected.referral || 'N/A']],
-                [['Other Requests', selected.otherRequests || 'None', true]],
-              ].map((row, ri) => (
-                <div key={ri} style={{ display: 'grid', gridTemplateColumns: row.length === 1 && row[0][2] ? '1fr' : '1fr 1fr', borderBottom: '1px solid #232a3a' }}>
-                  {row.map(([label, val, full], ci) => (
-                    <div key={label} style={{ padding: '12px 18px', borderRight: ci === 0 && row.length > 1 ? '1px solid #232a3a' : 'none' }}>
-                      <div style={{ fontSize: '.62rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>{label}</div>
-                      <div style={{ fontSize: '.86rem', fontWeight: '600', color: '#d1d5db', lineHeight: 1.4 }}>{val}</div>
-                    </div>
-                  ))}
+              {/* Contact row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid #232a3a' }}>
+                <div style={{ padding: '14px 18px', borderRight: '1px solid #232a3a' }}>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>📧 Email</div>
+                  <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db', wordBreak: 'break-all' }}>{selected.email}</div>
                 </div>
-              ))}
+                <div style={{ padding: '14px 18px' }}>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🕒 Submitted</div>
+                  <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db' }}>{selected.submittedAt}</div>
+                </div>
+              </div>
+              {/* Address full width */}
+              <div style={{ padding: '14px 18px', borderBottom: '1px solid #232a3a' }}>
+                <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>📍 Address</div>
+                <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db' }}>{selected.address || 'N/A'}</div>
+              </div>
+              {/* Bathrooms + Rooms */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid #232a3a' }}>
+                <div style={{ padding: '14px 18px', borderRight: '1px solid #232a3a' }}>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🚿 Bathrooms</div>
+                  <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db', lineHeight: 1.5 }}>{selected.bathrooms || 'None'}</div>
+                </div>
+                <div style={{ padding: '14px 18px' }}>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🛏 Rooms</div>
+                  <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db', lineHeight: 1.5 }}>{selected.rooms || 'None'}</div>
+                </div>
+              </div>
+              {/* Add-ons full width */}
+              <div style={{ padding: '14px 18px', borderBottom: '1px solid #232a3a' }}>
+                <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>✨ Add-Ons</div>
+                <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db' }}>{selected.addons || 'None'}</div>
+              </div>
+              {/* Pets + Walk-through */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid #232a3a' }}>
+                <div style={{ padding: '14px 18px', borderRight: '1px solid #232a3a' }}>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🐾 Pets</div>
+                  <div style={{ fontSize: '.84rem', fontWeight: '600', color: selected.pets === 'yes' ? '#f59e0b' : '#d1d5db' }}>{selected.pets === 'yes' ? 'Yes' : 'No'}</div>
+                </div>
+                <div style={{ padding: '14px 18px' }}>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🏠 Walk-Through</div>
+                  <div style={{ fontSize: '.84rem', fontWeight: '600', color: (selected.walkthrough === 'Yes' || selected.walkThrough === 'yes') ? '#f59e0b' : '#d1d5db' }}>{(selected.walkthrough === 'Yes' || selected.walkThrough === 'yes') ? 'Yes ⚠️' : 'No'}</div>
+                </div>
+              </div>
+              {/* Discounts */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid #232a3a' }}>
+                <div style={{ padding: '14px 18px', borderRight: '1px solid #232a3a' }}>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🎁 First-Time</div>
+                  <div style={{ fontSize: '.84rem', fontWeight: '600', color: selected.firstTime === 'yes' ? '#10b981' : '#d1d5db' }}>{selected.firstTime === 'yes' ? 'Yes — 10% off' : 'No'}</div>
+                </div>
+                <div style={{ padding: '14px 18px' }}>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>👴 Senior</div>
+                  <div style={{ fontSize: '.84rem', fontWeight: '600', color: selected.senior === 'yes' ? '#10b981' : '#d1d5db' }}>{selected.senior === 'yes' ? 'Yes — 10% off' : 'No'}</div>
+                </div>
+              </div>
+              {/* Access + Referral */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: selected.otherRequests ? '1px solid #232a3a' : 'none' }}>
+                <div style={{ padding: '14px 18px', borderRight: '1px solid #232a3a' }}>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🔑 Home Access</div>
+                  <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db' }}>{selected.access || 'N/A'}</div>
+                </div>
+                <div style={{ padding: '14px 18px' }}>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>📣 Referral</div>
+                  <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db' }}>{selected.referral || 'N/A'}</div>
+                </div>
+              </div>
+              {/* Other requests */}
+              {selected.otherRequests && (
+                <div style={{ padding: '14px 18px' }}>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>💬 Other Requests</div>
+                  <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db', lineHeight: 1.5 }}>{selected.otherRequests}</div>
+                </div>
+              )}
             </div>
 
             {/* Walk-through banner */}

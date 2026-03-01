@@ -73,6 +73,7 @@ export default function HomePage() {
   const [verifyError,   setVerifyError]   = useState('');
   const [verifyResent,  setVerifyResent]  = useState(false);
   const [authError,     setAuthError]     = useState(false);
+  const [freqTab,       setFreqTab]       = useState('once');
 
   useEffect(() => {
     let timeout;
@@ -219,26 +220,60 @@ export default function HomePage() {
       {/* SERVICES */}
       <section className="hp-services" id="services">
         <div className="hp-section-label">What We Offer</div>
-        <div className="hp-services-grid">
-          <div className="hp-service-card">
-            <div className="hsc-icon">🏠</div>
-            <h3>Residential</h3>
-            <p>Full home cleaning tailored to your schedule. Weekly, bi-weekly, or one-time deep cleans.</p>
-            <div className="hsc-price">From $120</div>
-          </div>
-          <div className="hp-service-card">
-            <div className="hsc-icon">🏢</div>
-            <h3>Light Commercial</h3>
-            <p>Offices, studios, and small businesses. Flexible scheduling before or after hours.</p>
-            <div className="hsc-price">From $150</div>
-          </div>
-          <div className="hp-service-card">
-            <div className="hsc-icon">🚚</div>
-            <h3>Move Out / In</h3>
-            <p>Leave your old place spotless or start fresh in your new home. Landlord-ready results.</p>
-            <div className="hsc-price">From $250</div>
-          </div>
+
+        {/* Frequency toggle */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginBottom: '22px', flexWrap: 'wrap' }}>
+          {[['once','One-Time',0],['weekly','Weekly',17.5],['biweekly','Bi-Weekly',15],['monthly','Monthly',12.5]].map(([key,label,disc]) => (
+            <button key={key} onClick={() => setFreqTab(key)} style={{
+              padding: '8px 18px', borderRadius: '99px', border: '2px solid',
+              borderColor: freqTab===key ? '#a855f7' : 'rgba(255,255,255,0.12)',
+              background: freqTab===key ? 'rgba(168,85,247,0.18)' : 'transparent',
+              color: freqTab===key ? '#d8b4fe' : '#9ca3af',
+              fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.82rem',
+              cursor: 'pointer', transition: 'all .15s', position: 'relative',
+            }}>
+              {label}
+              {disc > 0 && <span style={{ marginLeft: '6px', fontSize: '.65rem', color: '#10b981', fontWeight: '800' }}>SAVE {disc}%</span>}
+            </button>
+          ))}
         </div>
+
+        {(() => {
+          const disc = { once: 0, weekly: 17.5, biweekly: 15, monthly: 12.5 }[freqTab];
+          const p = (base) => Math.round(base * (1 - disc/100));
+          const freqLabel = { once: 'one-time', weekly: '/wk', biweekly: '/visit', monthly: '/mo' }[freqTab];
+          return (
+            <div className="hp-services-grid">
+              <div className="hp-service-card">
+                <div className="hsc-icon">🏠</div>
+                <h3>Residential</h3>
+                <p>Full home cleaning tailored to your schedule. Weekly, bi-weekly, or one-time deep cleans.</p>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <div className="hsc-price">From ${p(120)}{freqLabel}</div>
+                  {disc > 0 && <div style={{ fontSize: '.72rem', color: '#6b7280', textDecoration: 'line-through' }}>$120</div>}
+                </div>
+              </div>
+              <div className="hp-service-card">
+                <div className="hsc-icon">🏢</div>
+                <h3>Light Commercial</h3>
+                <p>Offices, studios, and small businesses. Flexible scheduling before or after hours.</p>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <div className="hsc-price">From ${p(150)}{freqLabel}</div>
+                  {disc > 0 && <div style={{ fontSize: '.72rem', color: '#6b7280', textDecoration: 'line-through' }}>$150</div>}
+                </div>
+              </div>
+              <div className="hp-service-card">
+                <div className="hsc-icon">🚚</div>
+                <h3>Move Out / In</h3>
+                <p>Leave your old place spotless or start fresh in your new home. Landlord-ready results.</p>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <div className="hsc-price">From ${p(250)}{freqLabel}</div>
+                  {disc > 0 && <div style={{ fontSize: '.72rem', color: '#6b7280', textDecoration: 'line-through' }}>$250</div>}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </section>
 
       {/* PICS / REVIEWS */}
