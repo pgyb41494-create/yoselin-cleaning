@@ -234,16 +234,16 @@ export default function HomePage() {
             <div className="hsc-price">From $120</div>
           </div>
           <div className="hp-service-card">
-            <div className="hsc-icon">🏢</div>
-            <h3>Light Commercial</h3>
-            <p>Offices, studios, and small businesses. Flexible scheduling before or after hours.</p>
-            <div className="hsc-price">From $250</div>
-          </div>
-          <div className="hp-service-card">
             <div className="hsc-icon">🚚</div>
             <h3>Move Out / In</h3>
             <p>Leave your old place spotless or start fresh in your new home. Landlord-ready results.</p>
             <div className="hsc-price">From $150</div>
+          </div>
+          <div className="hp-service-card">
+            <div className="hsc-icon">🏢</div>
+            <h3>Light Commercial</h3>
+            <p>Offices, studios, and small businesses. Flexible scheduling before or after hours.</p>
+            <div className="hsc-price">From $250</div>
           </div>
         </div>
       </section>
