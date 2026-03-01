@@ -13,30 +13,6 @@
   --border: #e2e8f0;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-
-/* Smooth scrolling for all scrollable containers */
-* {
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Smooth transitions on interactive elements */
-a, button, input, select, textarea {
-  transition: all 0.2s ease;
-}
-
-/* Smooth scroll snap for horizontal carousels */
-.hp-photos-row, .hp-services-grid {
-  scroll-behavior: smooth;
-}
-
-/* Custom scrollbars - thin & sleek everywhere */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.25); border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(168, 85, 247, 0.45); }
-* { scrollbar-width: thin; scrollbar-color: rgba(168,85,247,0.25) transparent; }
 
 body {
   font-family: 'DM Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif;
