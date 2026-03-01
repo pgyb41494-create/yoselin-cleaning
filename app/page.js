@@ -6,7 +6,7 @@ import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   updateProfile, sendPasswordResetEmail, sendEmailVerification,
 } from 'firebase/auth';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL, ADMIN_EMAILS } from '../lib/firebase';
 
 const FALLBACK_REVIEWS = [
@@ -73,13 +73,15 @@ export default function HomePage() {
   const [verifyError,   setVerifyError]   = useState('');
   const [verifyResent,  setVerifyResent]  = useState(false);
   const [authError,     setAuthError]     = useState(false);
-  const [freqTab,       setFreqTab]       = useState('once');
+  const [currentUser,   setCurrentUser]   = useState(null);
+  
 
   useEffect(() => {
     let timeout;
     try {
       const unsub = onAuthStateChanged(auth, (user) => {
         clearTimeout(timeout);
+        setCurrentUser(user || null);
         if (user) {
           if (ADMIN_EMAILS.includes(user.email?.toLowerCase()) || ADMIN_EMAILS.includes(user.email)) { router.push('/admin'); }
           else if (user.emailVerified)    { router.push('/dashboard'); }
@@ -168,6 +170,7 @@ export default function HomePage() {
 
   // Always show fake reviews; real submitted reviews are prepended at the front
   const reviews = [...liveReviews, ...FALLBACK_REVIEWS];
+  const isAdmin = currentUser && (ADMIN_EMAILS.includes(currentUser.email?.toLowerCase()) || ADMIN_EMAILS.includes(currentUser.email));
 
   if (loading) return <div className="spinner-page"><div className="spinner"></div></div>;
 
@@ -221,59 +224,28 @@ export default function HomePage() {
       <section className="hp-services" id="services">
         <div className="hp-section-label">What We Offer</div>
 
-        {/* Frequency toggle */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginBottom: '22px', flexWrap: 'wrap' }}>
-          {[['once','One-Time',0],['weekly','Weekly',17.5],['biweekly','Bi-Weekly',15],['monthly','Monthly',12.5]].map(([key,label,disc]) => (
-            <button key={key} onClick={() => setFreqTab(key)} style={{
-              padding: '8px 18px', borderRadius: '99px', border: '2px solid',
-              borderColor: freqTab===key ? '#a855f7' : 'rgba(255,255,255,0.12)',
-              background: freqTab===key ? 'rgba(168,85,247,0.18)' : 'transparent',
-              color: freqTab===key ? '#d8b4fe' : '#9ca3af',
-              fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.82rem',
-              cursor: 'pointer', transition: 'all .15s', position: 'relative',
-            }}>
-              {label}
-              {disc > 0 && <span style={{ marginLeft: '6px', fontSize: '.65rem', color: '#10b981', fontWeight: '800' }}>SAVE {disc}%</span>}
-            </button>
-          ))}
-        </div>
 
-        {(() => {
-          const disc = { once: 0, weekly: 17.5, biweekly: 15, monthly: 12.5 }[freqTab];
-          const p = (base) => Math.round(base * (1 - disc/100));
-          const freqLabel = { once: 'one-time', weekly: '/wk', biweekly: '/visit', monthly: '/mo' }[freqTab];
-          return (
-            <div className="hp-services-grid">
-              <div className="hp-service-card">
-                <div className="hsc-icon">🏠</div>
-                <h3>Residential</h3>
-                <p>Full home cleaning tailored to your schedule. Weekly, bi-weekly, or one-time deep cleans.</p>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <div className="hsc-price">From ${p(120)}{freqLabel}</div>
-                  {disc > 0 && <div style={{ fontSize: '.72rem', color: '#6b7280', textDecoration: 'line-through' }}>$120</div>}
-                </div>
-              </div>
-              <div className="hp-service-card">
-                <div className="hsc-icon">🏢</div>
-                <h3>Light Commercial</h3>
-                <p>Offices, studios, and small businesses. Flexible scheduling before or after hours.</p>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <div className="hsc-price">From ${p(150)}{freqLabel}</div>
-                  {disc > 0 && <div style={{ fontSize: '.72rem', color: '#6b7280', textDecoration: 'line-through' }}>$150</div>}
-                </div>
-              </div>
-              <div className="hp-service-card">
-                <div className="hsc-icon">🚚</div>
-                <h3>Move Out / In</h3>
-                <p>Leave your old place spotless or start fresh in your new home. Landlord-ready results.</p>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <div className="hsc-price">From ${p(250)}{freqLabel}</div>
-                  {disc > 0 && <div style={{ fontSize: '.72rem', color: '#6b7280', textDecoration: 'line-through' }}>$250</div>}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
+
+        <div className="hp-services-grid">
+          <div className="hp-service-card">
+            <div className="hsc-icon">🏠</div>
+            <h3>Residential</h3>
+            <p>Full home cleaning tailored to your schedule. Weekly, bi-weekly, or one-time deep cleans.</p>
+            <div className="hsc-price">From $120</div>
+          </div>
+          <div className="hp-service-card">
+            <div className="hsc-icon">🏢</div>
+            <h3>Light Commercial</h3>
+            <p>Offices, studios, and small businesses. Flexible scheduling before or after hours.</p>
+            <div className="hsc-price">From $250</div>
+          </div>
+          <div className="hp-service-card">
+            <div className="hsc-icon">🚚</div>
+            <h3>Move Out / In</h3>
+            <p>Leave your old place spotless or start fresh in your new home. Landlord-ready results.</p>
+            <div className="hsc-price">From $150</div>
+          </div>
+        </div>
       </section>
 
       {/* PICS / REVIEWS */}
@@ -331,13 +303,19 @@ export default function HomePage() {
                     <div style={{ fontSize: '.72rem', color: '#6b7280', marginTop: '1px' }}>{r.date}</div>
                   </div>
                   <div style={{ marginLeft: 'auto', fontSize: '.65rem', fontWeight: '700', color: '#a855f7', background: 'rgba(168,85,247,.12)', padding: '2px 8px', borderRadius: '99px', whiteSpace: 'nowrap' }}>Verified</div>
+                  {isAdmin && r.id && (
+                    <button onClick={(e) => { e.stopPropagation(); if(window.confirm('Delete this review?')) deleteDoc(doc(db, 'reviews', r.id)); }}
+                      style={{ marginLeft: '4px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '8px', padding: '3px 10px', fontSize: '.62rem', fontWeight: '700', cursor: 'pointer' }}>
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
 
           {/* scroll hint fade */}
-          <div style={{ position: 'absolute', right: 0, top: '42px', bottom: '12px', width: '60px', background: 'linear-gradient(to left,#0a0a0a 30%,transparent)', pointerEvents: 'none', borderRadius: '0 18px 18px 0' }} />
+          <div style={{ position: 'absolute', right: 0, top: '42px', bottom: '12px', width: '60px', background: 'linear-gradient(to left,#151515 30%,transparent)', pointerEvents: 'none', borderRadius: '0 18px 18px 0' }} />
         </div>
       </section>
 
