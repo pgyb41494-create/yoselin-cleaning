@@ -219,7 +219,7 @@ export default function DashboardPage() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: '#131313' }}>
+    <div style={{ minHeight: '100vh', background: 'transparent' }}>
 
       {/* NAV */}
       <nav style={{ background: '#151515', borderBottom: '1px solid #1f1f1f', padding: '0 24px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

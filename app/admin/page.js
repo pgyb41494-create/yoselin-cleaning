@@ -429,7 +429,7 @@ export default function AdminPage() {
   });
 
   return (
-    <div style={{ minHeight: '100vh', background: '#131313' }}>
+    <div style={{ minHeight: '100vh', background: 'transparent' }}>
 
       {/* Nav */}
       <nav className="nav" style={{ background: '#151515', borderBottom: '1px solid #1f1f1f' }}>
