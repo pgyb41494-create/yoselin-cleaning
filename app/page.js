@@ -330,15 +330,15 @@ export default function HomePage() {
             </div>
           </div>
         ) : (
-          <div className="hp-photos-row" style={{ marginBottom: '12px' }}>
-            {['Kitchen', 'Bathroom', 'Floors', 'Stove', 'Move-Out'].map((label, i) => (
-              <div className="hp-photo" key={i} onClick={() => router.push('/gallery')} style={{ cursor: 'pointer' }}>
-                <div className="hp-photo-inner">
-                  <span className="hp-photo-icon">📷</span>
-                  <span className="hp-photo-label">{label}</span>
-                </div>
-              </div>
-            ))}
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0 20px' }}>
+            <button onClick={() => router.push('/gallery')}
+              style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '22px 52px', background: 'linear-gradient(135deg,#a855f7,#db2777)', color: 'white', border: 'none', borderRadius: '20px', fontFamily: "'DM Sans',sans-serif", fontWeight: '900', fontSize: '1.25rem', cursor: 'pointer', boxShadow: '0 6px 40px rgba(168,85,247,.5), 0 0 80px rgba(219,39,119,.2)', letterSpacing: '.3px', transition: 'transform .15s, box-shadow .15s' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 8px 60px rgba(168,85,247,.7), 0 0 100px rgba(219,39,119,.3)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 6px 40px rgba(168,85,247,.5), 0 0 80px rgba(219,39,119,.2)'; }}>
+              <span style={{ fontSize: '1.5rem' }}>📷</span>
+              See All Photos
+              <span style={{ fontSize: '1.1rem', opacity: .85 }}>→</span>
+            </button>
           </div>
         )}
         {/* horizontal scroll review strip */}
