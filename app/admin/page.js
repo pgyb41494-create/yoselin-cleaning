@@ -638,7 +638,7 @@ export default function AdminPage() {
                 })}
               </div>
             </div>
-            {calSelected && getRequestsForDay(calSelected).length > 0 && (
+            {calSelected && (getRequestsForDay(calSelected).length > 0 || getScheduleForDay(calSelected).length > 0) && (
               <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #222', marginTop: '20px', overflow: 'hidden' }}>
                 <div style={{ padding: '14px 20px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ fontWeight: '700', color: 'white' }}>{MONTH_NAMES[calMonth]} {calSelected}</div>
@@ -657,7 +657,20 @@ export default function AdminPage() {
                     </div>
                   </div>
                 ))}
-              </div>
+                              {getScheduleForDay(calSelected).map(e => (
+                  <div key={e.id} style={{ padding: '14px 20px', borderBottom: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', background: 'rgba(168,85,247,.04)' }}>
+                    <div>
+                      <div style={{ fontWeight: '700', color: '#c084fc', fontSize: '.9rem', marginBottom: '2px' }}>&#x21BB; {e.clientName || 'Recurring'}</div>
+                      <div style={{ fontSize: '.78rem', color: '#9ca3af' }}>{e.time || 'TBD'} - {e.address || 'N/A'}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                      <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: '900', color: '#c084fc', fontSize: '1rem' }}>${e.estimate}</span>
+                      <span style={{ fontSize: '.65rem', fontWeight: '700', color: '#a855f7', background: 'rgba(168,85,247,.15)', padding: '2px 8px', borderRadius: '99px' }}>{e.frequency}</span>
+                      <span style={{ fontSize: '.65rem', fontWeight: '700', color: e.status === 'done' ? '#10b981' : '#60a5fa', background: e.status === 'done' ? 'rgba(16,185,129,.12)' : 'rgba(96,165,250,.12)', padding: '2px 8px', borderRadius: '99px' }}>{e.status === 'done' ? 'Done' : 'Upcoming'}</span>
+                    </div>
+                  </div>
+                ))}
+</div>
             )}
           </div>
         )}
