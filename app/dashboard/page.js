@@ -53,6 +53,10 @@ export default function DashboardPage() {
   const [settingsErr,  setSettingsErr]  = useState('');
   const [settingsBusy, setSettingsBusy] = useState(false);
 
+  const [cancelOpen,   setCancelOpen]   = useState(false);
+  const [cancelBusy,   setCancelBusy]   = useState(false);
+  const [cancelDone,   setCancelDone]   = useState(false);
+
   const [reschedOpen,   setReschedOpen]   = useState(false);
   const [reschedDates,  setReschedDates]  = useState('');
   const [reschedReason, setReschedReason] = useState('');
@@ -139,6 +143,19 @@ export default function DashboardPage() {
     setReschedOpen(false);
   };
 
+  const cancelBooking = async () => {
+    if (!latest) return;
+    setCancelBusy(true);
+    await updateDoc(doc(db, 'requests', latest.id), { status: 'cancelled' });
+    await addDoc(collection(db, 'chats', latest.id, 'messages'), {
+      text: 'Your booking has been cancelled as requested. Feel free to book again any time!',
+      sender: 'admin', senderName: 'Owner', createdAt: serverTimestamp(),
+    });
+    setCancelBusy(false);
+    setCancelDone(true);
+    setCancelOpen(false);
+  };
+
   const saveName = async () => {
     if (!settingsName.trim()) { setSettingsErr('Name cannot be empty.'); return; }
     setSettingsBusy(true); setSettingsErr(''); setSettingsMsg('');
@@ -182,7 +199,7 @@ export default function DashboardPage() {
   const upcomingSchedule = schedule.filter(e => e.status === 'upcoming');
   const TABS = [
     { id: 'home',     label: 'Home'     },
-    ...(latest && !isDone ? [
+    ...(latest && !isDone && !isCancelled ? [
       { id: 'messages', label: 'Messages', badge: unreadFromAdmin },
       { id: 'request',  label: 'My Quote' },
     ] : []),
@@ -561,6 +578,33 @@ export default function DashboardPage() {
                   <div style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.25)', borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '1.2rem' }}>✅</span>
                     <div style={{ fontWeight: '700', color: '#10b981', fontSize: '.85rem' }}>Reschedule request sent! We will be in touch soon.</div>
+                  </div>
+                )}
+
+                {/* Cancel Booking */}
+                {(latest.status === 'new' || latest.status === 'confirmed') && !cancelDone && (
+                  !cancelOpen ? (
+                    <button onClick={() => setCancelOpen(true)} style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>
+                      &#x274C; Cancel Booking
+                    </button>
+                  ) : (
+                    <div style={{ background: 'rgba(239,68,68,.07)', border: '1.5px solid rgba(239,68,68,.25)', borderRadius: '14px', padding: '16px' }}>
+                      <div style={{ fontWeight: '700', color: '#ef4444', fontSize: '.88rem', marginBottom: '6px' }}>&#x26A0; Cancel this booking?</div>
+                      <div style={{ fontSize: '.78rem', color: '#9ca3af', marginBottom: '14px', lineHeight: 1.5 }}>This will mark your booking as cancelled. You can always submit a new request whenever you're ready.</div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={cancelBooking} disabled={cancelBusy} style={{ flex: 1, padding: '10px', background: 'rgba(239,68,68,.15)', border: '1.5px solid rgba(239,68,68,.4)', color: '#ef4444', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>
+                          {cancelBusy ? 'Cancelling...' : 'Yes, Cancel'}
+                        </button>
+                        <button onClick={() => setCancelOpen(false)} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1.5px solid #2a2a2a', color: '#6b7280', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>
+                          Keep Booking
+                        </button>
+                      </div>
+                    </div>
+                  )
+                )}
+                {cancelDone && (
+                  <div style={{ background: 'rgba(107,114,128,.08)', border: '1px solid #2a2a2a', borderRadius: '12px', padding: '12px 16px', fontSize: '.83rem', color: '#9ca3af', textAlign: 'center' }}>
+                    Booking cancelled. You can submit a new request any time.
                   </div>
                 )}
               </div>

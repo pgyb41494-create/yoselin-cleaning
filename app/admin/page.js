@@ -100,6 +100,10 @@ export default function AdminPage() {
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteSaved, setNoteSaved] = useState(false);
 
+  const [editEstimate, setEditEstimate] = useState('');
+  const [estimateSaving, setEstimateSaving] = useState(false);
+  const [estimateSaved, setEstimateSaved] = useState(false);
+
   const [reschedMode, setReschedMode] = useState(false);
   const [reschedDate, setReschedDate] = useState('');
   const [reschedTime, setReschedTime] = useState('');
@@ -176,12 +180,26 @@ export default function AdminPage() {
   useEffect(() => {
     if (selected) {
       setNoteText(selected.adminNotes || '');
+      setEditEstimate(String(selected.estimate || ''));
+      setEstimateSaved(false);
       setNoteSaved(false);
       setReschedMode(false);
       setReschedDate(selected.date !== 'N/A' ? selected.date : '');
       setReschedTime(selected.time !== 'N/A' ? selected.time : '');
     }
   }, [selected?.id]);
+
+  const saveEstimate = async () => {
+    if (!selected) return;
+    const val = parseFloat(editEstimate);
+    if (isNaN(val) || val < 0) return;
+    setEstimateSaving(true);
+    await updateDoc(doc(db, 'requests', selected.id), { estimate: val });
+    setSelected(s => s ? { ...s, estimate: val } : s);
+    setEstimateSaving(false);
+    setEstimateSaved(true);
+    setTimeout(() => setEstimateSaved(false), 2500);
+  };
 
   const saveNote = async () => {
     if (!selected) return;
@@ -948,7 +966,7 @@ export default function AdminPage() {
               <div>
                 <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: '800', color: 'white', margin: 0, lineHeight: 1.2 }}>{selected.name}</h2>
                 <div style={{ marginTop: '8px' }}>
-                  <span className={'badge badge-' + selected.status} style={{ fontSize: '.72rem' }}>{selected.status === 'new' ? 'New' : selected.status === 'confirmed' ? 'Confirmed' : 'Done'}</span>
+                  <span className={'badge badge-' + selected.status} style={{ fontSize: '.72rem' }}>{selected.status === 'new' ? 'New' : selected.status === 'confirmed' ? 'Confirmed' : selected.status === 'cancelled' ? 'Cancelled' : 'Done'}</span>
                 </div>
               </div>
               <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: '1.4rem', cursor: 'pointer', padding: '4px', lineHeight: 1 }}>&times;</button>
@@ -1155,7 +1173,7 @@ export default function AdminPage() {
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
                         <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '900', color: '#60a5fa' }}>${r.estimate}</div>
                         <span className={'badge badge-'+r.status} style={{ marginTop: '4px', display: 'inline-block' }}>
-                          {r.status==='new' ? 'New' : r.status==='confirmed' ? 'Confirmed' : 'Done'}
+                          {r.status==='new' ? 'New' : r.status==='confirmed' ? 'Confirmed' : r.status==='cancelled' ? 'Cancelled' : 'Done'}
                         </span>
                       </div>
                     </div>

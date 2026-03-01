@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --white: #fff;
   --soft: #f0f1f5;
   --blue: #1a6fd4;
@@ -105,6 +105,7 @@ tr:hover td { background: var(--soft); }
 .badge-new { background: var(--pink-light); color: var(--pink-deep); }
 .badge-confirmed { background: var(--blue-pale); color: var(--blue); }
 .badge-done { background: #d1fae5; color: #065f46; }
+.badge-cancelled { background: rgba(239,68,68,.15); color: #ef4444; border: 1px solid rgba(239,68,68,.3); }
 .empty-state { text-align: center; padding: 54px 20px; color: #4b5563; }
 .view-btn { background: var(--blue-pale); color: var(--blue); border: none; padding: 5px 13px; border-radius: 8px; font-size: .75rem; font-weight: 700; cursor: pointer; transition: background .15s; }
 .view-btn:hover { background: var(--blue); color: white; }
@@ -287,9 +288,9 @@ tr:hover td { background: var(--soft); }
 .spinner { width: 40px; height: 40px; border: 3px solid #333; border-top-color: var(--pink); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ═══════════════════════════════════════
+/* ---------------------------------------
    HOMEPAGE STYLES (sketch-based redesign)
-═══════════════════════════════════════ */
+--------------------------------------- */
 
 .home-root { min-height: 100vh; background: #ffffff; }
 .hp-root { min-height: 100vh; background: transparent; color: var(--black); }
@@ -403,7 +404,7 @@ tr:hover td { background: var(--soft); }
 .hf-copy { color: #6b7280; font-size: .8rem; margin-bottom: 4px; }
 .hf-tagline { color: #4b5563; font-size: .76rem; letter-spacing: .5px; }
 
-/* ═══ PHOTO UPLOAD ═══ */
+/* --- PHOTO UPLOAD --- */
 .photo-upload-area {
   display: flex;
   flex-direction: column;
@@ -434,7 +435,7 @@ tr:hover td { background: var(--soft); }
 }
 .photo-remove:hover { background: #ef4444; }
 
-/* ═══ UNREAD BADGES ═══ */
+/* --- UNREAD BADGES --- */
 /* Customer dashboard tab badge */
 .cd-tab-unread {
   display: inline-flex;
@@ -481,7 +482,7 @@ tr:hover td { background: var(--soft); }
   .hp-photo { width: 120px; height: 100px; }
 }
 
-/* ═══ NEW HP NAV ═══ */
+/* --- NEW HP NAV --- */
 .hp-nav { position: sticky; top: 0; z-index: 100; background: var(--black); height: 152px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #222; }
 .hp-tab-wrap { position: relative; }
 .hp-tab-btn { background: rgba(255,255,255,0.08); border: 1px solid #333; border-radius: 8px; width: 38px; height: 38px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; cursor: pointer; }
@@ -494,7 +495,7 @@ tr:hover td { background: var(--soft); }
 .hp-nav-login:hover { background: white; color: var(--black); }
 .hp-nav-login:disabled { opacity: .5; cursor: not-allowed; }
 
-/* ═══ NEW HP HERO ═══ */
+/* --- NEW HP HERO --- */
 .hp-hero { background: var(--black); padding: 36px 32px 40px; text-align: center; }
 .hp-hero-tagline { font-size: .82rem; font-weight: 600; color: #9ca3af; letter-spacing: .5px; margin-bottom: 10px; text-decoration: underline; text-underline-offset: 4px; }
 .hp-hero-title { font-family: 'Playfair Display', serif; font-size: clamp(1.7rem, 4vw, 2.4rem); font-weight: 900; color: white; line-height: 1.12; margin-bottom: 12px; }
@@ -508,10 +509,10 @@ tr:hover td { background: var(--soft); }
 .hp-btn-outline:hover { border-color: rgba(255,255,255,.6); }
 .hp-err { color: #f87171; font-size: .82rem; margin-top: 14px; }
 
-/* ═══ SECTION SHARED ═══ */
+/* --- SECTION SHARED --- */
 .hp-section-label { font-size: .78rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--pink-deep); margin-bottom: 16px; text-align: center; text-decoration: underline; text-underline-offset: 5px; }
 
-/* ═══ SERVICES ═══ */
+/* --- SERVICES --- */
 .hp-services { padding: 36px 32px; background: rgba(0,0,0,0.25); }
 .hp-services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; max-width: 1000px; margin: 0 auto; }
 .hp-service-card { border: 1.5px solid #2a2a2a; border-radius: 16px; padding: 18px 16px; text-align: center; background: #181818; transition: all .2s; }
@@ -521,7 +522,7 @@ tr:hover td { background: var(--soft); }
 .hp-service-card p { color: #6b7280; font-size: .83rem; line-height: 1.6; margin-bottom: 14px; }
 .hsc-price { display: inline-block; background: var(--blue-pale); color: var(--blue); font-size: .8rem; font-weight: 700; padding: 5px 14px; border-radius: 99px; }
 
-/* ═══ GALLERY / REVIEWS ═══ */
+/* --- GALLERY / REVIEWS --- */
 .hp-gallery { padding: 36px 32px; background: rgba(0,0,0,0.2); }
 .hp-photos-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; max-width: 1000px; margin: 0 auto 20px; scrollbar-width: thin; }
 .hp-photo { flex-shrink: 0; width: 140px; height: 110px; border-radius: 12px; border: 2px dashed #333; background: #181818; overflow: hidden; }
@@ -537,14 +538,14 @@ tr:hover td { background: var(--soft); }
 .hrc-name { font-weight: 700; color: white; font-size: .84rem; }
 .hrc-date { font-size: .72rem; color: #9ca3af; }
 
-/* ═══ LOCATION ═══ */
+/* --- LOCATION --- */
 .hp-location { padding: 36px 32px; background: var(--black); text-align: center; }
 .hp-location-box { display: inline-flex; align-items: center; gap: 16px; background: #181818; border: 1.5px solid #2a2a2a; border-radius: 14px; padding: 20px 28px; text-align: left; max-width: 420px; width: 100%; }
 .hp-loc-pin { font-size: 1.8rem; flex-shrink: 0; }
 .hp-location-box strong { display: block; color: white; font-size: 1rem; margin-bottom: 4px; }
 .hp-location-box p { color: #6b7280; font-size: .82rem; line-height: 1.5; }
 
-/* ═══ FOOTER ═══ */
+/* --- FOOTER --- */
 .hp-footer { background: #131313; border-top: 1px solid #1a1a1a; padding: 24px 32px; text-align: center; }
 .hp-footer-links { display: flex; justify-content: center; gap: 32px; margin-bottom: 12px; }
 .hp-footer-links a { color: #9ca3af; font-size: .84rem; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
@@ -556,7 +557,7 @@ tr:hover td { background: var(--soft); }
 .hp-footer-brand { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700; color: #444; margin-bottom: 6px; }
 .hp-footer-copy { color: #333; font-size: .75rem; }
 
-/* ═══ CLIENT DASHBOARD ═══ */
+/* --- CLIENT DASHBOARD --- */
 .cd-root { min-height: 100vh; background: transparent; }
 .cd-nav { background: var(--black); padding: 0 20px; height: 56px; display: flex; align-items: center; justify-content: space-between; }
 .cd-nav-brand { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700; color: white; }
@@ -594,11 +595,11 @@ tr:hover td { background: var(--soft); }
 .cd-request { display: flex; flex-direction: column; gap: 16px; }
 .chat-inline { display: flex; flex-direction: column; }
 
-/* ═══ LOCATION STACK ═══ */
+/* --- LOCATION STACK --- */
 .hp-location-stack { display: flex; flex-direction: column; align-items: center; gap: 20px; max-width: 600px; margin: 0 auto; }
 .hp-loc-btn { width: 100%; max-width: 320px; text-align: center; justify-content: center; }
 
-/* ═══ CLIENT DASHBOARD REDESIGN ═══ */
+/* --- CLIENT DASHBOARD REDESIGN --- */
 .cd-root { min-height: 100vh; background: transparent; }
 .cd-nav { background: var(--black); padding: 0 24px; height: 58px; display: flex; align-items: center; justify-content: space-between; }
 .cd-nav-brand { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 700; color: white; }
@@ -707,7 +708,7 @@ tr:hover td { background: var(--soft); }
 .cd-alert-success { background: #d1fae5; color: #065f46; }
 .cd-alert-error { background: #fee2e2; color: #dc2626; }
 
-/* ═══ ADMIN REDESIGN ═══ */
+/* --- ADMIN REDESIGN --- */
 .ad-root { min-height: 100vh; background: transparent; }
 .ad-nav { background: var(--black); padding: 0 24px; height: 58px; display: flex; align-items: center; justify-content: space-between; }
 .ad-nav-left { display: flex; align-items: center; gap: 12px; }
@@ -754,7 +755,7 @@ tr:hover td { background: var(--soft); }
 .arc-done { background: #f3f4f6; color: #374151; }
 .arc-done:hover { background: #e5e7eb; }
 
-/* ═══ AUTH MODAL ═══ */
+/* --- AUTH MODAL --- */
 .am-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
 .am-modal { background: #141414; border: 1.5px solid #2a2a2a; border-radius: 24px; padding: 36px 30px 28px; width: 100%; max-width: 400px; position: relative; animation: popIn .25s ease; }
 .am-close { position: absolute; top: 14px; right: 16px; background: rgba(255,255,255,.07); border: none; color: #9ca3af; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: .9rem; display: flex; align-items: center; justify-content: center; transition: background .15s; }
@@ -787,7 +788,7 @@ tr:hover td { background: var(--soft); }
 .am-reset-success { text-align: center; padding: 20px 0; }
 .am-reset-success p { color: #d1d5db; font-size: .88rem; margin-bottom: 14px; line-height: 1.6; }
 
-/* ═══ BUILDING TYPE SELECTOR ═══ */
+/* --- BUILDING TYPE SELECTOR --- */
 .building-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin-top: 4px; }
 .building-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 8px; border: 1.5px solid #2a2a2a; border-radius: 12px; cursor: pointer; background: #181818; transition: all .15s; user-select: none; text-align: center; }
 .building-tile:hover { border-color: var(--blue); background: #1a2035; }
@@ -796,7 +797,7 @@ tr:hover td { background: var(--soft); }
 .bt-label { font-size: .72rem; font-weight: 700; color: #d1d5db; line-height: 1.2; }
 .building-tile.selected .bt-label { color: var(--pink); }
 
-/* ═══ DARK THEME OVERRIDES (wizard, portal, modals) ═══ */
+/* --- DARK THEME OVERRIDES (wizard, portal, modals) --- */
 /* Progress bar */
 .progress-wrap { background: #141414; border-bottom: 1.5px solid #2a2a2a; }
 .dot-circle { background: #1f1f1f; border-color: #3a3a3a; color: #9ca3af; }
@@ -905,7 +906,7 @@ td { color: #d1d5db; border-bottom-color: #2a2a2a; }
 tr:hover td { background: #222; }
 .arc-meta span { background: #222; color: #9ca3af; }
 
-/* ═══ MOBILE RESPONSIVE ═══ */
+/* --- MOBILE RESPONSIVE --- */
 @media (max-width: 640px) {
   /* Homepage navbar */
   .hp-nav { padding: 0 12px; height: 52px; }
