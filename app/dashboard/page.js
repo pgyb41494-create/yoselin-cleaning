@@ -143,6 +143,21 @@ export default function DashboardPage() {
     setReschedOpen(false);
   };
 
+  const cancelScheduleEntry = async (entryId) => {
+    if (!window.confirm('Cancel this individual recurring appointment?\nYour other scheduled cleanings will remain.')) return;
+    await updateDoc(doc(db, 'schedule', entryId), { status: 'cancelled' });
+    setSchedule(prev => prev.map(e => e.id === entryId ? { ...e, status: 'cancelled' } : e));
+  };
+
+  const cancelAllRecurring = async () => {
+    if (!window.confirm('Cancel ALL remaining recurring appointments?\nThis cannot be undone.')) return;
+    const upcoming = schedule.filter(e => e.status === 'upcoming');
+    for (const e of upcoming) {
+      await updateDoc(doc(db, 'schedule', e.id), { status: 'cancelled' });
+    }
+    setSchedule(prev => prev.map(e => e.status === 'upcoming' ? { ...e, status: 'cancelled' } : e));
+  };
+
   const cancelBooking = async () => {
     if (!latest) return;
     setCancelBusy(true);
@@ -632,36 +647,41 @@ export default function DashboardPage() {
                 {upcomingSchedule.map((entry, i) => {
                   const isNext = i === 0;
                   const now2 = new Date();
-                  const apptDate = new Date(entry.date);
                   const diff = Math.round((new Date(entry.date).setHours(0,0,0,0) - now2.setHours(0,0,0,0)) / 86400000);
                   return (
-                    <div key={entry.id} style={{ padding: '14px 20px', borderBottom: '1px solid #1e1e1e', display: 'flex', alignItems: 'center', gap: '14px' }}>
-                      {/* Number circle */}
-                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Playfair Display, serif', fontWeight: '900', fontSize: '.95rem', background: isNext ? 'linear-gradient(135deg,#1a6fd4,#db2777)' : '#1f1f1f', color: isNext ? 'white' : '#6b7280' }}>
+                    <div key={entry.id} style={{ padding: '14px 20px', borderBottom: '1px solid #1e1e1e', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                      <div style={{ width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Playfair Display, serif', fontWeight: '900', fontSize: '.9rem', background: isNext ? 'linear-gradient(135deg,#1a6fd4,#db2777)' : '#1f1f1f', color: isNext ? 'white' : '#6b7280' }}>
                         {i + 1}
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: '700', color: isNext ? 'white' : '#d1d5db', fontSize: '.88rem', marginBottom: '2px' }}>
+                      <div style={{ flex: 1, minWidth: '120px' }}>
+                        <div style={{ fontWeight: '700', color: isNext ? 'white' : '#d1d5db', fontSize: '.86rem', marginBottom: '2px' }}>
                           {entry.date}
-                          {isNext && <span style={{ marginLeft: '8px', fontSize: '.65rem', background: 'rgba(26,111,212,.2)', color: '#60a5fa', border: '1px solid rgba(26,111,212,.3)', borderRadius: '99px', padding: '2px 7px', fontWeight: '700' }}>NEXT</span>}
+                          {isNext && <span style={{ marginLeft: '7px', fontSize: '.62rem', background: 'rgba(26,111,212,.2)', color: '#60a5fa', border: '1px solid rgba(26,111,212,.3)', borderRadius: '99px', padding: '2px 7px', fontWeight: '700' }}>NEXT</span>}
                         </div>
-                        <div style={{ fontSize: '.75rem', color: '#6b7280' }}>
-                          {entry.time !== 'TBD' ? entry.time + ' \u00b7 ' : ''}{entry.address}
+                        <div style={{ fontSize: '.73rem', color: '#6b7280' }}>
+                          {entry.time !== 'TBD' ? entry.time + ' \u00b7 ' : ''}{entry.address?.split(',')[0]}
                         </div>
                       </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        {diff >= 0 && diff <= 30
-                          ? <div style={{ fontSize: '.75rem', fontWeight: '700', color: diff <= 3 ? '#f59e0b' : '#9ca3af' }}>
-                              {diff === 0 ? 'Today!' : diff === 1 ? 'Tomorrow' : 'In ' + diff + ' days'}
-                            </div>
-                          : null
-                        }
-                        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '.95rem', fontWeight: '900', color: '#60a5fa' }}>${entry.estimate}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                        {diff >= 0 && diff <= 30 && (
+                          <div style={{ fontSize: '.72rem', fontWeight: '700', color: diff <= 3 ? '#f59e0b' : '#9ca3af', textAlign: 'right' }}>
+                            {diff === 0 ? 'Today!' : diff === 1 ? 'Tomorrow' : 'In ' + diff + 'd'}
+                          </div>
+                        )}
+                        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '.9rem', fontWeight: '900', color: '#60a5fa' }}>${entry.estimate}</div>
+                        <button onClick={() => cancelScheduleEntry(entry.id)} title="Cancel this appointment" style={{ width: '28px', height: '28px', borderRadius: '7px', border: '1px solid rgba(239,68,68,.3)', background: 'rgba(239,68,68,.08)', color: '#ef4444', cursor: 'pointer', fontSize: '.82rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
                       </div>
                     </div>
                   );
                 })}
               </div>
+            )}
+
+            {/* Cancel all button */}
+            {upcomingSchedule.length > 1 && (
+              <button onClick={cancelAllRecurring} style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px solid rgba(239,68,68,.25)', color: '#ef4444', borderRadius: '12px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.85rem', cursor: 'pointer' }}>
+                ✕ Cancel All Remaining Recurring Appointments ({upcomingSchedule.length})
+              </button>
             )}
 
             {/* Completed */}
