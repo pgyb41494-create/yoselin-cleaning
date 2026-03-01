@@ -6,7 +6,7 @@ import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   updateProfile, sendPasswordResetEmail, sendEmailVerification,
 } from 'firebase/auth';
-import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, deleteDoc, doc, limit } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL, ADMIN_EMAILS } from '../lib/firebase';
 
 const FALLBACK_REVIEWS = [
@@ -50,6 +50,16 @@ export default function HomePage() {
   const router = useRouter();
   const [loading,       setLoading]       = useState(true);
   const [liveReviews,   setLiveReviews]   = useState([]);
+  const [galleryPhotos, setGalleryPhotos] = useState([]);
+
+  useEffect(() => {
+    const unsub = onSnapshot(
+      query(collection(db, 'galleryPhotos'), orderBy('createdAt', 'desc'), limit(6)),
+      snap => setGalleryPhotos(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      () => {}
+    );
+    return () => unsub();
+  }, []);
 
   // Pull real customer reviews from Firestore
   useEffect(() => {
@@ -199,11 +209,19 @@ export default function HomePage() {
 
         {currentUser ? (
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button onClick={() => router.push('/gallery')} style={{ padding: '9px 16px', background: 'linear-gradient(135deg,rgba(168,85,247,.15),rgba(219,39,119,.1))', border: '1.5px solid rgba(168,85,247,.4)', color: '#d8b4fe', borderRadius: '10px', fontWeight: '800', fontSize: '.78rem', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", whiteSpace: 'nowrap' }}>
+              📷 Our Work
+            </button>
             <button className="hp-nav-login" onClick={() => router.push(isAdmin ? '/admin' : '/dashboard')}>{isAdmin ? 'Admin' : 'Dashboard'}</button>
             <button onClick={() => signOut(auth)} style={{ background: 'none', border: '1px solid rgba(255,255,255,.15)', color: '#9ca3af', padding: '6px 14px', borderRadius: '99px', fontSize: '.78rem', cursor: 'pointer' }}>Sign Out</button>
           </div>
         ) : (
-          <button className="hp-nav-login" onClick={() => setAuthMode('login')}>Login</button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button onClick={() => router.push('/gallery')} style={{ padding: '9px 16px', background: 'linear-gradient(135deg,rgba(168,85,247,.15),rgba(219,39,119,.1))', border: '1.5px solid rgba(168,85,247,.4)', color: '#d8b4fe', borderRadius: '10px', fontWeight: '800', fontSize: '.78rem', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", whiteSpace: 'nowrap' }}>
+              📷 Our Work
+            </button>
+            <button className="hp-nav-login" onClick={() => setAuthMode('login')}>Login</button>
+          </div>
         )}
       </nav>
 
@@ -279,17 +297,50 @@ export default function HomePage() {
 
       {/* PICS / REVIEWS */}
       <section className="hp-gallery" id="pics">
-        <div className="hp-section-label">Pics / Reviews</div>
-        <div className="hp-photos-row">
-          {['Before & After', 'Kitchen Deep Clean', 'Bathroom Detail', 'Living Room', 'Office Space'].map((label, i) => (
-            <div className="hp-photo" key={i}>
-              <div className="hp-photo-inner">
-                <span className="hp-photo-icon">📷</span>
-                <span className="hp-photo-label">{label}</span>
-              </div>
-            </div>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
+          <div className="hp-section-label" style={{ margin: 0 }}>Our Work</div>
+          <button onClick={() => router.push('/gallery')} style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '10px 20px', background: 'linear-gradient(135deg,#a855f7,#db2777)', color: 'white', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans',sans-serif", fontWeight: '800', fontSize: '.82rem', cursor: 'pointer', boxShadow: '0 4px 20px rgba(168,85,247,.35)' }}>
+            📷 See All Photos →
+          </button>
         </div>
+
+        {galleryPhotos.length > 0 ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px', marginBottom: '12px' }}>
+            {galleryPhotos.map(photo => (
+              <div key={photo.id} onClick={() => router.push('/gallery')}
+                style={{ borderRadius: '14px', overflow: 'hidden', border: '1.5px solid #2a2a2a', cursor: 'pointer', position: 'relative', background: '#181818', aspectRatio: '4/3' }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.borderColor = '#a855f7'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.borderColor = '#2a2a2a'; }}
+                >
+                <img src={photo.url} alt={photo.label || ''} loading="lazy"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform .2s' }} />
+                {photo.category && (
+                  <div style={{ position: 'absolute', top: '7px', left: '7px', background: photo.category === 'before' ? 'rgba(239,68,68,.9)' : photo.category === 'after' ? 'rgba(16,185,129,.9)' : 'rgba(168,85,247,.9)', color: 'white', fontSize: '.6rem', fontWeight: '800', padding: '2px 8px', borderRadius: '99px', textTransform: 'uppercase' }}>
+                    {photo.category === 'before' ? '🔴 Before' : photo.category === 'after' ? '✅ After' : photo.category}
+                  </div>
+                )}
+              </div>
+            ))}
+            {/* See more tile */}
+            <div onClick={() => router.push('/gallery')} style={{ borderRadius: '14px', border: '2px dashed rgba(168,85,247,.4)', cursor: 'pointer', background: 'rgba(168,85,247,.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', aspectRatio: '4/3', gap: '8px' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(168,85,247,.12)'; e.currentTarget.style.borderColor = 'rgba(168,85,247,.7)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(168,85,247,.05)'; e.currentTarget.style.borderColor = 'rgba(168,85,247,.4)'; }}>
+              <span style={{ fontSize: '1.8rem' }}>📷</span>
+              <span style={{ fontWeight: '800', color: '#d8b4fe', fontSize: '.82rem' }}>View All</span>
+            </div>
+          </div>
+        ) : (
+          <div className="hp-photos-row" style={{ marginBottom: '12px' }}>
+            {['Kitchen', 'Bathroom', 'Floors', 'Stove', 'Move-Out'].map((label, i) => (
+              <div className="hp-photo" key={i} onClick={() => router.push('/gallery')} style={{ cursor: 'pointer' }}>
+                <div className="hp-photo-inner">
+                  <span className="hp-photo-icon">📷</span>
+                  <span className="hp-photo-label">{label}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         {/* horizontal scroll review strip */}
         <div id="reviews" style={{ position: 'relative', marginTop: '10px' }}>
           {/* summary bar */}
