@@ -254,6 +254,10 @@ export default function DashboardPage() {
         <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: '900', fontSize: '1.1rem', color: 'white' }}>
           Yoselins Cleaning
         </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button onClick={() => setActiveTab('home')} style={{ padding: '7px 16px', borderRadius: '99px', border: '2px solid rgba(96,165,250,.4)', background: 'rgba(96,165,250,.12)', color: '#93c5fd', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.78rem', cursor: 'pointer' }}>Dashboard</button>
+          <button onClick={() => router.push('/')} style={{ padding: '7px 16px', borderRadius: '99px', border: '2px solid rgba(255,255,255,.12)', background: 'transparent', color: '#9ca3af', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.78rem', cursor: 'pointer' }}>Home</button>
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {user?.photoURL
             ? <img src={user.photoURL} className="nav-avatar" alt="" />

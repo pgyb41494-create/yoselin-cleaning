@@ -445,6 +445,10 @@ export default function AdminPage() {
           <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '100px', objectFit: 'contain' }} />
           <span className="nav-badge">ADMIN</span>
         </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button onClick={() => { setTab('requests'); }} style={{ padding: '7px 16px', borderRadius: '99px', border: '2px solid rgba(168,85,247,.4)', background: 'rgba(168,85,247,.12)', color: '#d8b4fe', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.78rem', cursor: 'pointer' }}>Admin Dashboard</button>
+          <button onClick={() => router.push('/')} style={{ padding: '7px 16px', borderRadius: '99px', border: '2px solid rgba(255,255,255,.12)', background: 'transparent', color: '#9ca3af', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.78rem', cursor: 'pointer' }}>Home</button>
+        </div>
         <div className="nav-user">
           {user?.photoURL && <img src={user.photoURL} className="nav-avatar" alt="" />}
           <span className="nav-email">{user?.email}</span>
