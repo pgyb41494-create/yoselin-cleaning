@@ -1,8 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { collection, onSnapshot, orderBy, query, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { onAuthStateChanged } from 'firebase/auth';
+import { db, storage, auth, ADMIN_EMAILS } from '../../lib/firebase';
 
 export default function GalleryPage() {
   const router = useRouter();
@@ -10,6 +12,25 @@ export default function GalleryPage() {
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState(null);
   const [filter, setFilter] = useState('all');
+
+  // Admin state
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploadFiles, setUploadFiles] = useState([]);
+  const [uploadLabel, setUploadLabel] = useState('');
+  const [uploadDesc, setUploadDesc] = useState('');
+  const [uploadCategory, setUploadCategory] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user || null);
+      setIsAdmin(user ? ADMIN_EMAILS.includes(user.email?.toLowerCase()) || ADMIN_EMAILS.includes(user.email) : false);
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     const unsub = onSnapshot(
@@ -32,8 +53,57 @@ export default function GalleryPage() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [lightbox, photos, filter]);
 
+  const handleUpload = async () => {
+    if (!uploadFiles.length) return;
+    setUploading(true);
+    setUploadProgress('');
+    try {
+      for (let i = 0; i < uploadFiles.length; i++) {
+        const file = uploadFiles[i];
+        setUploadProgress(`Uploading ${i + 1} of ${uploadFiles.length}...`);
+        const fileName = `gallery/${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, fileName);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        await addDoc(collection(db, 'galleryPhotos'), {
+          url,
+          label: uploadLabel || '',
+          description: uploadDesc || '',
+          category: uploadCategory || '',
+          fileName,
+          createdAt: serverTimestamp(),
+        });
+      }
+      setUploadFiles([]);
+      setUploadLabel('');
+      setUploadDesc('');
+      setUploadCategory('');
+      setShowUpload(false);
+      setUploadProgress('');
+    } catch (err) {
+      console.error('Upload error:', err);
+      setUploadProgress('Upload failed: ' + err.message);
+    }
+    setUploading(false);
+  };
+
+  const handleDeletePhoto = async (photo) => {
+    if (!window.confirm('Delete this photo?')) return;
+    try {
+      await deleteDoc(doc(db, 'galleryPhotos', photo.id));
+    } catch (err) {
+      alert('Failed to delete: ' + err.message);
+    }
+  };
+
   const filtered = filter === 'all' ? photos : photos.filter(p => p.category === filter);
   const categories = ['all', ...new Set(photos.map(p => p.category).filter(Boolean))];
+
+  const inputStyle = {
+    width: '100%', padding: '11px 14px', background: '#1a1a1a', border: '1.5px solid #2a2a2a',
+    borderRadius: '10px', color: 'white', fontSize: '.88rem', fontFamily: "'DM Sans',sans-serif",
+    outline: 'none', boxSizing: 'border-box',
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: 'transparent' }}>
@@ -70,7 +140,101 @@ export default function GalleryPage() {
             </div>
           ))}
         </div>
+
+        {/* ADMIN UPLOAD BUTTON */}
+        {isAdmin && (
+          <div style={{ marginTop: '24px' }}>
+            <button onClick={() => setShowUpload(!showUpload)} style={{
+              padding: '12px 28px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white',
+              border: 'none', borderRadius: '12px', fontFamily: "'DM Sans',sans-serif", fontWeight: '800',
+              fontSize: '.9rem', cursor: 'pointer', boxShadow: '0 4px 20px rgba(16,185,129,.35)',
+            }}>
+              {showUpload ? '✕ Close Upload' : '➕ Upload Photos'}
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* ADMIN UPLOAD PANEL */}
+      {isAdmin && showUpload && (
+        <div style={{ background: 'linear-gradient(135deg,rgba(16,185,129,.06),rgba(5,150,105,.04))', borderBottom: '1.5px solid rgba(16,185,129,.2)', padding: '28px 24px' }}>
+          <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+            <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', fontWeight: '800', color: 'white', marginBottom: '18px', textAlign: 'center' }}>
+              📷 Upload Gallery Photos
+            </h3>
+
+            {/* File picker */}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ display: 'block', fontSize: '.78rem', fontWeight: '700', color: '#9ca3af', marginBottom: '6px' }}>Select Photos</label>
+              <input type="file" accept="image/*" multiple
+                onChange={e => setUploadFiles(Array.from(e.target.files))}
+                style={{ ...inputStyle, padding: '10px', cursor: 'pointer' }} />
+              {uploadFiles.length > 0 && (
+                <div style={{ fontSize: '.75rem', color: '#10b981', marginTop: '6px', fontWeight: '600' }}>
+                  {uploadFiles.length} file{uploadFiles.length > 1 ? 's' : ''} selected
+                </div>
+              )}
+            </div>
+
+            {/* Label */}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ display: 'block', fontSize: '.78rem', fontWeight: '700', color: '#9ca3af', marginBottom: '6px' }}>Label (optional)</label>
+              <input type="text" placeholder="e.g. Kitchen Deep Clean" value={uploadLabel}
+                onChange={e => setUploadLabel(e.target.value)} style={inputStyle} />
+            </div>
+
+            {/* Description */}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ display: 'block', fontSize: '.78rem', fontWeight: '700', color: '#9ca3af', marginBottom: '6px' }}>Description (optional)</label>
+              <input type="text" placeholder="e.g. Full kitchen scrub including oven" value={uploadDesc}
+                onChange={e => setUploadDesc(e.target.value)} style={inputStyle} />
+            </div>
+
+            {/* Category */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '.78rem', fontWeight: '700', color: '#9ca3af', marginBottom: '6px' }}>Category</label>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {[
+                  { value: '', label: 'None', color: '#6b7280' },
+                  { value: 'before', label: '🔴 Before', color: '#ef4444' },
+                  { value: 'after', label: '✅ After', color: '#10b981' },
+                  { value: 'general', label: '📷 General', color: '#a855f7' },
+                ].map(opt => (
+                  <button key={opt.value} onClick={() => setUploadCategory(opt.value)}
+                    style={{
+                      padding: '8px 16px', borderRadius: '10px', cursor: 'pointer',
+                      fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.82rem',
+                      background: uploadCategory === opt.value ? opt.color + '22' : '#1a1a1a',
+                      border: `1.5px solid ${uploadCategory === opt.value ? opt.color : '#2a2a2a'}`,
+                      color: uploadCategory === opt.value ? opt.color : '#6b7280',
+                    }}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Upload Progress */}
+            {uploadProgress && (
+              <div style={{ fontSize: '.82rem', color: uploadProgress.includes('failed') ? '#ef4444' : '#10b981', fontWeight: '600', marginBottom: '14px', textAlign: 'center' }}>
+                {uploadProgress}
+              </div>
+            )}
+
+            {/* Submit */}
+            <button onClick={handleUpload} disabled={uploading || !uploadFiles.length}
+              style={{
+                width: '100%', padding: '14px', borderRadius: '12px', border: 'none', cursor: uploading || !uploadFiles.length ? 'not-allowed' : 'pointer',
+                background: uploading || !uploadFiles.length ? '#2a2a2a' : 'linear-gradient(135deg,#10b981,#059669)',
+                color: uploading || !uploadFiles.length ? '#6b7280' : 'white',
+                fontFamily: "'DM Sans',sans-serif", fontWeight: '800', fontSize: '.95rem',
+                boxShadow: uploading || !uploadFiles.length ? 'none' : '0 4px 20px rgba(16,185,129,.35)',
+              }}>
+              {uploading ? '⏳ Uploading...' : `Upload ${uploadFiles.length || ''} Photo${uploadFiles.length !== 1 ? 's' : ''}`}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* FILTER TABS */}
       {categories.length > 1 && (
@@ -107,11 +271,10 @@ export default function GalleryPage() {
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
               {filtered.map((photo, i) => (
-                <div key={photo.id} onClick={() => setLightbox({ ...photo, index: i })}
-                  style={{ borderRadius: '16px', overflow: 'hidden', border: '1.5px solid #2a2a2a', cursor: 'zoom-in', position: 'relative', background: '#181818', transition: 'transform .15s, border-color .15s' }}
+                <div key={photo.id} style={{ borderRadius: '16px', overflow: 'hidden', border: '1.5px solid #2a2a2a', position: 'relative', background: '#181818', transition: 'transform .15s, border-color .15s' }}
                   onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.borderColor = '#a855f7'; }}
                   onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.borderColor = '#2a2a2a'; }}>
-                  <div style={{ aspectRatio: '4/3', overflow: 'hidden', background: '#111' }}>
+                  <div onClick={() => setLightbox({ ...photo, index: i })} style={{ aspectRatio: '4/3', overflow: 'hidden', background: '#111', cursor: 'zoom-in' }}>
                     <img src={photo.url} alt={photo.label || 'Gallery photo'} loading="lazy"
                       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                   </div>
@@ -124,6 +287,18 @@ export default function GalleryPage() {
                     }}>
                       {photo.category === 'before' ? '🔴 Before' : photo.category === 'after' ? '✅ After' : photo.category}
                     </div>
+                  )}
+                  {/* Admin delete button */}
+                  {isAdmin && (
+                    <button onClick={() => handleDeletePhoto(photo)}
+                      style={{
+                        position: 'absolute', top: '10px', right: '10px',
+                        background: 'rgba(239,68,68,.9)', color: 'white', border: 'none',
+                        borderRadius: '8px', padding: '4px 10px', fontSize: '.65rem', fontWeight: '800',
+                        cursor: 'pointer', backdropFilter: 'blur(4px)',
+                      }}>
+                      🗑 Delete
+                    </button>
                   )}
                   <div style={{ padding: '12px 14px' }}>
                     {photo.label && <div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem', marginBottom: '3px' }}>{photo.label}</div>}
