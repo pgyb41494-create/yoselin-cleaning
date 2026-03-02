@@ -53,11 +53,6 @@ const initRooms = () => ({ bed_small: 0, bed_medium: 0, bed_large: 0, liv_small:
 
 export default function BookingWizard({ user, onDone, adminMode = false }) {
   const { lang, t } = useLang();
-  const EXTRAS = lang === 'es' ? EXTRAS_ES : EXTRAS_EN;
-  const FREQS = lang === 'es' ? FREQS_ES : FREQS_EN;
-  const BEDROOMS = lang === 'es' ? BEDROOMS_ES : BEDROOMS_EN;
-  const BATHROOMS = lang === 'es' ? BATHROOMS_ES : BATHROOMS_EN;
-  const KITCHEN = lang === 'es' ? KITCHEN_ES : KITCHEN_EN;
   const [step,         setStep]         = useState(0);
   const [baths,        setBaths]        = useState(initBaths());
   const [rooms,        setRooms]        = useState(initRooms());
