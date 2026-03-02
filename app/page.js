@@ -119,8 +119,8 @@ export default function HomePage() {
     catch (e) {
       setError(
         e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found'
-          ? Incorrect email or password.
-          : Login failed. Please try again.
+          ? 'Incorrect email or password.'
+          : 'Login failed. Please try again.'
       );
       setBusy(false);
     }

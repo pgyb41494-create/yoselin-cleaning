@@ -384,8 +384,8 @@ export default function DashboardPage() {
       {/* NAV */}
       <nav style={{ background: '#151515', borderBottom: '1px solid #1f1f1f', padding: '0 16px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
-          <button onClick={() => setActiveTab('home')} style={{ padding: '7px 14px', borderRadius: '99px', border: '2px solid rgba(96,165,250,.4)', background: 'rgba(96,165,250,.12)', color: '#93c5fd', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.75rem', cursor: 'pointer' }}>Dashboard</button>
-          <button onClick={() => router.push('/')} style={{ padding: '7px 14px', borderRadius: '99px', border: '2px solid rgba(255,255,255,.12)', background: 'transparent', color: '#9ca3af', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.75rem', cursor: 'pointer' }>Home</button>
+          <button onClick={() => setActiveTab('home')} style={{ padding: '7px 14px', borderRadius: '99px', border: '2px solid rgba(96,165,250,.4)', background: 'rgba(96,165,250,.12)', color: '#93c5fd', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.75rem', cursor: 'pointer' }}>{t('Dashboard','Panel')}</button>
+          <button onClick={() => router.push('/')} style={{ padding: '7px 14px', borderRadius: '99px', border: '2px solid rgba(255,255,255,.12)', background: 'transparent', color: '#9ca3af', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.75rem', cursor: 'pointer' }}>{t('Home','Inicio')}</button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
           
