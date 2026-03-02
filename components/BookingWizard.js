@@ -17,7 +17,6 @@ const EXTRAS = [
   { id: 'windows',   name: 'Window Trim',        price: 5, hasQty: true },
 ];
 
-// pct kept for discount calculation — labels intentionally omitted
 const FREQS = [
   { val: 'once',     label: 'One-Time',  pct: 0     },
   { val: 'weekly',   label: 'Weekly',    pct: 0.175 },
@@ -160,18 +159,15 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   const timesForDate = availability.filter(s => s.date === form.date).map(s => s.time);
 
   const goTo = (s) => {
-    // Step 0 validation
     if (s >= 1) {
       if (!form.firstName.trim()) { alert('Please enter your first name.'); return; }
       if (!form.phone.trim())     { alert('Please enter your phone number.'); return; }
       if (!form.date)             { alert('Please choose a preferred date.'); return; }
     }
-    // Step 1 validation
     if (s >= 2) {
       const hasRoom = Object.values(rooms).some(v => v > 0) || Object.values(baths).some(v => v > 0);
       if (!hasRoom) { alert('Please select at least one room or bathroom before continuing.'); return; }
     }
-    // Remap old step numbers: old steps 2+3 are now step 2, old step 4 is now step 3
     setStep(s);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -245,12 +241,11 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
   return (
     <div>
-      {/* Progress bar */}
       <div className="progress-wrap" style={{ marginBottom: '0' }}>
         <div className="steps-row">
           {stepLabels.map((label, i) => (
             <div key={i} className={'step-dot ' + (i < step ? 'done' : i === step ? 'active' : '')}>
-              <div className="dot-circle">{i < step ? '✓' : i + 1}</div>
+              <div className="dot-circle">{i < step ? '\u2713' : i + 1}</div>
               <div className="dot-label">{label}</div>
             </div>
           ))}
@@ -259,7 +254,6 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
       <div className="wizard-body">
 
-        {/* ── STEP 0: CONTACT ── */}
         {step === 0 && (
           <div>
             <div className="page-title">{adminMode ? 'Client Information' : 'Your Information'}</div>
@@ -288,15 +282,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                 </div>
                 <div className="fg">
                   <label>Service Address</label>
-                  <input
-                    ref={addressInputRef}
-                    type="text"
-                    value={form.address}
-                    onChange={e => setF('address', e.target.value)}
+                  <input ref={addressInputRef} type="text" value={form.address} onChange={e => setF('address', e.target.value)}
                     onFocus={() => { if (window.__gmapsLoaded && !autocompleteRef.current) initAutocomplete(); }}
-                    placeholder="Start typing your address..."
-                    autoComplete="off"
-                  />
+                    placeholder="Start typing your address..." autoComplete="off" />
                 </div>
                 <div className="row2">
                   <div className="fg">
@@ -314,15 +302,15 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                     <label>Preferred Time</label>
                     {availDates.length > 0 && form.date ? (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginTop: '4px' }}>
-                        {timesForDate.map(t => (
-                          <button key={t} type="button" onClick={() => setF('time', t)} style={{
+                        {timesForDate.map(tm => (
+                          <button key={tm} type="button" onClick={() => setF('time', tm)} style={{
                             padding: '8px 14px', borderRadius: '10px',
-                            border: form.time === t ? '2px solid transparent' : '1.5px solid var(--border)',
-                            background: form.time === t ? 'var(--black)' : 'var(--soft)',
-                            color: form.time === t ? 'white' : '#374151',
+                            border: form.time === tm ? '2px solid transparent' : '1.5px solid var(--border)',
+                            background: form.time === tm ? 'var(--black)' : 'var(--soft)',
+                            color: form.time === tm ? 'white' : '#374151',
                             fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.78rem',
                             cursor: 'pointer', transition: 'all .15s',
-                          }}>{t}</button>
+                          }}>{tm}</button>
                         ))}
                       </div>
                     ) : availDates.length > 0 ? (
@@ -341,62 +329,28 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               </div>
             </div>
 
-            {/* Walk-through — prominent banner card */}
-            <div
-              onClick={() => setWalkthrough(w => !w)}
-              style={{
-                marginTop: '16px',
-                borderRadius: '16px',
-                border: walkthrough ? '2px solid #1a6fd4' : '2px dashed #3a3a3a',
-                background: walkthrough
-                  ? 'linear-gradient(135deg, rgba(26,111,212,.15), rgba(219,39,119,.08))'
-                  : '#141414',
-                padding: '20px 22px',
-                cursor: 'pointer',
-                transition: 'all .2s',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '18px',
-              }}
-            >
-              <div style={{
-                width: '52px', height: '52px', borderRadius: '14px', flexShrink: 0,
-                background: walkthrough ? 'linear-gradient(135deg,#1a6fd4,#db2777)' : '#222',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.6rem', transition: 'all .2s',
-              }}>
-                🏠
-              </div>
+            <div onClick={() => setWalkthrough(w => !w)} style={{
+              marginTop: '16px', borderRadius: '16px',
+              border: walkthrough ? '2px solid #1a6fd4' : '2px dashed #3a3a3a',
+              background: walkthrough ? 'linear-gradient(135deg, rgba(26,111,212,.15), rgba(219,39,119,.08))' : '#141414',
+              padding: '20px 22px', cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: '18px',
+            }}>
+              <div style={{ width: '52px', height: '52px', borderRadius: '14px', flexShrink: 0, background: walkthrough ? 'linear-gradient(135deg,#1a6fd4,#db2777)' : '#222', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem', transition: 'all .2s' }}>{'\uD83C\uDFE0'}</div>
               <div style={{ flex: 1 }}>
-                <div style={{
-                  fontWeight: '800', fontSize: '.98rem',
-                  color: walkthrough ? 'white' : '#9ca3af',
-                  marginBottom: '4px', transition: 'color .2s',
-                }}>
+                <div style={{ fontWeight: '800', fontSize: '.98rem', color: walkthrough ? 'white' : '#9ca3af', marginBottom: '4px', transition: 'color .2s' }}>
                   Request a Free Walk-Through
                 </div>
                 <div style={{ fontSize: '.8rem', color: walkthrough ? '#a5c8ff' : '#555', lineHeight: 1.5, transition: 'color .2s' }}>
-                  We’ll visit your space first to give you an exact price — no surprises.
+                  {"We'll visit your space first to give you an exact price \u2014 no surprises."}
                 </div>
                 {walkthrough && (
-                  <div style={{
-                    marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '5px',
-                    background: 'rgba(16,185,129,.15)', border: '1px solid rgba(16,185,129,.3)',
-                    borderRadius: '99px', padding: '3px 10px',
-                    fontSize: '.74rem', fontWeight: '700', color: '#10b981',
-                  }}>
-                    ✅ Walk-through requested
+                  <div style={{ marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(16,185,129,.15)', border: '1px solid rgba(16,185,129,.3)', borderRadius: '99px', padding: '3px 10px', fontSize: '.74rem', fontWeight: '700', color: '#10b981' }}>
+                    {'\u2705'} Walk-through requested
                   </div>
                 )}
               </div>
-              <div style={{
-                width: '28px', height: '28px', borderRadius: '8px', flexShrink: 0,
-                border: walkthrough ? '2px solid #1a6fd4' : '2px solid #3a3a3a',
-                background: walkthrough ? '#1a6fd4' : 'transparent',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '.9rem', color: 'white', fontWeight: '900', transition: 'all .2s',
-              }}>
-                {walkthrough ? '✓' : ''}
+              <div style={{ width: '28px', height: '28px', borderRadius: '8px', flexShrink: 0, border: walkthrough ? '2px solid #1a6fd4' : '2px solid #3a3a3a', background: walkthrough ? '#1a6fd4' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.9rem', color: 'white', fontWeight: '900', transition: 'all .2s' }}>
+                {walkthrough ? '\u2713' : ''}
               </div>
             </div>
 
@@ -406,7 +360,6 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
           </div>
         )}
 
-        {/* ── STEP 1: ROOMS ── */}
         {step === 1 && (
           <div>
             <div className="page-title">Rooms</div>
@@ -422,8 +375,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                   {BEDROOMS.map(({ key, name, desc }) => (
                     <RoomRow key={key} name={name} desc={desc} val={rooms[key]}
                       onInc={() => setRooms(r => ({ ...r, [key]: r[key] + 1 }))}
-                      onDec={() => setRooms(r => ({ ...r, [key]: Math.max(0, r[key] - 1) }))}
-                    />
+                      onDec={() => setRooms(r => ({ ...r, [key]: Math.max(0, r[key] - 1) }))} />
                   ))}
                 </div>
               </div>
@@ -439,8 +391,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                   {BATHROOMS.map(({ key, name, desc }) => (
                     <RoomRow key={key} name={name} desc={desc} val={baths[key]}
                       onInc={() => setBaths(b => ({ ...b, [key]: b[key] + 1 }))}
-                      onDec={() => setBaths(b => ({ ...b, [key]: Math.max(0, b[key] - 1) }))}
-                    />
+                      onDec={() => setBaths(b => ({ ...b, [key]: Math.max(0, b[key] - 1) }))} />
                   ))}
                 </div>
               </div>
@@ -456,8 +407,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                   {KITCHEN.map(({ key, name, desc }) => (
                     <RoomRow key={key} name={name} desc={desc} val={rooms[key]}
                       onInc={() => setRooms(r => ({ ...r, [key]: r[key] + 1 }))}
-                      onDec={() => setRooms(r => ({ ...r, [key]: Math.max(0, r[key] - 1) }))}
-                    />
+                      onDec={() => setRooms(r => ({ ...r, [key]: Math.max(0, r[key] - 1) }))} />
                   ))}
                 </div>
               </div>
@@ -470,13 +420,11 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
           </div>
         )}
 
-        {/* ── STEP 2: PREFERENCES (Add-Ons + Frequency merged) ── */}
         {step === 2 && (
           <div>
             <div className="page-title">Preferences</div>
             <div className="page-sub">Extras, frequency, and a few quick questions</div>
 
-            {/* Frequency */}
             <div className="wcard">
               <div className="card-header">
                 <div className="card-icon">F</div>
@@ -490,11 +438,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                     </div>
                   ))}
                 </div>
-
               </div>
             </div>
 
-            {/* Add-Ons */}
             <div className="wcard">
               <div className="card-header">
                 <div className="card-icon">+</div>
@@ -505,8 +451,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                   {EXTRAS.map(e => (
                     <div key={e.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <div className={'eitem ' + (extras[e.id] ? 'selected' : '')} onClick={() => setExtras(x => ({ ...x, [e.id]: !x[e.id] }))}>
-                        <input type="checkbox" readOnly checked={!!extras[e.id]}
-                          style={{ width: '17px', height: '17px', accentColor: 'var(--pink-deep)', flexShrink: 0, marginTop: '2px' }} />
+                        <input type="checkbox" readOnly checked={!!extras[e.id]} style={{ width: '17px', height: '17px', accentColor: 'var(--pink-deep)', flexShrink: 0, marginTop: '2px' }} />
                         <div className="ename">{e.name}</div>
                       </div>
                       {e.hasQty && extras[e.id] && (
@@ -546,7 +491,6 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
           </div>
         )}
 
-        {/* ── STEP 3: REVIEW ── */}
         {step === 3 && (
           <div>
             <div className="page-title">Review and Submit</div>
@@ -577,7 +521,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                   <div className="fg">
                     <label>Home Access</label>
                     <select value={form.access} onChange={e => setF('access', e.target.value)}>
-                      <option>I'll be home</option>
+                      <option>{"I'll be home"}</option>
                       <option>Lockbox / Key left out</option>
                       <option>Garage code</option>
                       <option>Other arrangement</option>
@@ -587,10 +531,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               </div>
             </div>
 
-            {/* Discounts */}
             <div className="wcard">
               <div className="card-header" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,.18), rgba(26,111,212,.1))' }}>
-                <div className="card-icon" style={{ fontSize: '1.2rem' }}>🏷️</div>
+                <div className="card-icon" style={{ fontSize: '1.2rem' }}>{'\uD83C\uDFF7\uFE0F'}</div>
                 <div>
                   <div className="card-title">Discounts</div>
                   <div className="card-sub">Any applicable discounts will be applied to your estimate</div>
@@ -631,14 +574,13 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                 </div>
                 {(firstTime === 'yes' || senior === 'yes') && (
                   <div style={{ marginTop: '12px', background: 'rgba(16,185,129,.1)', border: '1px solid rgba(16,185,129,.25)', borderRadius: '10px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '1rem' }}>✅</span>
+                    <span style={{ fontSize: '1rem' }}>{'\u2705'}</span>
                     <span style={{ fontSize: '.82rem', fontWeight: '700', color: '#10b981' }}>Discount applied!</span>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Price bar — shows final with discount applied, no breakdown of what % */}
             <div className="pbar">
               <div className="pbar-top">
                 <div>
