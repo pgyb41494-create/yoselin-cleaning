@@ -325,7 +325,7 @@ export default function GalleryPage() {
                 fontFamily: "'DM Sans',sans-serif", fontWeight: '800', fontSize: '.95rem',
                 boxShadow: uploading || !uploadFiles.length ? 'none' : '0 4px 20px rgba(16,185,129,.35)',
               }}>
-              {uploading ? '⏳ Uploading...' : `Upload ${uploadFiles.length || '} Photo${uploadFiles.length !== 1 ? 's' : '}`}
+              {uploading ? '⏳ Uploading...' : `Upload ${uploadFiles.length || ''} Photo${uploadFiles.length !== 1 ? 's' : '}`}
             </button>
           </div>
         </div>
