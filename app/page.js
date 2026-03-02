@@ -209,17 +209,11 @@ export default function HomePage() {
 
         {currentUser ? (
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button onClick={() => router.push('/gallery')} style={{ padding: '9px 16px', background: 'linear-gradient(135deg,rgba(168,85,247,.15),rgba(219,39,119,.1))', border: '1.5px solid rgba(168,85,247,.4)', color: '#d8b4fe', borderRadius: '10px', fontWeight: '800', fontSize: '.78rem', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", whiteSpace: 'nowrap' }}>
-              📷 Our Work
-            </button>
             <button className="hp-nav-login" onClick={() => router.push(isAdmin ? '/admin' : '/dashboard')}>{isAdmin ? 'Admin' : 'Dashboard'}</button>
             <button onClick={() => signOut(auth)} style={{ background: 'none', border: '1px solid rgba(255,255,255,.15)', color: '#9ca3af', padding: '6px 14px', borderRadius: '99px', fontSize: '.78rem', cursor: 'pointer' }}>Sign Out</button>
           </div>
         ) : (
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button onClick={() => router.push('/gallery')} style={{ padding: '9px 16px', background: 'linear-gradient(135deg,rgba(168,85,247,.15),rgba(219,39,119,.1))', border: '1.5px solid rgba(168,85,247,.4)', color: '#d8b4fe', borderRadius: '10px', fontWeight: '800', fontSize: '.78rem', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", whiteSpace: 'nowrap' }}>
-              📷 Our Work
-            </button>
             <button className="hp-nav-login" onClick={() => setAuthMode('login')}>Login</button>
           </div>
         )}
