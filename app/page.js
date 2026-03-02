@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -8,8 +8,8 @@ import {
 } from 'firebase/auth';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc, limit, getDoc } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL, ADMIN_EMAILS } from '../lib/firebase';
-import { useLang } from '../lib/LanguageContext';
-import LanguageToggle from '../components/LanguageToggle';
+
+
 
 const FALLBACK_REVIEWS = [
   { name: 'Maria G.',      stars: 5, text: 'Yoselin did an amazing job! My house has never looked this clean. She even organized my pantry without me asking. Absolutely love this service!', textEs: '¡Yoselin hizo un trabajo increíble! Mi casa nunca había estado tan limpia. Incluso organizó mi despensa sin que se lo pidiera. ¡Me encanta este servicio!', date: 'Jan 2025' },
@@ -36,7 +36,7 @@ const FALLBACK_REVIEWS = [
 
 export default function HomePage() {
   const router = useRouter();
-  const { lang, t, toggleLang } = useLang();
+  
   const [loading,       setLoading]       = useState(true);
   const [liveReviews,   setLiveReviews]   = useState([]);
   const [galleryPhotos, setGalleryPhotos] = useState([]);
@@ -109,18 +109,18 @@ export default function HomePage() {
   const handleGoogleSignIn = async () => {
     setError(''); setBusy(true);
     try { const r = await signInWithPopup(auth, new GoogleAuthProvider()); redirect(r.user); }
-    catch { setError(t('Google sign-in failed. Please try again.', 'Error con Google. Inténtalo de nuevo.')); setBusy(false); }
+    catch { setError('Google sign-in failed. Please try again.'); setBusy(false); }
   };
 
   const handleLogin = async () => {
     setError(''); setBusy(true);
-    if (!email || !password) { setError(t('Please fill in all fields.', 'Por favor completa todos los campos.')); setBusy(false); return; }
+    if (!email || !password) { setError('Please fill in all fields.'); setBusy(false); return; }
     try { const r = await signInWithEmailAndPassword(auth, email, password); redirect(r.user); }
     catch (e) {
       setError(
         e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found'
-          ? t('Incorrect email or password.', 'Correo o contraseña incorrectos.')
-          : t('Login failed. Please try again.', 'Error al iniciar sesión. Inténtalo de nuevo.')
+          ? Incorrect email or password.
+          : Login failed. Please try again.
       );
       setBusy(false);
     }
@@ -128,9 +128,9 @@ export default function HomePage() {
 
   const handleSignup = async () => {
     setError(''); setBusy(true);
-    if (!name.trim())        { setError(t('Please enter your name.', 'Por favor ingresa tu nombre.')); setBusy(false); return; }
-    if (!email || !password) { setError(t('Please fill in all fields.', 'Por favor completa todos los campos.')); setBusy(false); return; }
-    if (password.length < 6) { setError(t('Password must be at least 6 characters.', 'La contraseña debe tener al menos 6 caracteres.')); setBusy(false); return; }
+    if (!name.trim())        { setError('Please enter your name.'); setBusy(false); return; }
+    if (!email || !password) { setError('Please fill in all fields.'); setBusy(false); return; }
+    if (password.length < 6) { setError('Password must be at least 6 characters.'); setBusy(false); return; }
     try {
       const r = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(r.user, { displayName: name.trim() });
@@ -138,18 +138,18 @@ export default function HomePage() {
       redirect(r.user);
     } catch (e) {
       setError(e.code === 'auth/email-already-in-use'
-        ? t('An account with this email already exists. Try logging in.', 'Ya existe una cuenta con este correo. Intenta iniciar sesión.')
-        : t('Sign up failed. Please try again.', 'Error al registrarse. Inténtalo de nuevo.')
+        ? An account with this email already exists. Try logging in.
+        : Sign up failed. Please try again.
       );
       setBusy(false);
     }
   };
 
   const handleReset = async () => {
-    if (!email) { setError(t('Enter your email above first.', 'Ingresa tu correo primero.')); return; }
+    if (!email) { setError('Enter your email above first.'); return; }
     setError(''); setBusy(true);
     try { await sendPasswordResetEmail(auth, email); setResetSent(true); setBusy(false); }
-    catch { setError(t('Could not send reset email.', 'No se pudo enviar el correo de restablecimiento.')); setBusy(false); }
+    catch { setError('Could not send reset email.'); setBusy(false); }
   };
 
   const closeModal = () => {
@@ -162,15 +162,15 @@ export default function HomePage() {
     try {
       await auth.currentUser.reload();
       if (auth.currentUser.emailVerified) { router.push('/dashboard'); }
-      else { setVerifyError(t('Email not verified yet. Please check your inbox and click the link.', 'Correo no verificado aún. Revisa tu bandeja y haz clic en el enlace.')); }
-    } catch { setVerifyError(t('Something went wrong. Please try again.', 'Algo salió mal. Inténtalo de nuevo.')); }
+      else { setVerifyError('Email not verified yet. Please check your inbox and click the link.'); }
+    } catch { setVerifyError('Something went wrong. Please try again.'); }
     setBusy(false);
   };
 
   const resendVerification = async () => {
     setBusy(true); setVerifyError(''); setVerifyResent(false);
     try { await sendEmailVerification(auth.currentUser); setVerifyResent(true); }
-    catch { setVerifyError(t('Could not resend. Try again in a minute.', 'No se pudo reenviar. Intenta en un minuto.')); }
+    catch { setVerifyError('Could not resend. Try again in a minute.'); }
     setBusy(false);
   };
 
@@ -184,7 +184,7 @@ export default function HomePage() {
 
       {authError && (
         <div style={{background:'#fef3c7',borderBottom:'2px solid #f59e0b',padding:'10px 20px',textAlign:'center',fontSize:'.85rem',color:'#92400e',fontWeight:600}}>
-          ⚠️ {t('An ad blocker may be interfering with login. Please disable it for this site if you have trouble signing in.', 'Un bloqueador de anuncios puede estar interfiriendo con el inicio de sesión. Desactívalo para este sitio si tienes problemas.')}
+          ⚠️ {'An ad blocker may be interfering with login. Please disable it for this site if you have trouble signing in.'}
         </div>
       )}
 
@@ -197,8 +197,8 @@ export default function HomePage() {
             </button>
             {tabOpen && (
               <div className="hp-tab-dropdown">
-                <a href="#pics"    onClick={() => setTabOpen(false)}>📷 {t('Pics', 'Fotos')}</a>
-                <a href="#reviews" onClick={() => setTabOpen(false)}>⭐ {t('Reviews', 'Reseñas')}</a>
+                <a href="#pics"    onClick={() => setTabOpen(false)}>📷 {'Pics'}</a>
+                <a href="#reviews" onClick={() => setTabOpen(false)}>⭐ {'Reviews'}</a>
               </div>
             )}
           </div>
@@ -209,14 +209,13 @@ export default function HomePage() {
         </div>
 
         <div className="hp-nav-right">
-          <LanguageToggle />
           {currentUser ? (
             <>
-              <button className="hp-nav-login" onClick={() => router.push(isAdmin ? '/admin' : '/dashboard')}>{isAdmin ? 'Admin' : t('Dashboard', 'Panel')}</button>
-              <button onClick={() => signOut(auth)} style={{ background: 'none', border: '1px solid rgba(255,255,255,.15)', color: '#9ca3af', padding: '6px 14px', borderRadius: '99px', fontSize: '.78rem', cursor: 'pointer' }}>{t('Sign Out', 'Salir')}</button>
+              <button className="hp-nav-login" onClick={() => router.push(isAdmin ? '/admin' : '/dashboard')}>{isAdmin ? 'Admin' : Dashboard}</button>
+              <button onClick={() => signOut(auth)} style={{ background: 'none', border: '1px solid rgba(255,255,255,.15)', color: '#9ca3af', padding: '6px 14px', borderRadius: '99px', fontSize: '.78rem', cursor: 'pointer' }}>{'Sign Out'}</button>
             </>
           ) : (
-            <button className="hp-nav-login" onClick={() => setAuthMode('login')}>{t('Login', 'Iniciar Sesión')}</button>
+            <button className="hp-nav-login" onClick={() => setAuthMode('login')}>{'Login'}</button>
           )}
         </div>
       </nav>
@@ -230,27 +229,24 @@ export default function HomePage() {
         {/* Floating sparkle particles */}
         {[{l:'18%',d:'2.8s',sz:6,delay:'0s',c:'rgba(219,39,119,.7)'},{l:'35%',d:'3.4s',sz:4,delay:'1s',c:'rgba(168,85,247,.8)'},{l:'55%',d:'2.5s',sz:5,delay:'.4s',c:'rgba(26,111,212,.7)'},{l:'72%',d:'3.8s',sz:7,delay:'1.6s',c:'rgba(244,114,182,.8)'},{l:'85%',d:'2.2s',sz:4,delay:'.9s',c:'rgba(96,165,250,.7)'},{l:'10%',d:'3.1s',sz:5,delay:'2s',c:'rgba(168,85,247,.6)'}].map((p,i)=>(          <div key={i} className="hp-sparkle" style={{ left:p.l, bottom:'-8px', width:p.sz, height:p.sz, background:p.c, animationDuration:p.d, animationDelay:p.delay }} />
         ))}
-        <p className="hp-hero-tagline anim-fadeInUp delay-1">✨ {t('Ready To Make Your Place Shine', 'Listos Para Hacer Brillar Tu Hogar')}</p>
-        <h1 className="hp-hero-title anim-fadeInUp delay-2">{t('Professional Cleaning', 'Limpieza Profesional')}<br /><span>{t('You Can Trust', 'En Quien Puedes Confiar')}</span></h1>
+        <p className="hp-hero-tagline anim-fadeInUp delay-1">✨ {'Ready To Make Your Place Shine'}</p>
+        <h1 className="hp-hero-title anim-fadeInUp delay-2">{'Professional Cleaning'}<br /><span>{'You Can Trust'}</span></h1>
         <p className="hp-hero-intro anim-fadeInUp delay-3">
-          {t(
-            'We bring the sparkle back to your home or office. Detail-focused, reliable, and always on time. Based in Fairfield, Ohio serving the surrounding area.',
-            'Devolvemos el brillo a tu hogar u oficina. Detallistas, confiables y siempre puntuales. Ubicados en Fairfield, Ohio sirviendo el área circundante.'
-          )}
+          We bring the sparkle back to your home or office. Detail-focused, reliable, and always on time. Based in Fairfield, Ohio serving the surrounding area.
         </p>
         <div className="hp-hero-btns anim-fadeInUp delay-4">
           {currentUser ? (
-            <button className="hp-btn-primary" onClick={() => router.push(isAdmin ? '/admin' : '/dashboard')}>{isAdmin ? t('Go to Admin Panel', 'Ir al Panel de Admin') : t('Go to Dashboard', 'Ir al Panel')}</button>
+            <button className="hp-btn-primary" onClick={() => router.push(isAdmin ? '/admin' : '/dashboard')}>{isAdmin ? Go to Admin Panel : Go to Dashboard}</button>
           ) : (
             <>
-              <button className="hp-btn-primary" onClick={() => setAuthMode('signup')}>{t('Create Account', 'Crear Cuenta')}</button>
-              <button className="hp-btn-outline" onClick={() => setAuthMode('login')}>{t('Log In', 'Iniciar Sesión')}</button>
+              <button className="hp-btn-primary" onClick={() => setAuthMode('signup')}>{'Create Account'}</button>
+              <button className="hp-btn-outline" onClick={() => setAuthMode('login')}>{'Log In'}</button>
             </>
           )}
         </div>
         {/* Trust badges */}
         <div className="anim-fadeIn delay-5" style={{ display:'flex', gap:'10px', justifyContent:'center', flexWrap:'wrap', marginTop:'20px' }}>
-          {[t('✅ Insured & Trusted','✅ Asegurados y Confiables'), t('📍 Fairfield, Ohio','📍 Fairfield, Ohio'), t('⭐ 5-Star Rated','⭐ Calificación 5 Estrellas')].map((b,i)=>(
+          {['✅ Insured & Trusted', '📍 Fairfield, Ohio', '⭐ 5-Star Rated'].map((b,i)=>(
             <span key={i} style={{ fontSize:'.74rem', fontWeight:'700', color:'#9ca3af', background:'rgba(255,255,255,.05)', border:'1px solid rgba(255,255,255,.1)', borderRadius:'99px', padding:'5px 13px' }}>{b}</span>
           ))}
         </div>
@@ -258,43 +254,43 @@ export default function HomePage() {
 
       {/* SERVICES */}
       <section className="hp-services" id="services">
-        <div className="hp-section-label anim-fadeInUp">{t('What We Offer', 'Lo Que Ofrecemos')}</div>
+        <div className="hp-section-label anim-fadeInUp">{'What We Offer'}</div>
         <div className="hp-services-grid">
           <div className="hp-service-card anim-fadeInUp delay-2">
             <div className="hsc-icon">🏠</div>
-            <h3>{t('Residential', 'Residencial')}</h3>
-            <p>{t('Full home cleaning tailored to your schedule. Weekly, bi-weekly, or one-time deep cleans.', 'Limpieza completa adaptada a tu horario. Semanal, quincenal o limpieza profunda única.')}</p>
-            <div className="hsc-price">{t('From $120', 'Desde $120')}</div>
+            <h3>{'Residential'}</h3>
+            <p>{'Full home cleaning tailored to your schedule. Weekly, bi-weekly, or one-time deep cleans.'}</p>
+            <div className="hsc-price">{'From $120'}</div>
           </div>
           <div className="hp-service-card anim-fadeInUp delay-3">
             <div className="hsc-icon">🚚</div>
-            <h3>{t('Move Out / In', 'Mudanza')}</h3>
-            <p>{t('Leave your old place spotless or start fresh in your new home. Landlord-ready results.', 'Deja tu viejo lugar impecable o empieza fresco en tu nuevo hogar. Resultados listos para el arrendador.')}</p>
-            <div className="hsc-price">{t('From $150', 'Desde $150')}</div>
+            <h3>{'Move Out / In'}</h3>
+            <p>Leave your old place spotless or start fresh in your new home. Landlord-ready results.</p>
+            <div className="hsc-price">{'From $150'}</div>
           </div>
           <div className="hp-service-card anim-fadeInUp delay-4">
             <div className="hsc-icon">🏢</div>
-            <h3>{t('Light Commercial', 'Comercial Ligero')}</h3>
-            <p>{t('Offices, studios, and small businesses. Flexible scheduling before or after hours.', 'Oficinas, estudios y pequeños negocios. Horarios flexibles antes o después del horario laboral.')}</p>
-            <div className="hsc-price">{t('From $250', 'Desde $250')}</div>
+            <h3>{'Light Commercial'}</h3>
+            <p>Offices, studios, and small businesses. Flexible scheduling before or after hours.</p>
+            <div className="hsc-price">{'From $250'}</div>
           </div>
         </div>
       </section>
 
       {/* HOW IT WORKS */}
       <section style={{ padding: '70px 24px 60px', maxWidth: '900px', margin: '0 auto' }}>
-        <div className="hp-section-label">{t('How It Works', 'Cómo Funciona')}</div>
+        <div className="hp-section-label">{'How It Works'}</div>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '0', position: 'relative', marginTop: '10px', flexWrap: 'wrap' }}>
           {[
-            { step: '1', icon: '📋', title: t('Book Online', 'Reserva en Línea'), desc: t('Fill out a quick form with your details and get an instant estimate. No phone calls needed.', 'Completa un formulario rápido con tus datos y obtén un estimado al instante. Sin llamadas telefónicas.') },
-            { step: '2', icon: '✨', title: t('We Clean', 'Nosotros Limpiamos'), desc: t('Our team arrives on time with all supplies. Sit back while we make your space sparkle.', 'Nuestro equipo llega a tiempo con todos los suministros. Relájate mientras hacemos brillar tu espacio.') },
-            { step: '3', icon: '😊', title: t('You Relax', 'Tú Descansas'), desc: t('Come home to a spotless space. Love it or we\'ll make it right — guaranteed.', 'Llega a un espacio impecable. Te encantará o lo corregimos — garantizado.') },
+            { step: '1', icon: '📋', title: 'Book Online', desc: 'Fill out a quick form with your details and get an instant estimate. No phone calls needed.' },
+            { step: '2', icon: '✨', title: 'We Clean', desc: 'Our team arrives on time with all supplies. Sit back while we make your space sparkle.' },
+            { step: '3', icon: '😊', title: 'You Relax', desc: 'Come home to a spotless space. Love it or we will make it right - guaranteed.' },
           ].map((s, i) => (
             <div key={i} style={{ flex: '1 1 250px', maxWidth: '280px', textAlign: 'center', padding: '20px 20px', position: 'relative', zIndex: 1 }}>
               <div style={{ width: '88px', height: '88px', borderRadius: '50%', margin: '0 auto 18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', background: i === 0 ? 'rgba(168,85,247,.12)' : i === 1 ? 'rgba(219,39,119,.12)' : 'rgba(96,165,250,.12)', border: '2px solid ' + (i === 0 ? 'rgba(168,85,247,.3)' : i === 1 ? 'rgba(219,39,119,.3)' : 'rgba(96,165,250,.3)'), boxShadow: '0 0 30px ' + (i === 0 ? 'rgba(168,85,247,.15)' : i === 1 ? 'rgba(219,39,119,.15)' : 'rgba(96,165,250,.15)') }}>
                 {s.icon}
               </div>
-              <div style={{ fontSize: '.65rem', fontWeight: '800', letterSpacing: '1.5px', textTransform: 'uppercase', color: i === 0 ? '#a855f7' : i === 1 ? '#db2777' : '#60a5fa', marginBottom: '8px' }}>{t('Step', 'Paso')} {s.step}</div>
+              <div style={{ fontSize: '.65rem', fontWeight: '800', letterSpacing: '1.5px', textTransform: 'uppercase', color: i === 0 ? '#a855f7' : i === 1 ? '#db2777' : '#60a5fa', marginBottom: '8px' }}>{Step} {s.step}</div>
               <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.15rem', fontWeight: '700', color: 'white', margin: '0 0 8px' }}>{s.title}</h3>
               <p style={{ fontSize: '.84rem', color: '#9ca3af', lineHeight: '1.65', margin: 0 }}>{s.desc}</p>
             </div>
@@ -305,7 +301,7 @@ export default function HomePage() {
       {/* PICS / REVIEWS */}
       <section className="hp-gallery" id="pics">
         <div style={{ marginBottom: '8px' }}>
-          <div className="hp-section-label" style={{ margin: 0 }}>{t('Our Work', 'Nuestro Trabajo')}</div>
+          <div className="hp-section-label" style={{ margin: 0 }}>{'Our Work'}</div>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0 20px' }}>
@@ -314,7 +310,7 @@ export default function HomePage() {
             onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 8px 60px rgba(168,85,247,.7), 0 0 100px rgba(219,39,119,.3)'; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 6px 40px rgba(168,85,247,.5), 0 0 80px rgba(219,39,119,.2)'; }}>
             <span style={{ fontSize: '1.5rem' }}>📷</span>
-            {t('See All Photos', 'Ver Todas las Fotos')}
+            {'See All Photos'}
             <span style={{ fontSize: '1.1rem', opacity: .85 }}>→</span>
           </button>
         </div>
@@ -324,7 +320,7 @@ export default function HomePage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', gap: '3px', fontSize: '1.1rem' }}>{'⭐'.repeat(5)}</div>
             <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: '900', color: 'white' }}>5.0</div>
-            <div style={{ fontSize: '.8rem', color: '#9ca3af' }}>· {reviews.length} {t('reviews', 'reseñas')} · {t('All 5-star', 'Todas 5 estrellas')}</div>
+            <div style={{ fontSize: '.8rem', color: '#9ca3af' }}>· {reviews.length} 'reviews' + ' \u00b7 ' + 'All 5-star'</div>
           </div>
 
           <div style={{
@@ -344,7 +340,7 @@ export default function HomePage() {
                 <div>
                   <div style={{ fontSize: '.95rem', marginBottom: '10px', letterSpacing: '1px' }}>{'⭐'.repeat(r.stars)}</div>
                   <p style={{ color: '#d1d5db', fontSize: '.83rem', lineHeight: '1.65', margin: 0 }}>
-                    &ldquo;{lang === 'es' && r.textEs ? r.textEs : r.text}&rdquo;
+                    &ldquo;{r.text}&rdquo;
                   </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '12px', borderTop: '1px solid #222' }}>
@@ -358,11 +354,11 @@ export default function HomePage() {
                     <div style={{ fontWeight: '700', color: 'white', fontSize: '.82rem' }}>{r.name}</div>
                     <div style={{ fontSize: '.72rem', color: '#6b7280', marginTop: '1px' }}>{r.date}</div>
                   </div>
-                  <div style={{ marginLeft: 'auto', fontSize: '.65rem', fontWeight: '700', color: '#a855f7', background: 'rgba(168,85,247,.12)', padding: '2px 8px', borderRadius: '99px', whiteSpace: 'nowrap' }}>{t('Verified', 'Verificado')}</div>
+                  <div style={{ marginLeft: 'auto', fontSize: '.65rem', fontWeight: '700', color: '#a855f7', background: 'rgba(168,85,247,.12)', padding: '2px 8px', borderRadius: '99px', whiteSpace: 'nowrap' }}>{Verified}</div>
                   {isAdmin && r.id && (
                     <button onClick={(e) => { e.stopPropagation(); if(window.confirm('Delete this review?')) deleteDoc(doc(db, 'reviews', r.id)); }}
                       style={{ marginLeft: '4px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '8px', padding: '3px 10px', fontSize: '.62rem', fontWeight: '700', cursor: 'pointer' }}>
-                      {t('Delete', 'Eliminar')}
+                      {'Delete'}
                     </button>
                   )}
                 </div>
@@ -375,17 +371,17 @@ export default function HomePage() {
 
       {/* LOCATION */}
       <section className="hp-location" id="schedule">
-        <div className="hp-section-label">{t('Locations', 'Ubicaciones')}</div>
+        <div className="hp-section-label">{'Locations'}</div>
         <div className="hp-location-stack">
           <div className="hp-location-box">
             <span className="hp-loc-pin">📍</span>
             <div>
-              <strong>{t('Based In Fairfield, Ohio', 'Ubicados en Fairfield, Ohio')}</strong>
-              <p>{t('Serving Fairfield and surrounding cities in the Cincinnati area', 'Sirviendo Fairfield y ciudades cercanas en el área de Cincinnati')}</p>
+              <strong>{'Based In Fairfield, Ohio'}</strong>
+              <p>{'Serving Fairfield and surrounding cities in the Cincinnati area'}</p>
             </div>
           </div>
           <button className="hp-btn-primary hp-loc-btn" onClick={() => setAuthMode('signup')}>
-            {t('Login | Sign Up', 'Iniciar Sesión | Registrarse')}
+            {'Login | Sign Up'}
           </button>
         </div>
       </section>
@@ -393,18 +389,18 @@ export default function HomePage() {
       {/* FOOTER */}
       <footer className="hp-footer">
         <div className="hp-footer-links">
-          <a href="/policy">{t('Policy', 'Política')}</a>
-          <a href="#">{t('Careers', 'Empleo')}</a>
+          <a href="/policy">{'Policy'}</a>
+          <a href="#">{'Careers'}</a>
         </div>
         <div className="hp-footer-contact">
-          <p>{t('Text or Call', 'Llama o Envía Mensaje')}</p>
+          <p>{'Text or Call'}</p>
           <a href="tel:5133709082">513-370-9082</a>
           <a href="tel:5132576942">513-257-6942</a>
         </div>
         <div className="hp-footer-brand">
           <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '120px', objectFit: 'contain', marginBottom: '10px' }} />
         </div>
-        <p className="hp-footer-copy">© 2025 Yoselins Cleaning. {t('All rights reserved.', 'Todos los derechos reservados.')}</p>
+        <p className="hp-footer-copy">© 2025 Yoselins Cleaning. {'All rights reserved.'}</p>
       </footer>
 
 
@@ -414,24 +410,24 @@ export default function HomePage() {
         <div className="am-overlay">
           <div className="am-modal" style={{textAlign:'center'}}>
             <div className="am-logo">📧</div>
-            <h2 className="am-title">{t('Check Your Email', 'Revisa Tu Correo')}</h2>
+            <h2 className="am-title">{'Check Your Email'}</h2>
             <p className="am-sub" style={{marginBottom:'6px'}}>
-              {t('We sent a verification link to', 'Te enviamos un enlace de verificación a')}<br />
+              {'We sent a verification link to'}<br />
               <strong style={{color:'white'}}>{auth.currentUser?.email}</strong>
             </p>
             <p style={{color:'#6b7280',fontSize:'.76rem',marginBottom:'22px'}}>
-              {t('Click the link in the email, then press the button below.', 'Haz clic en el enlace del correo, luego presiona el botón de abajo.')}
+              {'Click the link in the email, then press the button below.'}
             </p>
             {verifyError   && <p className="am-error" style={{marginBottom:'12px'}}>{verifyError}</p>}
-            {verifyResent  && <p style={{color:'#10b981',fontSize:'.8rem',marginBottom:'12px'}}>✅ {t('Email resent! Check your inbox.', '¡Correo reenviado! Revisa tu bandeja.')}</p>}
+            {verifyResent  && <p style={{color:'#10b981',fontSize:'.8rem',marginBottom:'12px'}}>✅ {Email resent! Check your inbox.}</p>}
             <button className="am-submit" onClick={checkVerification} disabled={busy} style={{marginBottom:'10px'}}>
-              {busy ? '...' : t("I've Verified My Email", 'Ya Verifiqué Mi Correo')}
+              {busy ? '...' : "I've Verified My Email"}
             </button>
             <button className="am-link-btn" onClick={resendVerification} disabled={busy}>
-              {t('Resend verification email', 'Reenviar correo de verificación')}
+              {'Resend verification email'}
             </button>
             <button className="am-link-btn" style={{color:'#ef4444'}} onClick={() => { signOut(auth); setAuthMode(null); setVerifyError(''); setVerifyResent(false); }}>
-              {t('Sign out and use a different account', 'Cerrar sesión y usar otra cuenta')}
+              {'Sign out and use a different account'}
             </button>
           </div>
         </div>
@@ -446,38 +442,38 @@ export default function HomePage() {
               <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '150px', objectFit: 'contain' }} />
             </div>
             <h2 className="am-title">
-              {authMode === 'login' ? t('Welcome Back', 'Bienvenido De Nuevo') : t('Create Account', 'Crear Cuenta')}
+              {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
             </h2>
             <p className="am-sub">
-              {authMode === 'login' ? t('Sign in to your account', 'Inicia sesión en tu cuenta') : t('Set up your account in seconds', 'Crea tu cuenta en segundos')}
+              {authMode === 'login' ? 'Sign in to your account' : 'Set up your account in seconds'}
             </p>
 
             {resetSent ? (
               <div className="am-reset-success">
                 <div style={{fontSize:'2rem',marginBottom:'8px'}}>📧</div>
-                <p>{t('Password reset email sent! Check your inbox.', '¡Correo de restablecimiento enviado! Revisa tu bandeja.')}</p>
-                <button className="am-link-btn" onClick={() => setResetSent(false)}>{t('Back to Login', 'Volver al Inicio de Sesión')}</button>
+                <p>{'Password reset email sent! Check your inbox.'}</p>
+                <button className="am-link-btn" onClick={() => setResetSent(false)}>{'Back to Login'}</button>
               </div>
             ) : (
               <>
                 {authMode === 'signup' && (
                   <div className="am-field">
-                    <label>{t('Your Name', 'Tu Nombre')}</label>
-                    <input type="text" placeholder={t('First and last name', 'Nombre y apellido')} value={name}
+                    <label>{'Your Name'}</label>
+                    <input type="text" placeholder='First and last name' value={name}
                       onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSignup()} />
                   </div>
                 )}
                 <div className="am-field">
-                  <label>{t('Email', 'Correo Electrónico')}</label>
-                  <input type="email" placeholder={t('your@email.com', 'tu@correo.com')} value={email}
+                  <label>{'Email'}</label>
+                  <input type="email" placeholder='your@email.com' value={email}
                     onChange={e => setEmail(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignup())} />
                 </div>
                 <div className="am-field">
-                  <label>{t('Password', 'Contraseña')}</label>
+                  <label>{'Password'}</label>
                   <div className="am-pass-wrap">
                     <input type={showPass ? 'text' : 'password'}
-                      placeholder={authMode === 'signup' ? t('At least 6 characters', 'Al menos 6 caracteres') : t('Your password', 'Tu contraseña')}
+                      placeholder={authMode === 'signup' ? 'At least 6 characters' : 'Your password'}
                       value={password} onChange={e => setPassword(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignup())} />
                     <button className="am-eye" onClick={() => setShowPass(s => !s)}>
@@ -487,21 +483,21 @@ export default function HomePage() {
                 </div>
                 {error && <p className="am-error">{error}</p>}
                 <button className="am-submit" onClick={authMode === 'login' ? handleLogin : handleSignup} disabled={busy}>
-                  {busy ? '...' : authMode === 'login' ? t('Log In', 'Iniciar Sesión') : t('Create Account', 'Crear Cuenta')}
+                  {busy ? '...' : authMode === 'login' ? 'Log In' : 'Create Account'}
                 </button>
                 {authMode === 'login' && (
-                  <button className="am-link-btn" onClick={handleReset} disabled={busy}>{t('Forgot password?', '¿Olvidaste tu contraseña?')}</button>
+                  <button className="am-link-btn" onClick={handleReset} disabled={busy}>{'Forgot password?'}</button>
                 )}
-                <div className="am-divider"><span>{t('or', 'o')}</span></div>
+                <div className="am-divider"><span>{'or'}</span></div>
                 <button className="am-google" onClick={handleGoogleSignIn} disabled={busy}>
                   <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="" />
-                  {t('Continue with Google', 'Continuar con Google')}
+                  {'Continue with Google'}
                 </button>
                 <p className="am-switch">
                   {authMode === 'login' ? (
-                    <>{t('No account?', '¿No tienes cuenta?')} <button onClick={() => { setAuthMode('signup'); setError(''); }}>{t('Sign up', 'Regístrate')}</button></>
+                    <>{'No account?'} <button onClick={() => { setAuthMode('signup'); setError(''); }}>{'Sign up'}</button></>
                   ) : (
-                    <>{t('Already have an account?', '¿Ya tienes cuenta?')} <button onClick={() => { setAuthMode('login'); setError(''); }}>{t('Log in', 'Inicia sesión')}</button></>
+                    <>{'Already have an account?'} <button onClick={() => { setAuthMode('login'); setError(''); }}>{'Log in'}</button></>
                   )}
                 </p>
               </>
