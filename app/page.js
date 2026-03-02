@@ -419,7 +419,7 @@ export default function HomePage() {
               {'Click the link in the email, then press the button below.'}
             </p>
             {verifyError   && <p className="am-error" style={{marginBottom:'12px'}}>{verifyError}</p>}
-            {verifyResent  && <p style={{color:'#10b981',fontSize:'.8rem',marginBottom:'12px'}}>✅ {Email resent! Check your inbox.}</p>}
+            {verifyResent  && <p style={{color:'#10b981',fontSize:'.8rem',marginBottom:'12px'}}>✅ {'Email resent! Check your inbox.'}</p>}
             <button className="am-submit" onClick={checkVerification} disabled={busy} style={{marginBottom:'10px'}}>
               {busy ? '...' : "I've Verified My Email"}
             </button>

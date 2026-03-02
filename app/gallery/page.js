@@ -412,10 +412,10 @@ export default function GalleryPage() {
       {lightbox && (
         <div onClick={() => setLightbox(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.93)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div onClick={e => e.stopPropagation()} style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}>
-            <img src={lightbox.url} alt={lightbox.label || '} style={{ maxWidth: '90vw', maxHeight: '80vh', objectFit: 'contain', borderRadius: '14px', display: 'block' }} />
+            <img src={lightbox.url} alt={lightbox.label || ''} style={{ maxWidth: '90vw', maxHeight: '80vh', objectFit: 'contain', borderRadius: '14px', display: 'block' }} />
             {lightbox.label && (
               <div style={{ textAlign: 'center', marginTop: '14px', fontWeight: '700', color: 'white', fontSize: '.95rem' }}>
-                {lightbox.category === 'before' ? '🔴 Before — ' : lightbox.category === 'after' ? '✅ After — ' : '}{lightbox.label}
+                {lightbox.category === 'before' ? '🔴 Before — ' : lightbox.category === 'after' ? '✅ After — ' : ''}{lightbox.label}
               </div>
             )}
             <button onClick={() => setLightbox(null)} style={{ position: 'absolute', top: '-14px', right: '-14px', width: '36px', height: '36px', borderRadius: '50%', background: '#2a2a2a', border: '2px solid #444', color: 'white', fontSize: '1.2rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
