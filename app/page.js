@@ -298,11 +298,8 @@ export default function HomePage() {
 
       {/* PICS / REVIEWS */}
       <section className="hp-gallery" id="pics">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
+        <div style={{ marginBottom: '8px' }}>
           <div className="hp-section-label" style={{ margin: 0 }}>Our Work</div>
-          <button onClick={() => router.push('/gallery')} style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '10px 20px', background: 'linear-gradient(135deg,#a855f7,#db2777)', color: 'white', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans',sans-serif", fontWeight: '800', fontSize: '.82rem', cursor: 'pointer', boxShadow: '0 4px 20px rgba(168,85,247,.35)' }}>
-            📷 See All Photos →
-          </button>
         </div>
 
         {galleryPhotos.length > 0 ? (
