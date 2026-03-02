@@ -236,7 +236,7 @@ export default function HomePage() {
         </p>
         <div className="hp-hero-btns anim-fadeInUp delay-4">
           {currentUser ? (
-            <button className="hp-btn-primary" onClick={() => router.push(isAdmin ? '/admin' : '/dashboard')}>{isAdmin ? Go to Admin Panel : Go to Dashboard}</button>
+            <button className="hp-btn-primary" onClick={() => router.push(isAdmin ? '/admin' : '/dashboard')}>{isAdmin ? 'Go to Admin Panel' : 'Go to Dashboard'}</button>
           ) : (
             <>
               <button className="hp-btn-primary" onClick={() => setAuthMode('signup')}>{'Create Account'}</button>
