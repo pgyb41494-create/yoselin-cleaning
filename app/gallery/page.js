@@ -2,9 +2,33 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, onSnapshot, updateDoc, setDoc, getDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
-import { db, storage, auth, ADMIN_EMAILS } from '../../lib/firebase';
+import { db, auth, ADMIN_EMAILS } from '../../lib/firebase';
+
+// Compress image to base64 data URL
+function compressImage(file, maxWidth = 800, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > maxWidth) { h = (maxWidth / w) * h; w = maxWidth; }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function GalleryPage() {
   const router = useRouter();
@@ -13,7 +37,6 @@ export default function GalleryPage() {
   const [lightbox, setLightbox] = useState(null);
   const [filter, setFilter] = useState('all');
 
-  // Admin state
   const [currentUser, setCurrentUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
@@ -32,14 +55,24 @@ export default function GalleryPage() {
     return () => unsub();
   }, []);
 
-  // Load gallery from settings/galleryData document
+  // Load gallery photos from multiple Firestore docs (settings/gallery_0, gallery_1, etc.)
   useEffect(() => {
+    // Listen to the index doc
     const unsub = onSnapshot(
-      doc(db, 'settings', 'galleryData'),
-      (snap) => {
+      doc(db, 'settings', 'galleryIndex'),
+      async (snap) => {
         if (snap.exists()) {
-          const data = snap.data();
-          setPhotos(data.photos || []);
+          const { count = 0 } = snap.data();
+          const allPhotos = [];
+          for (let i = 0; i < count; i++) {
+            try {
+              const chunkSnap = await getDoc(doc(db, 'settings', `gallery_${i}`));
+              if (chunkSnap.exists()) {
+                allPhotos.push(...(chunkSnap.data().photos || []));
+              }
+            } catch (e) {}
+          }
+          setPhotos(allPhotos);
         } else {
           setPhotos([]);
         }
@@ -67,39 +100,51 @@ export default function GalleryPage() {
     setUploading(true);
     setUploadProgress('');
     try {
+      // Compress all images
       const newPhotos = [];
       for (let i = 0; i < uploadFiles.length; i++) {
-        const file = uploadFiles[i];
-        setUploadProgress(`Uploading ${i + 1} of ${uploadFiles.length}...`);
-        
-        // Upload to bookings/admin/gallery/ path (allowed by existing storage rules)
-        const fileName = `bookings/admin/gallery/${Date.now()}_${file.name}`;
-        const storageRef = ref(storage, fileName);
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
-        
+        setUploadProgress(`Compressing ${i + 1} of ${uploadFiles.length}...`);
+        const dataUrl = await compressImage(uploadFiles[i]);
         newPhotos.push({
-          id: Date.now().toString() + '_' + i,
-          url,
+          id: Date.now().toString() + '_' + i + '_' + Math.random().toString(36).slice(2, 6),
+          url: dataUrl,
           label: uploadLabel || '',
           description: uploadDesc || '',
           category: uploadCategory || '',
-          fileName,
           createdAt: new Date().toISOString(),
         });
       }
 
-      // Store metadata in settings/galleryData (allowed by existing firestore rules)
-      const galleryRef = doc(db, 'settings', 'galleryData');
-      const snap = await getDoc(galleryRef);
-      const existing = snap.exists() ? (snap.data().photos || []) : [];
-      const updated = [...newPhotos, ...existing]; // newest first
+      setUploadProgress('Saving to gallery...');
 
-      if (snap.exists()) {
-        await updateDoc(galleryRef, { photos: updated });
-      } else {
-        await setDoc(galleryRef, { photos: updated });
+      // Load existing photos from all chunks
+      const indexSnap = await getDoc(doc(db, 'settings', 'galleryIndex'));
+      const existingCount = indexSnap.exists() ? (indexSnap.data().count || 0) : 0;
+      let allExisting = [];
+      for (let i = 0; i < existingCount; i++) {
+        try {
+          const chunkSnap = await getDoc(doc(db, 'settings', `gallery_${i}`));
+          if (chunkSnap.exists()) allExisting.push(...(chunkSnap.data().photos || []));
+        } catch (e) {}
       }
+
+      // Merge new photos at the front
+      const allPhotos = [...newPhotos, ...allExisting];
+
+      // Split into chunks of ~4 photos per doc (to stay under 1MB Firestore limit)
+      const CHUNK_SIZE = 4;
+      const chunks = [];
+      for (let i = 0; i < allPhotos.length; i += CHUNK_SIZE) {
+        chunks.push(allPhotos.slice(i, i + CHUNK_SIZE));
+      }
+
+      // Write each chunk
+      for (let i = 0; i < chunks.length; i++) {
+        await setDoc(doc(db, 'settings', `gallery_${i}`), { photos: chunks[i] });
+      }
+
+      // Update index
+      await setDoc(doc(db, 'settings', 'galleryIndex'), { count: chunks.length });
 
       setUploadFiles([]);
       setUploadLabel('');
@@ -117,18 +162,34 @@ export default function GalleryPage() {
   const handleDeletePhoto = async (photo) => {
     if (!window.confirm('Delete this photo?')) return;
     try {
-      // Remove from storage
-      if (photo.fileName) {
-        try { await deleteObject(ref(storage, photo.fileName)); } catch (e) { console.log('Storage delete skipped:', e); }
+      // Load all photos
+      const indexSnap = await getDoc(doc(db, 'settings', 'galleryIndex'));
+      const existingCount = indexSnap.exists() ? (indexSnap.data().count || 0) : 0;
+      let allPhotos = [];
+      for (let i = 0; i < existingCount; i++) {
+        try {
+          const chunkSnap = await getDoc(doc(db, 'settings', `gallery_${i}`));
+          if (chunkSnap.exists()) allPhotos.push(...(chunkSnap.data().photos || []));
+        } catch (e) {}
       }
-      // Remove from Firestore array
-      const galleryRef = doc(db, 'settings', 'galleryData');
-      const snap = await getDoc(galleryRef);
-      if (snap.exists()) {
-        const existing = snap.data().photos || [];
-        const updated = existing.filter(p => p.id !== photo.id);
-        await updateDoc(galleryRef, { photos: updated });
+
+      // Remove the photo
+      allPhotos = allPhotos.filter(p => p.id !== photo.id);
+
+      // Re-chunk and save
+      const CHUNK_SIZE = 4;
+      const chunks = [];
+      for (let i = 0; i < allPhotos.length; i += CHUNK_SIZE) {
+        chunks.push(allPhotos.slice(i, i + CHUNK_SIZE));
       }
+      for (let i = 0; i < chunks.length; i++) {
+        await setDoc(doc(db, 'settings', `gallery_${i}`), { photos: chunks[i] });
+      }
+      // Clean up old chunks
+      for (let i = chunks.length; i < existingCount; i++) {
+        try { await setDoc(doc(db, 'settings', `gallery_${i}`), { photos: [] }); } catch (e) {}
+      }
+      await setDoc(doc(db, 'settings', 'galleryIndex'), { count: chunks.length });
     } catch (err) {
       alert('Failed to delete: ' + err.message);
     }
@@ -179,7 +240,6 @@ export default function GalleryPage() {
           ))}
         </div>
 
-        {/* ADMIN UPLOAD BUTTON */}
         {isAdmin && (
           <div style={{ marginTop: '24px' }}>
             <button onClick={() => setShowUpload(!showUpload)} style={{
