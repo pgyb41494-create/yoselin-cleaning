@@ -139,8 +139,14 @@ export default function AdminPage() {
 
   useEffect(() => {
     const unsub = onSnapshot(
-      query(collection(db, 'galleryPhotos'), orderBy('createdAt', 'desc')),
-      snap => setGalleryPhotos(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      doc(db, 'settings', 'galleryData'),
+      (snap) => {
+        if (snap.exists()) {
+          setGalleryPhotos(snap.data().photos || []);
+        } else {
+          setGalleryPhotos([]);
+        }
+      }
     );
     return () => unsub();
   }, []);
@@ -389,34 +395,51 @@ export default function AdminPage() {
     if (galleryFiles.length === 0) return;
     setGalleryUploading(true);
     try {
+      const newPhotos = [];
       for (const file of galleryFiles) {
-        const storageRef = ref(storage, `gallery/${Date.now()}_${file.name}`);
+        const fileName = `bookings/admin/gallery/${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, fileName);
         await uploadBytes(storageRef, file);
         const url = await getDownloadURL(storageRef);
-        await addDoc(collection(db, 'galleryPhotos'), {
+        newPhotos.push({
+          id: Date.now().toString() + '_' + Math.random().toString(36).slice(2, 8),
           url,
           label: galleryLabel.trim() || file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '),
           description: galleryDesc.trim(),
           category: galleryCategory,
-          storagePath: storageRef.fullPath,
-          createdAt: serverTimestamp(),
+          fileName,
+          createdAt: new Date().toISOString(),
         });
       }
+      const galleryRef = doc(db, 'settings', 'galleryData');
+      const snap = await getDoc(galleryRef);
+      const existing = snap.exists() ? (snap.data().photos || []) : [];
+      const updated = [...newPhotos, ...existing];
+      if (snap.exists()) { await updateDoc(galleryRef, { photos: updated }); }
+      else { await setDoc(galleryRef, { photos: updated }); }
       setGalleryLabel('');
       setGalleryDesc('');
       setGalleryFiles([]);
       setGalleryUploadDone(true);
       setTimeout(() => setGalleryUploadDone(false), 3000);
-    } catch (e) { console.error('Gallery upload error:', e); }
+    } catch (e) { console.error('Gallery upload error:', e); alert('Upload failed: ' + e.message); }
     setGalleryUploading(false);
   };
 
   const deleteGalleryPhoto = async (photo) => {
     if (!window.confirm('Delete this photo?')) return;
     try {
-      if (photo.storagePath) await deleteObject(ref(storage, photo.storagePath));
-    } catch (e) {}
-    await deleteDoc(doc(db, 'galleryPhotos', photo.id));
+      if (photo.fileName) await deleteObject(ref(storage, photo.fileName));
+    } catch (e) { console.log('Storage delete skipped:', e); }
+    try {
+      const galleryRef = doc(db, 'settings', 'galleryData');
+      const snap = await getDoc(galleryRef);
+      if (snap.exists()) {
+        const existing = snap.data().photos || [];
+        const updated = existing.filter(p => p.id !== photo.id);
+        await updateDoc(galleryRef, { photos: updated });
+      }
+    } catch (e) { alert('Delete failed: ' + e.message); }
   };
 
   const setP = (section, key, val) =>
