@@ -1,8 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, onSnapshot, orderBy, query, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { doc, onSnapshot, updateDoc, setDoc, getDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
 import { db, storage, auth, ADMIN_EMAILS } from '../../lib/firebase';
 
@@ -32,10 +32,19 @@ export default function GalleryPage() {
     return () => unsub();
   }, []);
 
+  // Load gallery from settings/galleryData document
   useEffect(() => {
     const unsub = onSnapshot(
-      query(collection(db, 'galleryPhotos'), orderBy('createdAt', 'desc')),
-      snap => { setPhotos(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); },
+      doc(db, 'settings', 'galleryData'),
+      (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          setPhotos(data.photos || []);
+        } else {
+          setPhotos([]);
+        }
+        setLoading(false);
+      },
       () => setLoading(false)
     );
     return () => unsub();
@@ -43,11 +52,11 @@ export default function GalleryPage() {
 
   useEffect(() => {
     if (!lightbox) return;
-    const filtered = filter === 'all' ? photos : photos.filter(p => p.category === filter);
+    const filteredPhotos = filter === 'all' ? photos : photos.filter(p => p.category === filter);
     const handleKey = (e) => {
       if (e.key === 'Escape') setLightbox(null);
-      if (e.key === 'ArrowRight') { const n = (lightbox.index + 1) % filtered.length; setLightbox({ ...filtered[n], index: n }); }
-      if (e.key === 'ArrowLeft')  { const n = (lightbox.index - 1 + filtered.length) % filtered.length; setLightbox({ ...filtered[n], index: n }); }
+      if (e.key === 'ArrowRight') { const n = (lightbox.index + 1) % filteredPhotos.length; setLightbox({ ...filteredPhotos[n], index: n }); }
+      if (e.key === 'ArrowLeft')  { const n = (lightbox.index - 1 + filteredPhotos.length) % filteredPhotos.length; setLightbox({ ...filteredPhotos[n], index: n }); }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
@@ -58,22 +67,40 @@ export default function GalleryPage() {
     setUploading(true);
     setUploadProgress('');
     try {
+      const newPhotos = [];
       for (let i = 0; i < uploadFiles.length; i++) {
         const file = uploadFiles[i];
         setUploadProgress(`Uploading ${i + 1} of ${uploadFiles.length}...`);
-        const fileName = `gallery/${Date.now()}_${file.name}`;
+        
+        // Upload to bookings/admin/gallery/ path (allowed by existing storage rules)
+        const fileName = `bookings/admin/gallery/${Date.now()}_${file.name}`;
         const storageRef = ref(storage, fileName);
         await uploadBytes(storageRef, file);
         const url = await getDownloadURL(storageRef);
-        await addDoc(collection(db, 'galleryPhotos'), {
+        
+        newPhotos.push({
+          id: Date.now().toString() + '_' + i,
           url,
           label: uploadLabel || '',
           description: uploadDesc || '',
           category: uploadCategory || '',
           fileName,
-          createdAt: serverTimestamp(),
+          createdAt: new Date().toISOString(),
         });
       }
+
+      // Store metadata in settings/galleryData (allowed by existing firestore rules)
+      const galleryRef = doc(db, 'settings', 'galleryData');
+      const snap = await getDoc(galleryRef);
+      const existing = snap.exists() ? (snap.data().photos || []) : [];
+      const updated = [...newPhotos, ...existing]; // newest first
+
+      if (snap.exists()) {
+        await updateDoc(galleryRef, { photos: updated });
+      } else {
+        await setDoc(galleryRef, { photos: updated });
+      }
+
       setUploadFiles([]);
       setUploadLabel('');
       setUploadDesc('');
@@ -90,7 +117,18 @@ export default function GalleryPage() {
   const handleDeletePhoto = async (photo) => {
     if (!window.confirm('Delete this photo?')) return;
     try {
-      await deleteDoc(doc(db, 'galleryPhotos', photo.id));
+      // Remove from storage
+      if (photo.fileName) {
+        try { await deleteObject(ref(storage, photo.fileName)); } catch (e) { console.log('Storage delete skipped:', e); }
+      }
+      // Remove from Firestore array
+      const galleryRef = doc(db, 'settings', 'galleryData');
+      const snap = await getDoc(galleryRef);
+      if (snap.exists()) {
+        const existing = snap.data().photos || [];
+        const updated = existing.filter(p => p.id !== photo.id);
+        await updateDoc(galleryRef, { photos: updated });
+      }
     } catch (err) {
       alert('Failed to delete: ' + err.message);
     }
@@ -163,7 +201,6 @@ export default function GalleryPage() {
               📷 Upload Gallery Photos
             </h3>
 
-            {/* File picker */}
             <div style={{ marginBottom: '14px' }}>
               <label style={{ display: 'block', fontSize: '.78rem', fontWeight: '700', color: '#9ca3af', marginBottom: '6px' }}>Select Photos</label>
               <input type="file" accept="image/*" multiple
@@ -176,21 +213,18 @@ export default function GalleryPage() {
               )}
             </div>
 
-            {/* Label */}
             <div style={{ marginBottom: '14px' }}>
               <label style={{ display: 'block', fontSize: '.78rem', fontWeight: '700', color: '#9ca3af', marginBottom: '6px' }}>Label (optional)</label>
               <input type="text" placeholder="e.g. Kitchen Deep Clean" value={uploadLabel}
                 onChange={e => setUploadLabel(e.target.value)} style={inputStyle} />
             </div>
 
-            {/* Description */}
             <div style={{ marginBottom: '14px' }}>
               <label style={{ display: 'block', fontSize: '.78rem', fontWeight: '700', color: '#9ca3af', marginBottom: '6px' }}>Description (optional)</label>
               <input type="text" placeholder="e.g. Full kitchen scrub including oven" value={uploadDesc}
                 onChange={e => setUploadDesc(e.target.value)} style={inputStyle} />
             </div>
 
-            {/* Category */}
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', fontSize: '.78rem', fontWeight: '700', color: '#9ca3af', marginBottom: '6px' }}>Category</label>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -214,14 +248,12 @@ export default function GalleryPage() {
               </div>
             </div>
 
-            {/* Upload Progress */}
             {uploadProgress && (
               <div style={{ fontSize: '.82rem', color: uploadProgress.includes('failed') ? '#ef4444' : '#10b981', fontWeight: '600', marginBottom: '14px', textAlign: 'center' }}>
                 {uploadProgress}
               </div>
             )}
 
-            {/* Submit */}
             <button onClick={handleUpload} disabled={uploading || !uploadFiles.length}
               style={{
                 width: '100%', padding: '14px', borderRadius: '12px', border: 'none', cursor: uploading || !uploadFiles.length ? 'not-allowed' : 'pointer',
@@ -271,7 +303,7 @@ export default function GalleryPage() {
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
               {filtered.map((photo, i) => (
-                <div key={photo.id} style={{ borderRadius: '16px', overflow: 'hidden', border: '1.5px solid #2a2a2a', position: 'relative', background: '#181818', transition: 'transform .15s, border-color .15s' }}
+                <div key={photo.id || i} style={{ borderRadius: '16px', overflow: 'hidden', border: '1.5px solid #2a2a2a', position: 'relative', background: '#181818', transition: 'transform .15s, border-color .15s' }}
                   onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.borderColor = '#a855f7'; }}
                   onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.borderColor = '#2a2a2a'; }}>
                   <div onClick={() => setLightbox({ ...photo, index: i })} style={{ aspectRatio: '4/3', overflow: 'hidden', background: '#111', cursor: 'zoom-in' }}>
@@ -288,7 +320,6 @@ export default function GalleryPage() {
                       {photo.category === 'before' ? '🔴 Before' : photo.category === 'after' ? '✅ After' : photo.category}
                     </div>
                   )}
-                  {/* Admin delete button */}
                   {isAdmin && (
                     <button onClick={() => handleDeletePhoto(photo)}
                       style={{
@@ -309,7 +340,6 @@ export default function GalleryPage() {
               ))}
             </div>
 
-            {/* CTA */}
             <div style={{ background: 'linear-gradient(135deg,rgba(26,111,212,.1),rgba(219,39,119,.08))', border: '1.5px solid rgba(168,85,247,.2)', borderRadius: '20px', padding: '40px 24px', textAlign: 'center', marginTop: '48px' }}>
               <div style={{ fontSize: '2rem', marginBottom: '14px' }}>✨</div>
               <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: '900', color: 'white', marginBottom: '8px' }}>Want Results Like These?</h2>
