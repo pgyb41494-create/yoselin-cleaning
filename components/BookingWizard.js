@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { useLang } from '../lib/LanguageContext';
 
 const BPRICES = { half: 15, small: 50, medium: 65, large: 80 };
 const RPRICES = { bed_small: 25, bed_medium: 30, bed_large: 35, liv_small: 20, liv_medium: 25, liv_large: 35, office: 10, kit_small: 45, kit_medium: 55, kit_large: 70, laundry: 10, basement: 75 };
@@ -52,7 +51,6 @@ const initBaths = () => ({ half: 0, small: 0, medium: 0, large: 0 });
 const initRooms = () => ({ bed_small: 0, bed_medium: 0, bed_large: 0, liv_small: 0, liv_medium: 0, liv_large: 0, office: 0, kit_small: 0, kit_medium: 0, kit_large: 0, laundry: 0, basement: 0 });
 
 export default function BookingWizard({ user, onDone, adminMode = false }) {
-  const { lang, t } = useLang();
   const [step,         setStep]         = useState(0);
   const [baths,        setBaths]        = useState(initBaths());
   const [rooms,        setRooms]        = useState(initRooms());

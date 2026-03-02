@@ -5,11 +5,9 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL, ADMIN_EMAILS } from '../../lib/firebase';
 import BookingWizard from '../../components/BookingWizard';
-import { useLang } from '../../lib/LanguageContext';
 
 export default function BookPage() {
   const router = useRouter();
-  const { t } = useLang();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
