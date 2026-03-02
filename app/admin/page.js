@@ -446,17 +446,33 @@ export default function AdminPage() {
 
   const deleteGalleryPhoto = async (photo) => {
     if (!window.confirm('Delete this photo?')) return;
+    // Delete from storage
+    try { if (photo.fileName) await deleteObject(ref(storage, photo.fileName)); } catch (e) {}
+    // Load all chunks, filter out this photo, re-save
     try {
-      if (photo.fileName) await deleteObject(ref(storage, photo.fileName));
-    } catch (e) { console.log('Storage delete skipped:', e); }
-    try {
-      const galleryRef = doc(db, 'settings', 'galleryData');
-      const snap = await getDoc(galleryRef);
-      if (snap.exists()) {
-        const existing = snap.data().photos || [];
-        const updated = existing.filter(p => p.id !== photo.id);
-        await updateDoc(galleryRef, { photos: updated });
+      const indexSnap = await getDoc(doc(db, 'settings', 'galleryIndex'));
+      const count = indexSnap.exists() ? (indexSnap.data().count || 0) : 0;
+      let allPhotos = [];
+      for (let i = 0; i < count; i++) {
+        try {
+          const chunkSnap = await getDoc(doc(db, 'settings', `gallery_${i}`));
+          if (chunkSnap.exists()) allPhotos.push(...(chunkSnap.data().photos || []));
+        } catch (e) {}
       }
+      const updated = allPhotos.filter(p => p.id !== photo.id);
+      const CHUNK_SIZE = 4;
+      const chunks = [];
+      for (let i = 0; i < updated.length; i += CHUNK_SIZE) chunks.push(updated.slice(i, i + CHUNK_SIZE));
+      // Overwrite existing chunks
+      for (let i = 0; i < Math.max(chunks.length, count); i++) {
+        if (i < chunks.length) {
+          await setDoc(doc(db, 'settings', `gallery_${i}`), { photos: chunks[i] });
+        } else {
+          // Delete leftover chunks
+          try { await setDoc(doc(db, 'settings', `gallery_${i}`), { photos: [] }); } catch(e) {}
+        }
+      }
+      await setDoc(doc(db, 'settings', 'galleryIndex'), { count: chunks.length });
     } catch (e) { alert('Delete failed: ' + e.message); }
   };
 
