@@ -271,7 +271,7 @@ export default function GalleryPage() {
                 style={{ ...inputStyle, padding: '10px', cursor: 'pointer' }} />
               {uploadFiles.length > 0 && (
                 <div style={{ fontSize: '.75rem', color: '#10b981', marginTop: '6px', fontWeight: '600' }}>
-                  {uploadFiles.length} file{uploadFiles.length > 1 ? 's' : '} selected
+                  {uploadFiles.length} file{uploadFiles.length > 1 ? 's' : ''} selected
                 </div>
               )}
             </div>
