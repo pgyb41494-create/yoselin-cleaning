@@ -1,4 +1,5 @@
 import './globals.css';
+import ClientProviders from '../components/ClientProviders';
 
 export const metadata = {
   title: "Yoselin's Cleaning Service",
@@ -13,7 +14,7 @@ export default function RootLayout({ children }) {
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
       </head>
-      <body>{children}</body>
+      <body><ClientProviders>{children}</ClientProviders></body>
     </html>
   );
 }

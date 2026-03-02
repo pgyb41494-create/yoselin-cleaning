@@ -139,10 +139,18 @@ export default function AdminPage() {
 
   useEffect(() => {
     const unsub = onSnapshot(
-      doc(db, 'settings', 'galleryData'),
-      (snap) => {
+      doc(db, 'settings', 'galleryIndex'),
+      async (snap) => {
         if (snap.exists()) {
-          setGalleryPhotos(snap.data().photos || []);
+          const { count = 0 } = snap.data();
+          const allPhotos = [];
+          for (let i = 0; i < count; i++) {
+            try {
+              const chunkSnap = await getDoc(doc(db, 'settings', `gallery_${i}`));
+              if (chunkSnap.exists()) allPhotos.push(...(chunkSnap.data().photos || []));
+            } catch (e) {}
+          }
+          setGalleryPhotos(allPhotos);
         } else {
           setGalleryPhotos([]);
         }
@@ -411,12 +419,22 @@ export default function AdminPage() {
           createdAt: new Date().toISOString(),
         });
       }
-      const galleryRef = doc(db, 'settings', 'galleryData');
-      const snap = await getDoc(galleryRef);
-      const existing = snap.exists() ? (snap.data().photos || []) : [];
-      const updated = [...newPhotos, ...existing];
-      if (snap.exists()) { await updateDoc(galleryRef, { photos: updated }); }
-      else { await setDoc(galleryRef, { photos: updated }); }
+      // Load existing photos from all chunks
+      const indexSnap = await getDoc(doc(db, 'settings', 'galleryIndex'));
+      const existingCount = indexSnap.exists() ? (indexSnap.data().count || 0) : 0;
+      let allExisting = [];
+      for (let i = 0; i < existingCount; i++) {
+        try {
+          const chunkSnap = await getDoc(doc(db, 'settings', `gallery_${i}`));
+          if (chunkSnap.exists()) allExisting.push(...(chunkSnap.data().photos || []));
+        } catch (e) {}
+      }
+      const allPhotos = [...newPhotos, ...allExisting];
+      const CHUNK_SIZE = 4;
+      const chunks = [];
+      for (let i = 0; i < allPhotos.length; i += CHUNK_SIZE) { chunks.push(allPhotos.slice(i, i + CHUNK_SIZE)); }
+      for (let i = 0; i < chunks.length; i++) { await setDoc(doc(db, 'settings', `gallery_${i}`), { photos: chunks[i] }); }
+      await setDoc(doc(db, 'settings', 'galleryIndex'), { count: chunks.length });
       setGalleryLabel('');
       setGalleryDesc('');
       setGalleryFiles([]);

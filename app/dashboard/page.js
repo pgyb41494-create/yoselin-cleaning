@@ -31,6 +31,139 @@ function getCountdown(dateStr) {
   return          { days: diff,    urgent: false };
 }
 
+/* ── helpers for the History tab ── */
+function hStatusColor(s) {
+  if (s === 'confirmed') return '#10b981';
+  if (s === 'done')      return '#60a5fa';
+  if (s === 'cancelled') return '#ef4444';
+  return '#f59e0b';
+}
+function hStatusLabel(s) {
+  if (s === 'confirmed') return 'Confirmed';
+  if (s === 'done')      return 'Completed';
+  if (s === 'cancelled') return 'Cancelled';
+  return 'Pending';
+}
+function hStatusIcon(s) {
+  if (s === 'confirmed') return '\u2705';
+  if (s === 'done')      return '\u2728';
+  if (s === 'cancelled') return '\u274C';
+  return '\u23F3';
+}
+
+function HistoryTab({ requests }) {
+  const [expanded, setExpanded] = useState({});
+  const toggle = (id) => setExpanded(p => ({ ...p, [id]: !p[id] }));
+
+  const doneCount  = requests.filter(r => r.status === 'done').length;
+  const totalSpent = requests.filter(r => r.status === 'done').reduce((acc, r) => acc + Number(r.estimate || 0), 0);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* Section title */}
+      <div>
+        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white', marginBottom: '4px' }}>
+          📋 Booking History
+        </div>
+        <div style={{ fontSize: '.82rem', color: '#6b7280' }}>{requests.length} booking{requests.length !== 1 ? 's' : ''} total</div>
+      </div>
+
+      {/* Summary stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+        {[
+          { label: 'Total',     val: String(requests.length), color: '#60a5fa' },
+          { label: 'Completed', val: String(doneCount),       color: '#10b981' },
+          { label: 'Spent',     val: '$' + totalSpent,        color: '#f472b6' },
+        ].map(item => (
+          <div key={item.label} style={{ background: 'rgba(14,10,18,.75)', border: '1px solid #2a2a2a', borderRadius: '14px', padding: '14px', textAlign: 'center' }}>
+            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: '900', color: item.color }}>{item.val}</div>
+            <div style={{ fontSize: '.7rem', color: '#6b7280', fontWeight: '600', marginTop: '3px' }}>{item.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Receipt cards */}
+      {requests.map((req) => {
+        const isExpanded = expanded[req.id];
+        const sc = hStatusColor(req.status);
+        const sl = hStatusLabel(req.status);
+        const si = hStatusIcon(req.status);
+        const createdDate = req.createdAt?.seconds
+          ? new Date(req.createdAt.seconds * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+          : req.date || 'N/A';
+
+        return (
+          <div key={req.id} className="receipt-card">
+            {/* Receipt header */}
+            <div className="receipt-header">
+              <div>
+                <div className="receipt-id">Booking #{req.id.slice(-6).toUpperCase()}</div>
+                <div className="receipt-date-label">Submitted {createdDate}</div>
+              </div>
+              <span style={{ fontSize: '.75rem', fontWeight: '700', color: sc, background: sc + '18', border: '1px solid ' + sc + '44', borderRadius: '99px', padding: '3px 10px', whiteSpace: 'nowrap' }}>
+                {si} {sl}
+              </span>
+            </div>
+
+            {/* Collapsed preview */}
+            {!isExpanded && (
+              <div style={{ padding: '13px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                <div>
+                  <div style={{ fontSize: '.85rem', fontWeight: '700', color: 'white', marginBottom: '2px' }}>
+                    {req.date || 'TBD'}{req.time && req.time !== 'N/A' ? ' \u00b7 ' + req.time : ''}
+                  </div>
+                  <div style={{ fontSize: '.76rem', color: '#6b7280' }}>{req.address?.split(',')[0] || 'Address TBD'}</div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: '900', background: 'linear-gradient(135deg,#f472b6,#4a9eff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    {'$' + req.estimate}
+                  </div>
+                  <div style={{ fontSize: '.68rem', color: '#6b7280' }}>Estimate</div>
+                </div>
+              </div>
+            )}
+
+            {/* Expanded full receipt */}
+            {isExpanded && (
+              <div>
+                <div className="receipt-body">
+                  {[
+                    ['Service Date',  req.date || 'TBD'],
+                    ['Time',          req.time || 'TBD'],
+                    ['Address',       req.address],
+                    ['Frequency',     req.frequency || 'One-Time'],
+                    ['Bathrooms',     req.bathrooms],
+                    ['Rooms',         req.rooms],
+                    ['Add-Ons',       req.addons || 'None'],
+                    ['Pets',          req.pets === 'yes' ? 'Yes (+fee)' : 'No'],
+                    ['Building Type', req.buildingType],
+                  ].filter(([, v]) => v && v !== '\u2014' && v !== '').map(([k, v]) => (
+                    <div key={k} className="receipt-row">
+                      <span className="receipt-key">{k}</span>
+                      <span className="receipt-val">{v}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="receipt-total">
+                  <div>
+                    <div className="receipt-total-label">Estimated Total</div>
+                    <div style={{ fontSize: '.72rem', color: '#6b7280', marginTop: '2px' }}>Final price confirmed before service</div>
+                  </div>
+                  <div className="receipt-total-amount">{'$' + req.estimate}</div>
+                </div>
+              </div>
+            )}
+
+            <button className="receipt-expand-btn" onClick={() => toggle(req.id)}>
+              {isExpanded ? '\u25B2 Hide Details' : '\u25BC View Receipt'}
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [user,       setUser]       = useState(null);
@@ -70,13 +203,10 @@ export default function DashboardPage() {
     return () => clearInterval(id);
   }, []);
 
-  // Clear the unread badge the instant the Messages tab is opened
   useEffect(() => {
     const reqId = requests[0]?.id;
     if (activeTab === 'messages' && reqId) {
-      // useUnreadCount reads from chatReads/{id}_customer lastReadAt
       setDoc(doc(db, 'chatReads', `${reqId}_customer`), { lastReadAt: new Date() }, { merge: true }).catch(() => {});
-      // Also zero out the legacy chatUnread counter
       setDoc(doc(db, 'chatUnread', reqId), { unreadByCustomer: 0 }, { merge: true }).catch(() => {});
     }
   }, [activeTab, requests]);
@@ -87,7 +217,6 @@ export default function DashboardPage() {
       if (ADMIN_EMAILS.includes(u.email?.toLowerCase()) || ADMIN_EMAILS.includes(u.email)) { router.push('/admin'); return; }
       setUser(u);
       setSettingsName(u.displayName || '');
-      // Query by userId (self-created) AND by email (admin-created for this user)
       const qById = query(collection(db, 'requests'), where('userId', '==', u.uid));
       const qByEmail = query(collection(db, 'requests'), where('userEmail', '==', u.email));
       const merge = (snaps) => {
@@ -103,7 +232,6 @@ export default function DashboardPage() {
       const unsubB = onSnapshot(qByEmail, s => { snapB = s; if (snapA) merge([snapA, snapB]); }, () => {});
       const unsubReq = () => { unsubA(); unsubB(); };
 
-      // Load recurring schedule for this user (by userId OR email)
       Promise.all([
         getDocs(query(collection(db, 'schedule'), where('userId', '==', u.uid))),
         getDocs(query(collection(db, 'schedule'), where('clientEmail', '==', u.email))),
@@ -207,7 +335,6 @@ export default function DashboardPage() {
     setSettingsBusy(false);
   };
 
-  // Must be called before any early return (Rules of Hooks)
   const unreadFromAdmin = useUnreadCount(requests[0]?.id || null, 'customer');
 
   if (loading) return <div className="spinner-page"><div className="spinner"></div></div>;
@@ -233,6 +360,7 @@ export default function DashboardPage() {
       { id: 'request',  label: 'My Quote' },
     ] : []),
     ...(upcomingSchedule.length > 0 ? [{ id: 'schedule', label: 'Schedule (' + upcomingSchedule.length + ')' }] : []),
+    ...(requests.length > 0 ? [{ id: 'history', label: 'History (' + requests.length + ')' }] : []),
     { id: 'settings', label: 'Settings' },
   ];
   const safeTab = TABS.find(t => t.id === activeTab) ? activeTab : 'home';
@@ -276,7 +404,7 @@ export default function DashboardPage() {
               Hey, {firstName}!
             </h1>
             <p style={{ color: '#6b7280', fontSize: '.85rem' }}>
-              {isDone      ? 'Your cleaning is complete ? thank you!' :
+              {isDone      ? 'Your cleaning is complete — thank you!' :
                isConfirmed ? 'Your appointment is confirmed!' :
                latest      ? 'We are reviewing your request.' :
                'Welcome to your cleaning portal.'}
@@ -292,7 +420,7 @@ export default function DashboardPage() {
               <div style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '12px', padding: '10px 14px' }}>
                 <div style={{ fontSize: '.68rem', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '2px' }}>Your Booking</div>
                 <div style={{ fontSize: '.85rem', fontWeight: '700', color: statusColor }}>{statusLabel}</div>
-                <div style={{ fontSize: '.75rem', color: '#9ca3af' }}>${latest.estimate} estimate</div>
+                <div style={{ fontSize: '.75rem', color: '#9ca3af' }}>{'$' + latest.estimate} estimate</div>
               </div>
             )}
           </div>
@@ -328,7 +456,7 @@ export default function DashboardPage() {
 
       <div style={{ maxWidth: '760px', margin: '0 auto', padding: '20px 16px 80px' }}>
 
-        {/* -- HOME TAB -- */}
+        {/* ── HOME TAB ── */}
         {safeTab === 'home' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
@@ -377,15 +505,11 @@ export default function DashboardPage() {
                 <p style={{ color: '#9ca3af', fontSize: '.85rem', marginBottom: '24px', lineHeight: '1.6' }}>Your cleaning has been marked complete. Hope everything is sparkling!</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
                   {btn('Book Again', () => router.push('/book'))}
-                  {/* Go back to main home page */}
                   <button onClick={() => router.push('/')} style={{
                     padding: '11px 28px', background: 'transparent',
                     color: '#9ca3af', border: '1.5px solid #2a2a2a', borderRadius: '12px',
-                    fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem',
-                    cursor: 'pointer',
-                  }}>
-                    Back to Home Page
-                  </button>
+                    fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer',
+                  }}>Back to Home Page</button>
                 </div>
               </div>
             ) : (
@@ -397,7 +521,7 @@ export default function DashboardPage() {
                   <div style={{ color: '#6b7280', fontSize: '.8rem' }}>{latest.address}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.8rem', fontWeight: '900', background: 'linear-gradient(135deg,#f472b6,#4a9eff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>${latest.estimate}</div>
+                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.8rem', fontWeight: '900', background: 'linear-gradient(135deg,#f472b6,#4a9eff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{'$' + latest.estimate}</div>
                   <div style={{ fontSize: '.7rem', color: '#6b7280' }}>Estimate</div>
                 </div>
               </div>
@@ -440,7 +564,7 @@ export default function DashboardPage() {
                         {[1, 2, 3, 4, 5].map(s => (
                           <button key={s} onMouseEnter={() => setHoverStar(s)} onMouseLeave={() => setHoverStar(0)} onClick={() => setReviewStars(s)}
                             style={{ fontSize: '1.8rem', background: 'none', border: 'none', cursor: 'pointer', opacity: s <= (hoverStar || reviewStars) ? 1 : 0.25, transition: 'all .12s', lineHeight: 1, padding: '2px' }}>
-                            ?
+                            ⭐
                           </button>
                         ))}
                         <span style={{ color: '#9ca3af', fontSize: '.82rem', marginLeft: '6px' }}>{reviewStars} star{reviewStars !== 1 ? 's' : ''}</span>
@@ -489,11 +613,11 @@ export default function DashboardPage() {
                   </div>
                 </>
               ) : (
-                <div style={{ fontSize: '.78rem', color: loyalty.color, fontWeight: '700', textAlign: 'center' }}>Highest tier ? thank you for your loyalty!</div>
+                <div style={{ fontSize: '.78rem', color: loyalty.color, fontWeight: '700', textAlign: 'center' }}>Highest tier — thank you for your loyalty!</div>
               )}
             </div>
 
-            {/* Next recurring cleaning card */}
+            {/* Next recurring cleaning */}
             {upcomingSchedule.length > 0 && (
               <div onClick={() => setActiveTab('schedule')} style={{ background: '#181818', border: '1.5px solid rgba(168,85,247,.3)', borderRadius: '16px', padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -535,7 +659,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* -- MESSAGES TAB -- */}
+        {/* ── MESSAGES TAB ── */}
         {safeTab === 'messages' && latest && !isDone && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>Messages</div>
@@ -545,7 +669,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* -- MY QUOTE TAB -- */}
+        {/* ── MY QUOTE TAB ── */}
         {safeTab === 'request' && latest && !isDone && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>Quote Details</div>
@@ -553,7 +677,7 @@ export default function DashboardPage() {
               <div style={{ background: '#151515', padding: '18px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <div style={{ fontSize: '.7rem', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>Your Estimate</div>
-                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '2.2rem', fontWeight: '900', background: 'linear-gradient(135deg,#f472b6,#4a9eff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>${latest.estimate}</div>
+                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '2.2rem', fontWeight: '900', background: 'linear-gradient(135deg,#f472b6,#4a9eff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{'$' + latest.estimate}</div>
                   <div style={{ fontSize: '.7rem', color: '#6b7280', marginTop: '3px' }}>Final price confirmed before service</div>
                 </div>
                 <span className={'badge badge-' + latest.status}>{statusLabel}</span>
@@ -623,7 +747,7 @@ export default function DashboardPage() {
                   ) : (
                     <div style={{ background: 'rgba(239,68,68,.07)', border: '1.5px solid rgba(239,68,68,.25)', borderRadius: '14px', padding: '16px' }}>
                       <div style={{ fontWeight: '700', color: '#ef4444', fontSize: '.88rem', marginBottom: '6px' }}>&#x26A0; Cancel this booking?</div>
-                      <div style={{ fontSize: '.78rem', color: '#9ca3af', marginBottom: '14px', lineHeight: 1.5 }}>This will mark your booking as cancelled. You can always submit a new request whenever you're ready.</div>
+                      <div style={{ fontSize: '.78rem', color: '#9ca3af', marginBottom: '14px', lineHeight: 1.5 }}>This will mark your booking as cancelled. You can always submit a new request whenever you&#39;re ready.</div>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button onClick={cancelBooking} disabled={cancelBusy} style={{ flex: 1, padding: '10px', background: 'rgba(239,68,68,.15)', border: '1.5px solid rgba(239,68,68,.4)', color: '#ef4444', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>
                           {cancelBusy ? 'Cancelling...' : 'Yes, Cancel'}
@@ -645,7 +769,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* -- SCHEDULE TAB -- */}
+        {/* ── SCHEDULE TAB ── */}
         {safeTab === 'schedule' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>
@@ -655,7 +779,6 @@ export default function DashboardPage() {
               These are your automatically scheduled future cleanings based on your <strong style={{ color: 'white' }}>{schedule[0]?.frequency}</strong> plan.
             </div>
 
-            {/* Upcoming */}
             {upcomingSchedule.length > 0 && (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
                 <div style={{ padding: '13px 20px', borderBottom: '1px solid #2a2a2a', fontSize: '.72rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.5px' }}>
@@ -685,7 +808,7 @@ export default function DashboardPage() {
                             {diff === 0 ? 'Today!' : diff === 1 ? 'Tomorrow' : 'In ' + diff + 'd'}
                           </div>
                         )}
-                        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '.9rem', fontWeight: '900', color: '#60a5fa' }}>${entry.estimate}</div>
+                        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '.9rem', fontWeight: '900', color: '#60a5fa' }}>{'$' + entry.estimate}</div>
                         <button onClick={() => cancelScheduleEntry(entry.id)} title="Cancel this appointment" style={{ width: '28px', height: '28px', borderRadius: '7px', border: '1px solid rgba(239,68,68,.3)', background: 'rgba(239,68,68,.08)', color: '#ef4444', cursor: 'pointer', fontSize: '.82rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
                       </div>
                     </div>
@@ -694,14 +817,12 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Cancel all button */}
             {upcomingSchedule.length > 1 && (
               <button onClick={cancelAllRecurring} style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px solid rgba(239,68,68,.25)', color: '#ef4444', borderRadius: '12px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.85rem', cursor: 'pointer' }}>
                 ✕ Cancel All Remaining Recurring Appointments ({upcomingSchedule.length})
               </button>
             )}
 
-            {/* Completed */}
             {schedule.filter(e => e.status === 'done').length > 0 && (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
                 <div style={{ padding: '13px 20px', borderBottom: '1px solid #2a2a2a', fontSize: '.72rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.5px' }}>
@@ -714,7 +835,7 @@ export default function DashboardPage() {
                       <div style={{ fontWeight: '600', color: '#6b7280', fontSize: '.83rem' }}>{entry.date}</div>
                       <div style={{ fontSize: '.72rem', color: '#555' }}>{entry.time}</div>
                     </div>
-                    <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '.9rem', fontWeight: '700', color: '#555' }}>${entry.estimate}</div>
+                    <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '.9rem', fontWeight: '700', color: '#555' }}>{'$' + entry.estimate}</div>
                   </div>
                 ))}
               </div>
@@ -722,12 +843,17 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* -- SETTINGS TAB -- */}
+        {/* ── HISTORY TAB ── */}
+        {safeTab === 'history' && (
+          <HistoryTab requests={requests} />
+        )}
+
+        {/* ── SETTINGS TAB ── */}
         {safeTab === 'settings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>Account Settings</div>
-            {settingsMsg && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: 'rgba(16,185,129,.12)', color: '#10b981', border: '1px solid rgba(16,185,129,.2)' }}>? {settingsMsg}</div>}
-            {settingsErr && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: 'rgba(239,68,68,.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,.2)' }}>? {settingsErr}</div>}
+            {settingsMsg && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: 'rgba(16,185,129,.12)', color: '#10b981', border: '1px solid rgba(16,185,129,.2)' }}>✅ {settingsMsg}</div>}
+            {settingsErr && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: 'rgba(239,68,68,.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,.2)' }}>⚠️ {settingsErr}</div>}
 
             <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '20px' }}>
               <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '16px' }}>Profile</div>
