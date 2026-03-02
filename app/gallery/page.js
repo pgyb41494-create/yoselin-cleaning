@@ -400,14 +400,7 @@ export default function GalleryPage() {
               ))}
             </div>
 
-            <div style={{ background: 'linear-gradient(135deg,rgba(26,111,212,.1),rgba(219,39,119,.08))', border: '1.5px solid rgba(168,85,247,.2)', borderRadius: '20px', padding: '40px 24px', textAlign: 'center', marginTop: '48px' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '14px' }}>✨</div>
-              <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: '900', color: 'white', marginBottom: '8px' }}>Want Results Like These?</h2>
-              <p style={{ color: '#9ca3af', fontSize: '.9rem', marginBottom: '24px', lineHeight: 1.6 }}>Get a free custom estimate for your home or office. No commitment required.</p>
-              <button onClick={() => router.push('/book')} style={{ padding: '15px 36px', background: 'linear-gradient(135deg,#a855f7,#db2777)', color: 'white', border: 'none', borderRadius: '14px', fontFamily: "'DM Sans',sans-serif", fontWeight: '800', fontSize: '1rem', cursor: 'pointer' }}>
-                Book a Cleaning Now
-              </button>
-            </div>
+
           </>
         )}
       </div>
