@@ -6,7 +6,7 @@ import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   updateProfile, sendPasswordResetEmail, sendEmailVerification,
 } from 'firebase/auth';
-import { collection, query, orderBy, onSnapshot, deleteDoc, doc, limit } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, deleteDoc, doc, limit, getDoc } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL, ADMIN_EMAILS } from '../lib/firebase';
 
 const FALLBACK_REVIEWS = [
@@ -54,8 +54,15 @@ export default function HomePage() {
 
   useEffect(() => {
     const unsub = onSnapshot(
-      query(collection(db, 'galleryPhotos'), orderBy('createdAt', 'desc'), limit(6)),
-      snap => setGalleryPhotos(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      doc(db, 'settings', 'galleryData'),
+      (snap) => {
+        if (snap.exists()) {
+          const all = snap.data().photos || [];
+          setGalleryPhotos(all.slice(0, 6));
+        } else {
+          setGalleryPhotos([]);
+        }
+      },
       () => {}
     );
     return () => unsub();

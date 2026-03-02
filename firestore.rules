@@ -51,5 +51,14 @@ service cloud.firestore {
       allow read: if true;
       allow create: if request.auth != null;
     }
+
+    // Gallery photos — admin can write, anyone can read
+    match /galleryPhotos/{photoId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null
+        && (request.auth.token.email == 'pgyb41494@gmail.com'
+            || request.auth.token.email == 'cardonayoselin422@gmail.com'
+            || request.auth.token.email == 'Cardonayoselin422@gmail.com');
+    }
   }
 }
