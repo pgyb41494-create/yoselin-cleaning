@@ -138,8 +138,8 @@ export default function HomePage() {
       redirect(r.user);
     } catch (e) {
       setError(e.code === 'auth/email-already-in-use'
-        ? An account with this email already exists. Try logging in.
-        : Sign up failed. Please try again.
+        ? 'An account with this email already exists. Try logging in.'
+        : 'Sign up failed. Please try again.'
       );
       setBusy(false);
     }
