@@ -5,9 +5,12 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL, ADMIN_EMAILS } from '../../lib/firebase';
 import BookingWizard from '../../components/BookingWizard';
+import { useLang } from '../../lib/LanguageContext';
+import LanguageToggle from '../../components/LanguageToggle';
 
 export default function BookPage() {
   const router = useRouter();
+  const { t } = useLang();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
@@ -56,10 +59,11 @@ export default function BookPage() {
       <div className="guest-header">
         <div style={{ position: 'absolute', top: '15px', right: '16px', display: 'flex', gap: '8px', alignItems: 'center' }}>
           {user?.photoURL && <img src={user.photoURL} className="nav-avatar" alt="" />}
-          <button className="signout-btn" onClick={() => { signOut(auth); router.push('/'); }}>Sign Out</button>
+          <LanguageToggle />
+          <button className="signout-btn" onClick={() => { signOut(auth); router.push('/'); }}>{t('Sign Out', 'Salir')}</button>
         </div>
         <h1>Yoselin's<br /><span>Cleaning Service</span></h1>
-        <p>Professional - Reliable - Sparkling Clean</p>
+        <p>{t('Professional - Reliable - Sparkling Clean', 'Profesional - Confiable - Impecablemente Limpio')}</p>
         <div className="header-badges">
           <span className="hbadge pink">✅ Licensed and Insured</span>
           <span className="hbadge blue">⭐ 5-Star Rated</span>

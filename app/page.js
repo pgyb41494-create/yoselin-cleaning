@@ -190,23 +190,25 @@ export default function HomePage() {
 
       {/* NAVBAR */}
       <nav className="hp-nav">
-        <div className="hp-tab-wrap">
-          <button className="hp-tab-btn" onClick={() => setTabOpen(!tabOpen)}>
-            <span /><span /><span />
-          </button>
-          {tabOpen && (
-            <div className="hp-tab-dropdown">
-              <a href="#pics"    onClick={() => setTabOpen(false)}>📷 {t('Pics', 'Fotos')}</a>
-              <a href="#reviews" onClick={() => setTabOpen(false)}>⭐ {t('Reviews', 'Reseñas')}</a>
-            </div>
-          )}
+        <div className="hp-nav-left">
+          <div className="hp-tab-wrap">
+            <button className="hp-tab-btn" onClick={() => setTabOpen(!tabOpen)}>
+              <span /><span /><span />
+            </button>
+            {tabOpen && (
+              <div className="hp-tab-dropdown">
+                <a href="#pics"    onClick={() => setTabOpen(false)}>📷 {t('Pics', 'Fotos')}</a>
+                <a href="#reviews" onClick={() => setTabOpen(false)}>⭐ {t('Reviews', 'Reseñas')}</a>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="hp-nav-brand">
-          <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '140px', objectFit: 'contain' }} />
+          <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '190px', objectFit: 'contain' }} />
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div className="hp-nav-right">
           <LanguageToggle />
           {currentUser ? (
             <>
@@ -306,41 +308,16 @@ export default function HomePage() {
           <div className="hp-section-label" style={{ margin: 0 }}>{t('Our Work', 'Nuestro Trabajo')}</div>
         </div>
 
-        {galleryPhotos.length > 0 ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px', marginBottom: '12px' }}>
-            {galleryPhotos.map(photo => (
-              <div key={photo.id} onClick={() => router.push('/gallery')}
-                style={{ borderRadius: '14px', overflow: 'hidden', border: '1.5px solid #2a2a2a', cursor: 'pointer', position: 'relative', background: '#181818', aspectRatio: '4/3' }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.borderColor = '#a855f7'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.borderColor = '#2a2a2a'; }}>
-                <img src={photo.url} alt={photo.label || ''} loading="lazy"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform .2s' }} />
-                {photo.category && (
-                  <div style={{ position: 'absolute', top: '7px', left: '7px', background: photo.category === 'before' ? 'rgba(239,68,68,.9)' : photo.category === 'after' ? 'rgba(16,185,129,.9)' : 'rgba(168,85,247,.9)', color: 'white', fontSize: '.6rem', fontWeight: '800', padding: '2px 8px', borderRadius: '99px', textTransform: 'uppercase' }}>
-                    {photo.category === 'before' ? t('🔴 Before', '🔴 Antes') : photo.category === 'after' ? t('✅ After', '✅ Después') : photo.category}
-                  </div>
-                )}
-              </div>
-            ))}
-            <div onClick={() => router.push('/gallery')} style={{ borderRadius: '14px', border: '2px dashed rgba(168,85,247,.4)', cursor: 'pointer', background: 'rgba(168,85,247,.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', aspectRatio: '4/3', gap: '8px' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(168,85,247,.12)'; e.currentTarget.style.borderColor = 'rgba(168,85,247,.7)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(168,85,247,.05)'; e.currentTarget.style.borderColor = 'rgba(168,85,247,.4)'; }}>
-              <span style={{ fontSize: '1.8rem' }}>📷</span>
-              <span style={{ fontWeight: '800', color: '#d8b4fe', fontSize: '.82rem' }}>{t('View All', 'Ver Todas')}</span>
-            </div>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0 20px' }}>
-            <button onClick={() => router.push('/gallery')}
-              style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '22px 52px', background: 'linear-gradient(135deg,#a855f7,#db2777)', color: 'white', border: 'none', borderRadius: '20px', fontFamily: "'DM Sans',sans-serif", fontWeight: '900', fontSize: '1.25rem', cursor: 'pointer', boxShadow: '0 6px 40px rgba(168,85,247,.5), 0 0 80px rgba(219,39,119,.2)', letterSpacing: '.3px', transition: 'transform .15s, box-shadow .15s' }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 8px 60px rgba(168,85,247,.7), 0 0 100px rgba(219,39,119,.3)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 6px 40px rgba(168,85,247,.5), 0 0 80px rgba(219,39,119,.2)'; }}>
-              <span style={{ fontSize: '1.5rem' }}>📷</span>
-              {t('See All Photos', 'Ver Todas las Fotos')}
-              <span style={{ fontSize: '1.1rem', opacity: .85 }}>→</span>
-            </button>
-          </div>
-        )}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0 20px' }}>
+          <button onClick={() => router.push('/gallery')}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '22px 52px', background: 'linear-gradient(135deg,#a855f7,#db2777)', color: 'white', border: 'none', borderRadius: '20px', fontFamily: "'DM Sans',sans-serif", fontWeight: '900', fontSize: '1.25rem', cursor: 'pointer', boxShadow: '0 6px 40px rgba(168,85,247,.5), 0 0 80px rgba(219,39,119,.2)', letterSpacing: '.3px', transition: 'transform .15s, box-shadow .15s' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 8px 60px rgba(168,85,247,.7), 0 0 100px rgba(219,39,119,.3)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 6px 40px rgba(168,85,247,.5), 0 0 80px rgba(219,39,119,.2)'; }}>
+            <span style={{ fontSize: '1.5rem' }}>📷</span>
+            {t('See All Photos', 'Ver Todas las Fotos')}
+            <span style={{ fontSize: '1.1rem', opacity: .85 }}>→</span>
+          </button>
+        </div>
 
         {/* Reviews */}
         <div id="reviews" style={{ position: 'relative', marginTop: '10px' }}>
@@ -430,15 +407,7 @@ export default function HomePage() {
         <p className="hp-footer-copy">© 2025 Yoselins Cleaning. {t('All rights reserved.', 'Todos los derechos reservados.')}</p>
       </footer>
 
-      {/* FLOATING LANGUAGE TOGGLE FAB */}
-      <button
-        className="lang-fab"
-        onClick={toggleLang}
-        title={lang === 'en' ? 'Cambiar a Español' : 'Switch to English'}
-      >
-        <span className="lang-fab-flag">{lang === 'en' ? '🇪🇸' : '🇺🇸'}</span>
-        {lang === 'en' ? 'Español' : 'English'}
-      </button>
+
 
       {/* VERIFY EMAIL MODAL */}
       {authMode === 'verify' && (

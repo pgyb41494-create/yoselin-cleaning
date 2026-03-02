@@ -6,6 +6,8 @@ import { collection, query, where, onSnapshot, addDoc, getDocs, serverTimestamp,
 import { auth, db, ADMIN_EMAILS } from '../../lib/firebase';
 import Chat from '../../components/Chat';
 import { useUnreadCount } from '../../lib/useUnreadCount';
+import { useLang } from '../../lib/LanguageContext';
+import LanguageToggle from '../../components/LanguageToggle';
 
 function getLoyaltyTier(count) {
   if (count >= 8) return { label: 'VIP Client',       icon: '\uD83C\uDFC6', color: '#7c3aed', bg: 'rgba(124,58,237,.15)', next: null,        nextAt: null };
@@ -335,6 +337,7 @@ export default function DashboardPage() {
     setSettingsBusy(false);
   };
 
+  const { t } = useLang();
   const unreadFromAdmin = useUnreadCount(requests[0]?.id || null, 'customer');
 
   if (loading) return <div className="spinner-page"><div className="spinner"></div></div>;
@@ -354,14 +357,14 @@ export default function DashboardPage() {
 
   const upcomingSchedule = schedule.filter(e => e.status === 'upcoming');
   const TABS = [
-    { id: 'home',     label: 'Home'     },
+    { id: 'home',     label: t('Home', 'Inicio')     },
     ...(latest && !isDone && !isCancelled ? [
-      { id: 'messages', label: 'Messages', badge: unreadFromAdmin },
-      { id: 'request',  label: 'My Quote' },
+      { id: 'messages', label: t('Messages', 'Mensajes'), badge: unreadFromAdmin },
+      { id: 'request',  label: t('My Quote', 'Mi Cotización') },
     ] : []),
-    ...(upcomingSchedule.length > 0 ? [{ id: 'schedule', label: 'Schedule (' + upcomingSchedule.length + ')' }] : []),
-    ...(requests.length > 0 ? [{ id: 'history', label: 'History (' + requests.length + ')' }] : []),
-    { id: 'settings', label: 'Settings' },
+    ...(upcomingSchedule.length > 0 ? [{ id: 'schedule', label: t('Schedule', 'Horario') + ' (' + upcomingSchedule.length + ')' }] : []),
+    ...(requests.length > 0 ? [{ id: 'history', label: t('History', 'Historial') + ' (' + requests.length + ')' }] : []),
+    { id: 'settings', label: t('Settings', 'Ajustes') },
   ];
   const safeTab = TABS.find(t => t.id === activeTab) ? activeTab : 'home';
 
@@ -378,21 +381,18 @@ export default function DashboardPage() {
     <div style={{ minHeight: '100vh', background: 'transparent' }}>
 
       {/* NAV */}
-      <nav style={{ background: '#151515', borderBottom: '1px solid #1f1f1f', padding: '0 24px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: '900', fontSize: '1.1rem', color: 'white' }}>
-          Yoselins Cleaning
+      <nav style={{ background: '#151515', borderBottom: '1px solid #1f1f1f', padding: '0 16px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+          <button onClick={() => setActiveTab('home')} style={{ padding: '7px 14px', borderRadius: '99px', border: '2px solid rgba(96,165,250,.4)', background: 'rgba(96,165,250,.12)', color: '#93c5fd', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.75rem', cursor: 'pointer' }}>{t('Dashboard', 'Panel')}</button>
+          <button onClick={() => router.push('/')} style={{ padding: '7px 14px', borderRadius: '99px', border: '2px solid rgba(255,255,255,.12)', background: 'transparent', color: '#9ca3af', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.75rem', cursor: 'pointer' }}>{t('Home', 'Inicio')}</button>
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <button onClick={() => setActiveTab('home')} style={{ padding: '7px 16px', borderRadius: '99px', border: '2px solid rgba(96,165,250,.4)', background: 'rgba(96,165,250,.12)', color: '#93c5fd', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.78rem', cursor: 'pointer' }}>Dashboard</button>
-          <button onClick={() => router.push('/')} style={{ padding: '7px 16px', borderRadius: '99px', border: '2px solid rgba(255,255,255,.12)', background: 'transparent', color: '#9ca3af', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.78rem', cursor: 'pointer' }}>Home</button>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <LanguageToggle />
           {user?.photoURL
             ? <img src={user.photoURL} className="nav-avatar" alt="" />
-            : <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '.85rem' }}>{firstName[0]?.toUpperCase()}</div>
+            : <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '.8rem', flexShrink: 0 }}>{firstName[0]?.toUpperCase()}</div>
           }
-          <span style={{ fontSize: '.8rem', color: '#9ca3af' }}>{firstName}</span>
-          <button className="signout-btn" onClick={() => { signOut(auth); router.push('/'); }}>Sign Out</button>
+          <button className="signout-btn" onClick={() => { signOut(auth); router.push('/'); }}>{t('Sign Out', 'Salir')}</button>
         </div>
       </nav>
 
@@ -401,13 +401,13 @@ export default function DashboardPage() {
         <div style={{ maxWidth: '760px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
           <div>
             <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: '900', color: 'white', marginBottom: '4px' }}>
-              Hey, {firstName}!
+              {t('Hey', '¡Hola')}, {firstName}!
             </h1>
             <p style={{ color: '#6b7280', fontSize: '.85rem' }}>
-              {isDone      ? 'Your cleaning is complete — thank you!' :
-               isConfirmed ? 'Your appointment is confirmed!' :
-               latest      ? 'We are reviewing your request.' :
-               'Welcome to your cleaning portal.'}
+              {isDone      ? t('Your cleaning is complete — thank you!', '¡Tu limpieza está completa — gracias!') :
+               isConfirmed ? t('Your appointment is confirmed!', '¡Tu cita está confirmada!') :
+               latest      ? t('We are reviewing your request.', 'Estamos revisando tu solicitud.') :
+               t('Welcome to your cleaning portal.', 'Bienvenido a tu portal de limpieza.')}
             </p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
