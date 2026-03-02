@@ -6,6 +6,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { notifyAdminNewMessage, notifyCustomerNewMessage } from '../lib/notifications';
+import { useLang } from '../lib/LanguageContext';
 
 /* ── Inject keyframe animations once ── */
 const ANIM_ID = '__chat_anim__';
@@ -139,6 +140,7 @@ export default function Chat({
   onClose,
   inline = false,
 }) {
+  const { t } = useLang();
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
@@ -254,7 +256,7 @@ export default function Chat({
   const renderMessages = () =>
     messages.length === 0 ? (
       <div style={{ color: '#6b7280', textAlign: 'center', padding: '40px 20px', fontSize: '.85rem' }}>
-        No messages yet. Say hello! 👋
+        {t('No messages yet. Say hello! 👋','Aún no hay mensajes. ¡Di hola! 👋')}
       </div>
     ) : (
       messages.map((m, idx) => {
@@ -322,7 +324,7 @@ export default function Chat({
               value={text}
               onChange={e => setText(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-              placeholder="Type a message..."
+              placeholder={t('Type a message...','Escribe un mensaje...')}
               autoComplete="off"
               style={{ flex: 1, background: 'transparent', border: 'none', color: 'white', fontSize: '.88rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }}
             />
@@ -332,7 +334,7 @@ export default function Chat({
               disabled={sending || !text.trim()}
               style={{ opacity: text.trim() ? 1 : 0.45, transition: 'opacity .2s' }}
             >
-              {sending ? '...' : 'Send'}
+              {sending ? '...' : t('Send','Enviar')}
             </button>
           </div>
         </div>
@@ -420,7 +422,7 @@ export default function Chat({
               value={text}
               onChange={e => setText(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-              placeholder="Type a message..."
+              placeholder={t('Type a message...','Escribe un mensaje...')}
               autoComplete="off"
               style={{
                 flex: 1, background: '#1f1f1f', border: '1.5px solid #2a2a2a',
@@ -435,7 +437,7 @@ export default function Chat({
               disabled={sending || !text.trim()}
               style={{ opacity: text.trim() ? 1 : 0.45, transition: 'opacity .2s', flexShrink: 0 }}
             >
-              {sending ? '...' : 'Send'}
+              {sending ? '...' : t('Send','Enviar')}
             </button>
           </div>
         </div>

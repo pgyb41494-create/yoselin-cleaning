@@ -6,6 +6,7 @@ import { collection, query, where, onSnapshot, addDoc, getDocs, serverTimestamp,
 import { auth, db, ADMIN_EMAILS } from '../../lib/firebase';
 import Chat from '../../components/Chat';
 import { useUnreadCount } from '../../lib/useUnreadCount';
+import { useLang } from '../../lib/LanguageContext';
 
 
 function getLoyaltyTier(count) {
@@ -53,6 +54,7 @@ function hStatusIcon(s) {
 }
 
 function HistoryTab({ requests }) {
+  const { t } = useLang();
   const [expanded, setExpanded] = useState({});
   const toggle = (id) => setExpanded(p => ({ ...p, [id]: !p[id] }));
 
@@ -148,7 +150,7 @@ function HistoryTab({ requests }) {
                 <div className="receipt-total">
                   <div>
                     <div className="receipt-total-label">Estimated Total</div>
-                    <div style={{ fontSize: '.72rem', color: '#6b7280', marginTop: '2px' }}>Final price confirmed before service</div>
+                    <div style={{ fontSize: '.72rem', color: '#6b7280', marginTop: '2px' }}>{t('Final price confirmed before service','Precio final confirmado antes del servicio')}</div>
                   </div>
                   <div className="receipt-total-amount">{'$' + req.estimate}</div>
                 </div>
@@ -314,28 +316,29 @@ export default function DashboardPage() {
   };
 
   const saveName = async () => {
-    if (!settingsName.trim()) { setSettingsErr('Name cannot be empty.'); return; }
+    if (!settingsName.trim()) { setSettingsErr(t('Name cannot be empty.','El nombre no puede estar vacío.')); return; }
     setSettingsBusy(true); setSettingsErr(''); setSettingsMsg('');
-    try { await updateProfile(user, { displayName: settingsName.trim() }); setSettingsMsg('Name updated!'); }
-    catch { setSettingsErr('Failed to update name.'); }
+    try { await updateProfile(user, { displayName: settingsName.trim() }); setSettingsMsg(t('Name updated!','¡Nombre actualizado!')); }
+    catch { setSettingsErr(t('Failed to update name.','Error al actualizar el nombre.')); }
     setSettingsBusy(false);
   };
 
   const savePassword = async () => {
-    if (!currentPass || !newPass) { setSettingsErr('Fill in both fields.'); return; }
+    if (!currentPass || !newPass) { setSettingsErr(t('Fill in both fields.','Completa ambos campos.')); return; }
     if (newPass.length < 6) { setSettingsErr('At least 6 characters required.'); return; }
     setSettingsBusy(true); setSettingsErr(''); setSettingsMsg('');
     try {
       const cred = EmailAuthProvider.credential(user.email, currentPass);
       await reauthenticateWithCredential(user, cred);
       await updatePassword(user, newPass);
-      setSettingsMsg('Password updated!'); setCurrentPass(''); setNewPass('');
+      setSettingsMsg(t('Password updated!','¡Contraseña actualizada!')); setCurrentPass(''); setNewPass('');
     } catch (e) {
       setSettingsErr(e.code === 'auth/wrong-password' ? 'Current password is incorrect.' : 'Failed to update password.');
     }
     setSettingsBusy(false);
   };
 
+  const { t } = useLang();
   const unreadFromAdmin = useUnreadCount(requests[0]?.id || null, 'customer');
 
   if (loading) return <div className="spinner-page"><div className="spinner"></div></div>;
@@ -364,7 +367,7 @@ export default function DashboardPage() {
     ...(requests.length > 0 ? [{ id: 'history', label: 'History' + ' (' + requests.length + ')' }] : []),
     { id: 'settings', label: 'Settings' },
   ];
-  const safeTab = TABS.find(t => t.id === activeTab) ? activeTab : 'home';
+  const safeTab = TABS.find(tb => tb.id === activeTab) ? activeTab : 'home';
 
   const btn = (label, onClick, style = {}) => (
     <button onClick={onClick} style={{
@@ -390,7 +393,7 @@ export default function DashboardPage() {
             ? <img src={user.photoURL} className="nav-avatar" alt="" />
             : <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '.8rem', flexShrink: 0 }}>{firstName[0]?.toUpperCase()}</div>
           }
-          <button className="signout-btn" onClick={() => { signOut(auth); router.push('/'); }}>Sign Out</button>
+          <button className="signout-btn" onClick={() => { signOut(auth); router.push('/'); }}>{t('Sign Out','Salir')}</button>
         </div>
       </nav>
 
@@ -411,14 +414,14 @@ export default function DashboardPage() {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '7px', background: loyalty.bg, border: '1px solid ' + loyalty.color + '44', borderRadius: '99px', padding: '6px 13px' }}>
               <span>{loyalty.icon}</span>
-              <span style={{ fontSize: '.73rem', fontWeight: '700', color: loyalty.color }}>{loyalty.label}</span>
+              <span style={{ fontSize: '.73rem', fontWeight: '700', color: loyalty.color }}>{t(loyalty.label, loyalty.label === 'VIP Client' ? 'Cliente VIP' : loyalty.label === 'Gold Client' ? 'Cliente Oro' : loyalty.label === 'Regular Client' ? 'Cliente Regular' : loyalty.label === 'Returning Client' ? 'Cliente Recurrente' : 'Cliente Nuevo')}</span>
               {allDone > 0 && <span style={{ fontSize: '.68rem', color: loyalty.color, opacity: .7 }}>{allDone} job{allDone !== 1 ? 's' : ''}</span>}
             </div>
             {latest && (
               <div style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '12px', padding: '10px 14px' }}>
-                <div style={{ fontSize: '.68rem', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '2px' }}>Your Booking</div>
+                <div style={{ fontSize: '.68rem', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '2px' }}>{t('Your Booking','Tu Reserva')}</div>
                 <div style={{ fontSize: '.85rem', fontWeight: '700', color: statusColor }}>{statusLabel}</div>
-                <div style={{ fontSize: '.75rem', color: '#9ca3af' }}>{'$' + latest.estimate} estimate</div>
+                <div style={{ fontSize: '.75rem', color: '#9ca3af' }}>{'$' + latest.estimate} {t('estimate','estimado')}</div>
               </div>
             )}
           </div>
@@ -427,18 +430,18 @@ export default function DashboardPage() {
 
       {/* TABS */}
       <div style={{ background: '#141414', borderBottom: '1.5px solid #2a2a2a', display: 'flex', padding: '0 8px', overflowX: 'auto' }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
+        {TABS.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
             flex: 1, minWidth: '80px', padding: '13px 8px 11px',
             background: 'none', border: 'none',
-            borderBottom: safeTab === t.id ? '3px solid #60a5fa' : '3px solid transparent',
+            borderBottom: safeTab === tab.id ? '3px solid #60a5fa' : '3px solid transparent',
             fontSize: '.82rem', fontWeight: '700',
-            color: safeTab === t.id ? '#60a5fa' : '#6b7280',
+            color: safeTab === tab.id ? '#60a5fa' : '#6b7280',
             cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap',
             position: 'relative',
           }}>
-            {t.label}
-            {t.badge > 0 && (
+            {tab.label}
+            {tab.badge > 0 && (
               <span style={{
                 position: 'absolute', top: '8px', right: '6px',
                 background: '#ef4444', color: 'white',
@@ -446,7 +449,7 @@ export default function DashboardPage() {
                 minWidth: '15px', height: '15px', borderRadius: '99px',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 padding: '0 4px', lineHeight: 1,
-              }}>{t.badge > 9 ? '9+' : t.badge}</span>
+              }}>{tab.badge > 9 ? '9+' : tab.badge}</span>
             )}
           </button>
         ))}
@@ -470,16 +473,16 @@ export default function DashboardPage() {
                     ? <span style={{ fontSize: '1.5rem' }}>&#x1F525;</span>
                     : <>
                         <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: '900', fontSize: '1.4rem', color: 'white', lineHeight: 1 }}>{countdown.days}</span>
-                        <span style={{ fontSize: '.55rem', color: '#9ca3af', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px' }}>days</span>
+                        <span style={{ fontSize: '.55rem', color: '#9ca3af', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px' }}>{t('days','días')}</span>
                       </>
                   }
                 </div>
                 <div>
                   <div style={{ fontSize: '.7rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '2px' }}>
-                    {countdown.urgent ? 'Coming Up!' : 'Upcoming Cleaning'}
+                    {countdown.urgent ? t('Coming Up!','¡Próximamente!') : t('Upcoming Cleaning','Próxima Limpieza')}
                   </div>
                   <div style={{ fontSize: '1rem', fontWeight: '800', color: 'white', marginBottom: '2px' }}>
-                    {countdown.days === 0 ? 'Your cleaning is TODAY!' : countdown.days === 1 ? 'Your cleaning is TOMORROW!' : 'Cleaning in ' + countdown.days + ' days'}
+                    {countdown.days === 0 ? t('Your cleaning is TODAY!','¡Tu limpieza es HOY!') : countdown.days === 1 ? t('Your cleaning is TOMORROW!','¡Tu limpieza es MAÑANA!') : t('Cleaning in','Limpieza en') + ' ' + countdown.days + ' ' + t('days','días')}
                   </div>
                   <div style={{ fontSize: '.8rem', color: '#9ca3af' }}>
                     {latest.date}{latest.time && latest.time !== 'N/A' ? ' at ' + latest.time : ''}
@@ -492,30 +495,30 @@ export default function DashboardPage() {
             {!latest ? (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '18px', padding: '40px 24px', textAlign: 'center' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>&#x2728;</div>
-                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white', marginBottom: '8px' }}>Get Your Free Quote</h2>
+                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white', marginBottom: '8px' }}>{t('Get Your Free Quote','Obtén Tu Cotización Gratis')}</h2>
                 <p style={{ color: '#9ca3af', fontSize: '.85rem', marginBottom: '24px', lineHeight: '1.6' }}>Fill out a quick form and get a custom estimate. No commitment needed.</p>
-                {btn('Get a Quote', () => router.push('/book'))}
+                {btn(t('Get a Quote','Obtener Cotización'), () => router.push('/book'))}
               </div>
             ) : isDone ? (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '18px', padding: '36px 24px', textAlign: 'center' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>&#x1F389;</div>
-                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white', marginBottom: '8px' }}>Job Complete!</h2>
-                <p style={{ color: '#9ca3af', fontSize: '.85rem', marginBottom: '24px', lineHeight: '1.6' }}>Your cleaning has been marked complete. Hope everything is sparkling!</p>
+                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white', marginBottom: '8px' }}>{t('Job Complete!','¡Trabajo Completado!')}</h2>
+                <p style={{ color: '#9ca3af', fontSize: '.85rem', marginBottom: '24px', lineHeight: '1.6' }}>{t('Your cleaning has been marked complete. Hope everything is sparkling!','Tu limpieza ha sido marcada como completada. ¡Esperamos que todo brille!')}</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
                   {btn('Book Again', () => router.push('/book'))}
                   <button onClick={() => router.push('/')} style={{
                     padding: '11px 28px', background: 'transparent',
                     color: '#9ca3af', border: '1.5px solid #2a2a2a', borderRadius: '12px',
                     fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer',
-                  }}>Back to Home Page</button>
+                  }}>{t('Back to Home Page','Volver a la Página Principal')}</button>
                 </div>
               </div>
             ) : (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '18px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontSize: '.7rem', color: '#6b7280', fontWeight: '700', letterSpacing: '.5px', textTransform: 'uppercase', marginBottom: '5px' }}>Booking #{latest.id.slice(-6).toUpperCase()}</div>
-                  <div style={{ color: '#d1d5db', fontSize: '.85rem', marginBottom: '3px' }}>Date: {latest.date || 'TBD'}</div>
-                  <div style={{ color: '#d1d5db', fontSize: '.85rem', marginBottom: '3px' }}>Time: {latest.time || 'TBD'}</div>
+                  <div style={{ fontSize: '.7rem', color: '#6b7280', fontWeight: '700', letterSpacing: '.5px', textTransform: 'uppercase', marginBottom: '5px' }}>{t('Booking','Reserva')} #{latest.id.slice(-6).toUpperCase()}</div>
+                  <div style={{ color: '#d1d5db', fontSize: '.85rem', marginBottom: '3px' }}>{t('Date','Fecha')}: {latest.date || 'TBD'}</div>
+                  <div style={{ color: '#d1d5db', fontSize: '.85rem', marginBottom: '3px' }}>{t('Time','Hora')}: {latest.time || 'TBD'}</div>
                   <div style={{ color: '#6b7280', fontSize: '.8rem' }}>{latest.address}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
@@ -528,9 +531,9 @@ export default function DashboardPage() {
             {/* Status progress */}
             {latest && !isDone && (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '18px 20px' }}>
-                <div style={{ fontSize: '.72rem', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '14px' }}>Booking Progress</div>
+                <div style={{ fontSize: '.72rem', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '14px' }}>{t('Booking Progress','Progreso de Reserva')}</div>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                  {[{ label: 'Submitted', done: true }, { label: 'In Review', done: isConfirmed }, { label: 'Confirmed', done: isConfirmed }, { label: 'Complete', done: false }].map((s, i, arr) => (
+                  {[{ label: t('Submitted','Enviado'), done: true }, { label: t('In Review','En Revisión'), done: isConfirmed }, { label: t('Confirmed','Confirmado'), done: isConfirmed }, { label: t('Complete','Completado'), done: false }].map((s, i, arr) => (
                     <div key={s.label} style={{ display: 'flex', alignItems: 'center', flex: i < arr.length - 1 ? 1 : 'none' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
                         <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: s.done ? '#db2777' : '#2a2a2a', border: '2px solid ' + (s.done ? '#db2777' : '#3a3a3a'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.72rem', color: s.done ? 'white' : '#555', fontWeight: '700' }}>
@@ -548,13 +551,13 @@ export default function DashboardPage() {
             {/* Review */}
             {isDone && !alreadyReview && (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', borderBottom: '1px solid #2a2a2a', fontWeight: '700', color: 'white', fontSize: '.92rem' }}>Leave a Review</div>
+                <div style={{ padding: '14px 20px', borderBottom: '1px solid #2a2a2a', fontWeight: '700', color: 'white', fontSize: '.92rem' }}>{t('Leave a Review','Dejar una Reseña')}</div>
                 <div style={{ padding: '18px 20px' }}>
                   {reviewDone ? (
                     <div style={{ textAlign: 'center', padding: '16px 0' }}>
                       <div style={{ fontSize: '2.4rem', marginBottom: '10px' }}>&#x2764;&#xFE0F;</div>
-                      <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: '700', color: 'white', fontSize: '1.05rem', marginBottom: '5px' }}>Thank you for your review!</div>
-                      <div style={{ color: '#9ca3af', fontSize: '.83rem' }}>It will appear on our homepage.</div>
+                      <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: '700', color: 'white', fontSize: '1.05rem', marginBottom: '5px' }}>{t('Thank you for your review!','¡Gracias por tu reseña!')}</div>
+                      <div style={{ color: '#9ca3af', fontSize: '.83rem' }}>{t('It will appear on our homepage.','Aparecerá en nuestra página principal.')}</div>
                     </div>
                   ) : (
                     <>
@@ -565,12 +568,12 @@ export default function DashboardPage() {
                             ⭐
                           </button>
                         ))}
-                        <span style={{ color: '#9ca3af', fontSize: '.82rem', marginLeft: '6px' }}>{reviewStars} star{reviewStars !== 1 ? 's' : ''}</span>
+                        <span style={{ color: '#9ca3af', fontSize: '.82rem', marginLeft: '6px' }}>{reviewStars} {t('stars','estrellas')}</span>
                       </div>
-                      <textarea value={reviewText} onChange={e => setReviewText(e.target.value)} placeholder="Tell others about your experience..." rows={3}
+                      <textarea value={reviewText} onChange={e => setReviewText(e.target.value)} placeholder={t('Tell others about your experience...','Cuéntale a otros sobre tu experiencia...')} rows={3}
                         style={{ width: '100%', padding: '12px 14px', background: '#1f1f1f', border: '1.5px solid #2a2a2a', borderRadius: '12px', color: 'white', fontSize: '.87rem', fontFamily: "'DM Sans', sans-serif", outline: 'none', resize: 'vertical', marginBottom: '12px' }} />
                       <button onClick={submitReview} disabled={reviewBusy || !reviewText.trim()} style={{ width: '100%', padding: '13px', background: reviewText.trim() ? 'linear-gradient(135deg,#f59e0b,#db2777)' : '#1f1f1f', color: reviewText.trim() ? 'white' : '#4b5563', border: 'none', borderRadius: '12px', fontSize: '.92rem', fontWeight: '700', cursor: reviewText.trim() ? 'pointer' : 'not-allowed', fontFamily: "'DM Sans', sans-serif" }}>
-                        {reviewBusy ? 'Submitting...' : 'Submit Review'}
+                        {reviewBusy ? t('Submitting...','Enviando...') : t('Submit Review','Enviar Reseña')}
                       </button>
                     </>
                   )}
@@ -581,7 +584,7 @@ export default function DashboardPage() {
             {isDone && alreadyReview && !reviewDone && (
               <div style={{ background: 'rgba(16,185,129,.07)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '12px', padding: '13px 18px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ fontSize: '1.2rem' }}>&#x2705;</span>
-                <div style={{ fontWeight: '700', color: '#10b981', fontSize: '.87rem' }}>Review Submitted - Thank you!</div>
+                <div style={{ fontWeight: '700', color: '#10b981', fontSize: '.87rem' }}>{t('Review Submitted - Thank you!','Reseña Enviada - ¡Gracias!')}</div>
               </div>
             )}
 
@@ -592,12 +595,12 @@ export default function DashboardPage() {
                   <div style={{ fontSize: '.68rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>Loyalty Status</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
                     <span style={{ fontSize: '1.3rem' }}>{loyalty.icon}</span>
-                    <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: '700', color: loyalty.color, fontSize: '.95rem' }}>{loyalty.label}</span>
+                    <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: '700', color: loyalty.color, fontSize: '.95rem' }}>{t(loyalty.label, loyalty.label === 'VIP Client' ? 'Cliente VIP' : loyalty.label === 'Gold Client' ? 'Cliente Oro' : loyalty.label === 'Regular Client' ? 'Cliente Regular' : loyalty.label === 'Returning Client' ? 'Cliente Recurrente' : 'Cliente Nuevo')}</span>
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.8rem', fontWeight: '900', color: 'white', lineHeight: 1 }}>{allDone}</div>
-                  <div style={{ fontSize: '.68rem', color: '#6b7280', marginTop: '2px' }}>job{allDone !== 1 ? 's' : ''} done</div>
+                  <div style={{ fontSize: '.68rem', color: '#6b7280', marginTop: '2px' }}>{t('jobs done','trabajos hechos')}</div>
                 </div>
               </div>
               {loyalty.next ? (
@@ -606,12 +609,12 @@ export default function DashboardPage() {
                     <div style={{ height: '100%', width: Math.min(100, (allDone / loyalty.nextAt) * 100) + '%', background: 'linear-gradient(90deg,' + loyalty.color + ',' + loyalty.color + '99)', borderRadius: '99px', transition: 'width .5s' }} />
                   </div>
                   <div style={{ fontSize: '.7rem', color: '#6b7280', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>{allDone} / {loyalty.nextAt} jobs</span>
-                    <span>{loyalty.nextAt - allDone} more to reach <strong style={{ color: 'white' }}>{loyalty.next}</strong></span>
+                    <span>{allDone} / {loyalty.nextAt} {t('jobs','trabajos')}</span>
+                    <span>{loyalty.nextAt - allDone} {t('more to reach','más para alcanzar')} <strong style={{ color: 'white' }}>{loyalty.next}</strong></span>
                   </div>
                 </>
               ) : (
-                <div style={{ fontSize: '.78rem', color: loyalty.color, fontWeight: '700', textAlign: 'center' }}>Highest tier — thank you for your loyalty!</div>
+                <div style={{ fontSize: '.78rem', color: loyalty.color, fontWeight: '700', textAlign: 'center' }}>{t('Highest tier','Nivel máximo') + ' '}— {t('thank you for your loyalty!','¡gracias por tu lealtad!')}</div>
               )}
             </div>
 
@@ -621,9 +624,9 @@ export default function DashboardPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                   <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(168,85,247,.15)', border: '1px solid rgba(168,85,247,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', flexShrink: 0 }}>&#x1F501;</div>
                   <div>
-                    <div style={{ fontSize: '.7rem', fontWeight: '700', color: '#a855f7', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '2px' }}>Next Recurring Cleaning</div>
+                    <div style={{ fontSize: '.7rem', fontWeight: '700', color: '#a855f7', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '2px' }}>{t('Next Recurring Cleaning','Próxima Limpieza Recurrente')}</div>
                     <div style={{ fontWeight: '700', color: 'white', fontSize: '.9rem' }}>{upcomingSchedule[0].date}</div>
-                    <div style={{ fontSize: '.72rem', color: '#9ca3af' }}>{upcomingSchedule[0].time !== 'TBD' ? upcomingSchedule[0].time + ' \u00b7 ' : ''}{upcomingSchedule.length} cleanings scheduled</div>
+                    <div style={{ fontSize: '.72rem', color: '#9ca3af' }}>{upcomingSchedule[0].time !== 'TBD' ? upcomingSchedule[0].time + ' \u00b7 ' : ''}{upcomingSchedule.length} {t('cleanings scheduled','limpiezas programadas')}</div>
                   </div>
                 </div>
                 <span style={{ color: '#a855f7', fontSize: '1rem', flexShrink: 0 }}>&#x2192;</span>
@@ -635,22 +638,22 @@ export default function DashboardPage() {
               {latest && !isDone && (
                 <div onClick={() => setActiveTab('messages')} style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(26,111,212,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>&#x1F4AC;</div>
-                  <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>Messages</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>Chat with us</div></div>
+                  <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>{t('Messages','Mensajes')}</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>{t('Chat with us','Chatea con nosotros')}</div></div>
                 </div>
               )}
               {latest && !isDone && (
                 <div onClick={() => setActiveTab('request')} style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(219,39,119,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>&#x1F4CB;</div>
-                  <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>My Quote</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>View details</div></div>
+                  <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>{t('My Quote','Mi Cotización')}</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>{t('View details','Ver detalles')}</div></div>
                 </div>
               )}
               <div onClick={() => router.push('/book')} style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(16,185,129,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>&#x2728;</div>
-                <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>{latest ? 'New Quote' : 'Get a Quote'}</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>Instant estimate</div></div>
+                <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>{latest ? t('New Quote','Nueva Cotización') : t('Get a Quote','Obtener Cotización')}</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>{t('Instant estimate','Estimado instantáneo')}</div></div>
               </div>
               <div onClick={() => setActiveTab('settings')} style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(156,163,175,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>&#x2699;&#xFE0F;</div>
-                <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>Settings</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>Update your info</div></div>
+                <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>{t('Settings','Ajustes')}</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>{t('Update your info','Actualiza tu información')}</div></div>
               </div>
             </div>
 
@@ -660,7 +663,7 @@ export default function DashboardPage() {
         {/* ── MESSAGES TAB ── */}
         {safeTab === 'messages' && latest && !isDone && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>Messages</div>
+            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>{t('Messages','Mensajes')}</div>
             <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
               <Chat requestId={latest.id} currentUser={user} senderRole="customer" onClose={null} inline={true} />
             </div>
@@ -670,26 +673,26 @@ export default function DashboardPage() {
         {/* ── MY QUOTE TAB ── */}
         {safeTab === 'request' && latest && !isDone && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>Quote Details</div>
+            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>{t('Quote Details','Detalles de Cotización')}</div>
             <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
               <div style={{ background: '#151515', padding: '18px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <div style={{ fontSize: '.7rem', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>Your Estimate</div>
+                  <div style={{ fontSize: '.7rem', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>{t('Your Estimate','Tu Estimado')}</div>
                   <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '2.2rem', fontWeight: '900', background: 'linear-gradient(135deg,#f472b6,#4a9eff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{'$' + latest.estimate}</div>
-                  <div style={{ fontSize: '.7rem', color: '#6b7280', marginTop: '3px' }}>Final price confirmed before service</div>
+                  <div style={{ fontSize: '.7rem', color: '#6b7280', marginTop: '3px' }}>{t('Final price confirmed before service','Precio final confirmado antes del servicio')}</div>
                 </div>
                 <span className={'badge badge-' + latest.status}>{statusLabel}</span>
               </div>
               <div style={{ padding: '8px 22px' }}>
                 {[
-                  ['Date',      latest.date || 'TBD'],
-                  ['Time',      latest.time || 'TBD'],
-                  ['Address',   latest.address],
-                  ['Frequency', latest.frequency],
-                  ['Bathrooms', latest.bathrooms],
-                  ['Rooms',     latest.rooms],
-                  ['Add-Ons',   latest.addons || 'None'],
-                  ['Pets',      latest.pets === 'yes' ? 'Yes' : 'No'],
+                  [t('Date','Fecha'),      latest.date || 'TBD'],
+                  [t('Time','Hora'),      latest.time || 'TBD'],
+                  [t('Address','Dirección'),   latest.address],
+                  [t('Frequency','Frecuencia'), latest.frequency],
+                  [t('Bathrooms','Baños'), latest.bathrooms],
+                  [t('Rooms','Habitaciones'),     latest.rooms],
+                  [t('Add-Ons','Extras'),   latest.addons || 'None'],
+                  [t('Pets','Mascotas'),      latest.pets === 'yes' ? 'Yes' : 'No'],
                 ].map(([k, v]) => (
                   <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', padding: '10px 0', borderBottom: '1px solid #2a2a2a' }}>
                     <span style={{ fontSize: '.78rem', color: '#6b7280', fontWeight: '600', minWidth: '100px' }}>{k}</span>
@@ -698,41 +701,37 @@ export default function DashboardPage() {
                 ))}
               </div>
               <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <button onClick={() => setActiveTab('messages')} style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.92rem', cursor: 'pointer' }}>
-                  Send a Message
-                </button>
+                <button onClick={() => setActiveTab('messages')} style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.92rem', cursor: 'pointer' }}>{t('Send a Message','Enviar un Mensaje')}</button>
                 {!reschedDone ? (
                   !reschedOpen ? (
-                    <button onClick={() => setReschedOpen(true)} style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px solid #2a2a2a', color: '#9ca3af', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>
-                      Request a Reschedule
-                    </button>
+                    <button onClick={() => setReschedOpen(true)} style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px solid #2a2a2a', color: '#9ca3af', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>{t('Request a Reschedule','Solicitar Reprogramación')}</button>
                   ) : (
                     <div style={{ background: '#1a1a1a', borderRadius: '14px', padding: '16px', border: '1.5px solid #2a2a2a' }}>
-                      <div style={{ fontWeight: '700', color: 'white', fontSize: '.88rem', marginBottom: '12px' }}>Request a Reschedule</div>
+                      <div style={{ fontWeight: '700', color: 'white', fontSize: '.88rem', marginBottom: '12px' }}>{t('Request a Reschedule','Solicitar Reprogramación')}</div>
                       <div style={{ marginBottom: '10px' }}>
-                        <label style={{ display: 'block', fontSize: '.78rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>Preferred Dates / Times</label>
+                        <label style={{ display: 'block', fontSize: '.78rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>{t('Preferred Dates / Times','Fechas / Horas Preferidas')}</label>
                         <input type="text" value={reschedDates} onChange={e => setReschedDates(e.target.value)}
-                          placeholder="e.g. Any morning next week, or March 10-12"
+                          placeholder={t('e.g. Any morning next week, or March 10-12','ej. Cualquier mañana la próxima semana, o 10-12 de Marzo')}
                           style={{ width: '100%', padding: '9px 12px', background: '#141414', border: '1.5px solid #333', borderRadius: '9px', color: 'white', fontSize: '.83rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
                       </div>
                       <div style={{ marginBottom: '12px' }}>
-                        <label style={{ display: 'block', fontSize: '.78rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>Reason (optional)</label>
+                        <label style={{ display: 'block', fontSize: '.78rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>{t('Reason (optional)','Razón (opcional)')}</label>
                         <input type="text" value={reschedReason} onChange={e => setReschedReason(e.target.value)}
-                          placeholder="e.g. Work conflict, family event..."
+                          placeholder={t('e.g. Work conflict, family event...','ej. Conflicto de trabajo, evento familiar...')}
                           style={{ width: '100%', padding: '9px 12px', background: '#141414', border: '1.5px solid #333', borderRadius: '9px', color: 'white', fontSize: '.83rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
                       </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button onClick={submitReschedule} disabled={reschedBusy || !reschedDates.trim()} style={{ flex: 1, padding: '10px', background: reschedDates.trim() ? 'linear-gradient(135deg,#1a6fd4,#db2777)' : '#2a2a2a', color: reschedDates.trim() ? 'white' : '#555', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: reschedDates.trim() ? 'pointer' : 'not-allowed' }}>
-                          {reschedBusy ? 'Sending...' : 'Send Request'}
+                          {reschedBusy ? t('Sending...','Enviando...') : t('Send Request','Enviar Solicitud')}
                         </button>
-                        <button onClick={() => setReschedOpen(false)} style={{ padding: '10px 16px', background: 'transparent', border: '1.5px solid #2a2a2a', color: '#6b7280', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>Cancel</button>
+                        <button onClick={() => setReschedOpen(false)} style={{ padding: '10px 16px', background: 'transparent', border: '1.5px solid #2a2a2a', color: '#6b7280', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>{t('Cancel','Cancelar')}</button>
                       </div>
                     </div>
                   )
                 ) : (
                   <div style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.25)', borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '1.2rem' }}>&#x2705;</span>
-                    <div style={{ fontWeight: '700', color: '#10b981', fontSize: '.85rem' }}>Reschedule request sent! We will be in touch soon.</div>
+                    <div style={{ fontWeight: '700', color: '#10b981', fontSize: '.85rem' }}>{t('Reschedule request sent!','Solicitud de reprogramación enviada.')} {t('We will be in touch soon.','Nos comunicaremos pronto.')}</div>
                   </div>
                 )}
 
@@ -740,26 +739,23 @@ export default function DashboardPage() {
                 {(latest.status === 'new' || latest.status === 'confirmed') && !cancelDone && (
                   !cancelOpen ? (
                     <button onClick={() => setCancelOpen(true)} style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>
-                      &#x274C; Cancel Booking
-                    </button>
+                      &#x274C; {t('Cancel Booking','Cancelar Reserva')}</button>
                   ) : (
                     <div style={{ background: 'rgba(239,68,68,.07)', border: '1.5px solid rgba(239,68,68,.25)', borderRadius: '14px', padding: '16px' }}>
-                      <div style={{ fontWeight: '700', color: '#ef4444', fontSize: '.88rem', marginBottom: '6px' }}>&#x26A0; Cancel this booking?</div>
-                      <div style={{ fontSize: '.78rem', color: '#9ca3af', marginBottom: '14px', lineHeight: 1.5 }}>This will mark your booking as cancelled. You can always submit a new request whenever you&#39;re ready.</div>
+                      <div style={{ fontWeight: '700', color: '#ef4444', fontSize: '.88rem', marginBottom: '6px' }}>&#x26A0; {t('Cancel this booking?','¿Cancelar esta reserva?')}</div>
+                      <div style={{ fontSize: '.78rem', color: '#9ca3af', marginBottom: '14px', lineHeight: 1.5 }}>{t("This will mark your booking as cancelled. You can always submit a new request whenever you're ready.","Esto marcará tu reserva como cancelada. Siempre puedes enviar una nueva solicitud cuando estés listo.")}</div>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button onClick={cancelBooking} disabled={cancelBusy} style={{ flex: 1, padding: '10px', background: 'rgba(239,68,68,.15)', border: '1.5px solid rgba(239,68,68,.4)', color: '#ef4444', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>
-                          {cancelBusy ? 'Cancelling...' : 'Yes, Cancel'}
+                          {cancelBusy ? t('Cancelling...','Cancelando...') : t('Yes, Cancel','Sí, Cancelar')}
                         </button>
-                        <button onClick={() => setCancelOpen(false)} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1.5px solid #2a2a2a', color: '#6b7280', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>
-                          Keep Booking
-                        </button>
+                        <button onClick={() => setCancelOpen(false)} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1.5px solid #2a2a2a', color: '#6b7280', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>{t('Keep Booking','Mantener Reserva')}</button>
                       </div>
                     </div>
                   )
                 )}
                 {cancelDone && (
                   <div style={{ background: 'rgba(107,114,128,.08)', border: '1px solid #2a2a2a', borderRadius: '12px', padding: '12px 16px', fontSize: '.83rem', color: '#9ca3af', textAlign: 'center' }}>
-                    Booking cancelled. You can submit a new request any time.
+                    {t('Booking cancelled. You can submit a new request any time.','Reserva cancelada. Puedes enviar una nueva solicitud en cualquier momento.')}
                   </div>
                 )}
               </div>
@@ -771,16 +767,16 @@ export default function DashboardPage() {
         {safeTab === 'schedule' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>
-              &#x1F501; Your Recurring Schedule
+              &#x1F501; {t('Your Recurring Schedule','Tu Horario Recurrente')}
             </div>
             <div style={{ background: 'rgba(168,85,247,.07)', border: '1px solid rgba(168,85,247,.2)', borderRadius: '12px', padding: '13px 18px', fontSize: '.83rem', color: '#c4b5fd' }}>
-              These are your automatically scheduled future cleanings based on your <strong style={{ color: 'white' }}>{schedule[0]?.frequency}</strong> plan.
+              {t('These are your automatically scheduled future cleanings based on your','Estas son tus próximas limpiezas programadas según tu')} <strong style={{ color: 'white' }}>{schedule[0]?.frequency}</strong> plan.
             </div>
 
             {upcomingSchedule.length > 0 && (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
                 <div style={{ padding: '13px 20px', borderBottom: '1px solid #2a2a2a', fontSize: '.72rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.5px' }}>
-                  Upcoming ({upcomingSchedule.length})
+                  {t('Upcoming','Próximas')} ({upcomingSchedule.length})
                 </div>
                 {upcomingSchedule.map((entry, i) => {
                   const isNext = i === 0;
@@ -803,7 +799,7 @@ export default function DashboardPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
                         {diff >= 0 && diff <= 30 && (
                           <div style={{ fontSize: '.72rem', fontWeight: '700', color: diff <= 3 ? '#f59e0b' : '#9ca3af', textAlign: 'right' }}>
-                            {diff === 0 ? 'Today!' : diff === 1 ? 'Tomorrow' : 'In ' + diff + 'd'}
+                            {diff === 0 ? t('Today!','¡Hoy!') : diff === 1 ? t('Tomorrow','Mañana') : t('In','En') + ' ' + diff + t('d','d')}
                           </div>
                         )}
                         <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '.9rem', fontWeight: '900', color: '#60a5fa' }}>{'$' + entry.estimate}</div>
@@ -817,14 +813,14 @@ export default function DashboardPage() {
 
             {upcomingSchedule.length > 1 && (
               <button onClick={cancelAllRecurring} style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px solid rgba(239,68,68,.25)', color: '#ef4444', borderRadius: '12px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.85rem', cursor: 'pointer' }}>
-                ✕ Cancel All Remaining Recurring Appointments ({upcomingSchedule.length})
+                ✕ {t('Cancel All Remaining Recurring Appointments','Cancelar Todas las Citas Recurrentes Restantes')} ({upcomingSchedule.length})
               </button>
             )}
 
             {schedule.filter(e => e.status === 'done').length > 0 && (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
                 <div style={{ padding: '13px 20px', borderBottom: '1px solid #2a2a2a', fontSize: '.72rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.5px' }}>
-                  {Completed} ({schedule.filter(e => e.status === 'done').length})
+                  {t('Completed','Completados')} ({schedule.filter(e => e.status === 'done').length})
                 </div>
                 {schedule.filter(e => e.status === 'done').map(entry => (
                   <div key={entry.id} style={{ padding: '12px 20px', borderBottom: '1px solid #1e1e1e', display: 'flex', alignItems: 'center', gap: '12px', opacity: 0.6 }}>
@@ -849,36 +845,36 @@ export default function DashboardPage() {
         {/* ── SETTINGS TAB ── */}
         {safeTab === 'settings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>Account Settings</div>
+            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>{t('Account Settings','Configuración de Cuenta')}</div>
             {settingsMsg && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: 'rgba(16,185,129,.12)', color: '#10b981', border: '1px solid rgba(16,185,129,.2)' }}>✅ {settingsMsg}</div>}
             {settingsErr && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: 'rgba(239,68,68,.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,.2)' }}>⚠️ {settingsErr}</div>}
 
             <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '20px' }}>
-              <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '16px' }}>Profile</div>
+              <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '16px' }}>{t('Profile','Perfil')}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '18px', paddingBottom: '18px', borderBottom: '1px solid #2a2a2a' }}>
                 {user?.photoURL
                   ? <img src={user.photoURL} style={{ width: '44px', height: '44px', borderRadius: '50%' }} alt="" />
                   : <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '1.1rem' }}>{firstName[0]?.toUpperCase()}</div>
                 }
                 <div>
-                  <div style={{ fontWeight: '700', color: 'white', fontSize: '.9rem' }}>{user?.displayName || 'No name set'}</div>
+                  <div style={{ fontWeight: '700', color: 'white', fontSize: '.9rem' }}>{user?.displayName || t('No name set','Sin nombre')}</div>
                   <div style={{ fontSize: '.78rem', color: '#9ca3af', marginTop: '2px' }}>{user?.email}</div>
                 </div>
               </div>
               <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '.8rem', fontWeight: '700', color: '#d1d5db', marginBottom: '6px' }}>Display Name</label>
-                <input type="text" value={settingsName} onChange={e => setSettingsName(e.target.value)} placeholder="Your full name"
+                <label style={{ display: 'block', fontSize: '.8rem', fontWeight: '700', color: '#d1d5db', marginBottom: '6px' }}>{t('Display Name','Nombre para Mostrar')}</label>
+                <input type="text" value={settingsName} onChange={e => setSettingsName(e.target.value)} placeholder={t('Your full name','Tu nombre completo')}
                   style={{ width: '100%', padding: '10px 13px', background: '#1f1f1f', border: '1.5px solid #2a2a2a', borderRadius: '10px', color: 'white', fontSize: '.87rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
               </div>
               <button onClick={saveName} disabled={settingsBusy} style={{ padding: '11px 22px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>
-                {settingsBusy ? 'Saving...' : 'Save Name'}
+                {settingsBusy ? t('Saving...','Guardando...') : t('Save Name','Guardar Nombre')}
               </button>
             </div>
 
             {!isGoogleUser && (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '20px' }}>
-                <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '16px' }}>Change Password</div>
-                {[['Current Password', currentPass, setCurrentPass, ''], ['New Password', newPass, setNewPass, 'At least 6 characters']].map(([label, val, setter, ph]) => (
+                <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '16px' }}>{t('Change Password','Cambiar Contraseña')}</div>
+                {[[t('Current Password','Contraseña Actual'), currentPass, setCurrentPass, ''], [t('New Password','Nueva Contraseña'), newPass, setNewPass, t('At least 6 characters','Mínimo 6 caracteres')]].map(([label, val, setter, ph]) => (
                   <div key={label} style={{ marginBottom: '12px' }}>
                     <label style={{ display: 'block', fontSize: '.8rem', fontWeight: '700', color: '#d1d5db', marginBottom: '6px' }}>{label}</label>
                     <input type="password" value={val} onChange={e => setter(e.target.value)} placeholder={ph}
@@ -886,23 +882,23 @@ export default function DashboardPage() {
                   </div>
                 ))}
                 <button onClick={savePassword} disabled={settingsBusy} style={{ padding: '11px 22px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>
-                  {settingsBusy ? 'Updating...' : 'Update Password'}
+                  {settingsBusy ? t('Updating...','Actualizando...') : t('Update Password','Actualizar Contraseña')}
                 </button>
               </div>
             )}
 
             {isGoogleUser && (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '20px' }}>
-                <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '8px' }}>Password</div>
-                <p style={{ color: '#9ca3af', fontSize: '.84rem' }}>You signed in with Google. Manage your password through your Google account.</p>
+                <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '8px' }}>{t('Password','Contraseña')}</div>
+                <p style={{ color: '#9ca3af', fontSize: '.84rem' }}>{t('You signed in with Google. Manage your password through your Google account.','Iniciaste sesión con Google. Administra tu contraseña a través de tu cuenta de Google.')}</p>
               </div>
             )}
 
             <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '20px' }}>
-              <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '8px' }}>Sign Out</div>
-              <p style={{ color: '#9ca3af', fontSize: '.84rem', marginBottom: '14px' }}>This will sign you out on this device.</p>
+              <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '8px' }}>{t('Sign Out','Salir')}</div>
+              <p style={{ color: '#9ca3af', fontSize: '.84rem', marginBottom: '14px' }}>{t('This will sign you out on this device.','Esto cerrará tu sesión en este dispositivo.')}</p>
               <button onClick={() => { signOut(auth); router.push('/'); }} style={{ padding: '11px 22px', background: 'rgba(239,68,68,.1)', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>
-                Sign Out
+                {t('Sign Out','Salir')}
               </button>
             </div>
           </div>
