@@ -430,10 +430,13 @@ export default function AdminPage() {
         } catch (e) {}
       }
       const allPhotos = [...newPhotos, ...allExisting];
-      const CHUNK_SIZE = 4;
+      const CHUNK_SIZE = 20;
       const chunks = [];
       for (let i = 0; i < allPhotos.length; i += CHUNK_SIZE) { chunks.push(allPhotos.slice(i, i + CHUNK_SIZE)); }
       for (let i = 0; i < chunks.length; i++) { await setDoc(doc(db, 'settings', `gallery_${i}`), { photos: chunks[i] }); }
+      // Clean up leftover old chunks
+      const oldCount = existingCount;
+      for (let ci = chunks.length; ci < oldCount; ci++) { try { await setDoc(doc(db, 'settings', `gallery_${ci}`), { photos: [] }); } catch(e) {} }
       await setDoc(doc(db, 'settings', 'galleryIndex'), { count: chunks.length });
       setGalleryLabel('');
       setGalleryDesc('');
@@ -460,7 +463,7 @@ export default function AdminPage() {
         } catch (e) {}
       }
       const updated = allPhotos.filter(p => p.id !== photo.id);
-      const CHUNK_SIZE = 4;
+      const CHUNK_SIZE = 20;
       const chunks = [];
       for (let i = 0; i < updated.length; i += CHUNK_SIZE) chunks.push(updated.slice(i, i + CHUNK_SIZE));
       // Overwrite existing chunks
