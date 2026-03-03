@@ -138,6 +138,7 @@ export default function AdminPage() {
   const [galleryUploadDone, setGalleryUploadDone] = useState(false);
 
   useEffect(() => {
+    if (!user) return;
     const unsub = onSnapshot(
       doc(db, 'settings', 'galleryIndex'),
       async (snap) => {
@@ -154,10 +155,11 @@ export default function AdminPage() {
         } else {
           setGalleryPhotos([]);
         }
-      }
+      },
+      (err) => console.warn('Gallery listener error:', err)
     );
     return () => unsub();
-  }, []);
+  }, [user]);
   const [priceSaving, setPriceSaving] = useState(false);
   const [priceSaved, setPriceSaved] = useState(false);
 
