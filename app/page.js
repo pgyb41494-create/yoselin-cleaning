@@ -211,7 +211,7 @@ export default function HomePage() {
         <div className="hp-nav-right">
           {currentUser ? (
             <>
-              <button className="hp-nav-login" onClick={() => router.push(isAdmin ? '/admin' : '/dashboard')}>{isAdmin ? 'Admin' : Dashboard}</button>
+              <button className="hp-nav-login" onClick={() => router.push(isAdmin ? '/admin' : '/dashboard')}>{isAdmin ? 'Admin' : 'Dashboard'}</button>
               <button onClick={() => signOut(auth)} style={{ background: 'none', border: '1px solid rgba(255,255,255,.15)', color: '#9ca3af', padding: '6px 14px', borderRadius: '99px', fontSize: '.78rem', cursor: 'pointer' }}>{'Sign Out'}</button>
             </>
           ) : (
@@ -290,7 +290,7 @@ export default function HomePage() {
               <div style={{ width: '88px', height: '88px', borderRadius: '50%', margin: '0 auto 18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', background: i === 0 ? 'rgba(168,85,247,.12)' : i === 1 ? 'rgba(219,39,119,.12)' : 'rgba(96,165,250,.12)', border: '2px solid ' + (i === 0 ? 'rgba(168,85,247,.3)' : i === 1 ? 'rgba(219,39,119,.3)' : 'rgba(96,165,250,.3)'), boxShadow: '0 0 30px ' + (i === 0 ? 'rgba(168,85,247,.15)' : i === 1 ? 'rgba(219,39,119,.15)' : 'rgba(96,165,250,.15)') }}>
                 {s.icon}
               </div>
-              <div style={{ fontSize: '.65rem', fontWeight: '800', letterSpacing: '1.5px', textTransform: 'uppercase', color: i === 0 ? '#a855f7' : i === 1 ? '#db2777' : '#60a5fa', marginBottom: '8px' }}>{Step} {s.step}</div>
+              <div style={{ fontSize: '.65rem', fontWeight: '800', letterSpacing: '1.5px', textTransform: 'uppercase', color: i === 0 ? '#a855f7' : i === 1 ? '#db2777' : '#60a5fa', marginBottom: '8px' }}>{'Step'} {s.step}</div>
               <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.15rem', fontWeight: '700', color: 'white', margin: '0 0 8px' }}>{s.title}</h3>
               <p style={{ fontSize: '.84rem', color: '#9ca3af', lineHeight: '1.65', margin: 0 }}>{s.desc}</p>
             </div>
@@ -354,7 +354,7 @@ export default function HomePage() {
                     <div style={{ fontWeight: '700', color: 'white', fontSize: '.82rem' }}>{r.name}</div>
                     <div style={{ fontSize: '.72rem', color: '#6b7280', marginTop: '1px' }}>{r.date}</div>
                   </div>
-                  <div style={{ marginLeft: 'auto', fontSize: '.65rem', fontWeight: '700', color: '#a855f7', background: 'rgba(168,85,247,.12)', padding: '2px 8px', borderRadius: '99px', whiteSpace: 'nowrap' }}>{Verified}</div>
+                  <div style={{ marginLeft: 'auto', fontSize: '.65rem', fontWeight: '700', color: '#a855f7', background: 'rgba(168,85,247,.12)', padding: '2px 8px', borderRadius: '99px', whiteSpace: 'nowrap' }}>{'Verified'}</div>
                   {isAdmin && r.id && (
                     <button onClick={(e) => { e.stopPropagation(); if(window.confirm('Delete this review?')) deleteDoc(doc(db, 'reviews', r.id)); }}
                       style={{ marginLeft: '4px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '8px', padding: '3px 10px', fontSize: '.62rem', fontWeight: '700', cursor: 'pointer' }}>
