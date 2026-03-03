@@ -437,7 +437,7 @@ export default function AdminPage() {
       // Clean up leftover old chunks
       const oldCount = existingCount;
       for (let ci = chunks.length; ci < oldCount; ci++) { try { await setDoc(doc(db, 'settings', `gallery_${ci}`), { photos: [] }); } catch(e) {} }
-      await setDoc(doc(db, 'settings', 'galleryIndex'), { count: chunks.length });
+      await setDoc(doc(db, 'settings', 'galleryIndex'), { count: chunks.length, updatedAt: Date.now() });
       setGalleryLabel('');
       setGalleryDesc('');
       setGalleryFiles([]);
@@ -475,7 +475,7 @@ export default function AdminPage() {
           try { await setDoc(doc(db, 'settings', `gallery_${i}`), { photos: [] }); } catch(e) {}
         }
       }
-      await setDoc(doc(db, 'settings', 'galleryIndex'), { count: chunks.length });
+      await setDoc(doc(db, 'settings', 'galleryIndex'), { count: chunks.length, updatedAt: Date.now() });
     } catch (e) { alert('Delete failed: ' + e.message); }
   };
 

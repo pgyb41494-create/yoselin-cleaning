@@ -155,8 +155,10 @@ export default function GalleryPage() {
         try { await setDoc(doc(db, 'settings', `gallery_${i}`), { photos: [] }); } catch (e) {}
       }
 
-      // Update index
-      await setDoc(doc(db, 'settings', 'galleryIndex'), { count: chunks.length });
+      // Update index (updatedAt forces onSnapshot to fire)
+      await setDoc(doc(db, 'settings', 'galleryIndex'), { count: chunks.length, updatedAt: Date.now() });
+      // Update local state immediately
+      setPhotos(allPhotos);
 
       setUploadFiles([]);
       setUploadLabel('');
@@ -206,7 +208,9 @@ export default function GalleryPage() {
       for (let i = chunks.length; i < existingCount; i++) {
         try { await setDoc(doc(db, 'settings', `gallery_${i}`), { photos: [] }); } catch (e) {}
       }
-      await setDoc(doc(db, 'settings', 'galleryIndex'), { count: chunks.length });
+      await setDoc(doc(db, 'settings', 'galleryIndex'), { count: chunks.length, updatedAt: Date.now() });
+      // Update local state immediately so UI reflects the change
+      setPhotos(allPhotos);
     } catch (err) {
       alert('Failed to delete: ' + err.message);
     }
