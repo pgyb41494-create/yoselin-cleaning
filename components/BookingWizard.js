@@ -50,6 +50,11 @@ const KITCHEN = [
 const initBaths = () => ({ half: 0, small: 0, medium: 0, large: 0 });
 const initRooms = () => ({ bed_small: 0, bed_medium: 0, bed_large: 0, liv_small: 0, liv_medium: 0, liv_large: 0, office: 0, kit_small: 0, kit_medium: 0, kit_large: 0, laundry: 0, basement: 0 });
 
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAY_LABELS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function getDaysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
+function formatDateKey(d) { return MONTH_NAMES[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear(); }
+
 export default function BookingWizard({ user, onDone, adminMode = false }) {
   const [step,         setStep]         = useState(0);
   const [baths,        setBaths]        = useState(initBaths());
@@ -63,6 +68,11 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   const [submitting,   setSubmitting]   = useState(false);
   const [availability, setAvailability] = useState([]);
   const [livePrices,   setLivePrices]   = useState(null);
+
+  // Calendar state
+  const now = new Date();
+  const [calMonth, setCalMonth] = useState(now.getMonth());
+  const [calYear,  setCalYear]  = useState(now.getFullYear());
 
   const addressInputRef = useRef(null);
   const autocompleteRef = useRef(null);
@@ -157,6 +167,20 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
   const availDates   = [...new Set(availability.map(s => s.date))];
   const timesForDate = availability.filter(s => s.date === form.date).map(s => s.time);
+
+  // Build a map of date -> slot count for the calendar
+  const slotsPerDate = {};
+  availability.forEach(s => { slotsPerDate[s.date] = (slotsPerDate[s.date] || 0) + 1; });
+
+  const calFirstDay   = new Date(calYear, calMonth, 1).getDay();
+  const calDaysInMonth = getDaysInMonth(calYear, calMonth);
+  const todayMidnight  = new Date(); todayMidnight.setHours(0,0,0,0);
+
+  const prevMonth = () => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); } else setCalMonth(m => m - 1); };
+  const nextMonth = () => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); } else setCalMonth(m => m + 1); };
+
+  // Don't let user go to past months
+  const canGoPrev = calYear > now.getFullYear() || (calYear === now.getFullYear() && calMonth > now.getMonth());
 
   const goTo = (s) => {
     if (s >= 1) {
@@ -286,36 +310,97 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                     onFocus={() => { if (window.__gmapsLoaded && !autocompleteRef.current) initAutocomplete(); }}
                     placeholder="Start typing your address..." autoComplete="off" />
                 </div>
-                <div className="row2">
-                  <div className="fg">
-                    <label>Preferred Date <span style={{ color: '#ef4444' }}>*</span></label>
-                    {availDates.length > 0 ? (
-                      <select value={form.date} onChange={e => { setF('date', e.target.value); setF('time', ''); }}>
-                        <option value="">Select an available date</option>
-                        {availDates.map(d => <option key={d} value={d}>{d}</option>)}
-                      </select>
-                    ) : (
-                      <input type="text" value={form.date} onChange={e => setF('date', e.target.value)} placeholder="e.g. Monday, March 10" />
-                    )}
-                  </div>
-                  <div className="fg">
-                    <label>Preferred Time</label>
-                    {availDates.length > 0 && form.date ? (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginTop: '4px' }}>
+                {/* ── VISUAL CALENDAR DATE PICKER ── */}
+                {availDates.length > 0 ? (
+                  <div style={{ marginTop: '4px' }}>
+                    <label style={{ marginBottom: '10px', display: 'block' }}>Preferred Date <span style={{ color: '#ef4444' }}>*</span></label>
+                    <div style={{ background: '#151515', borderRadius: '16px', border: '1.5px solid #2a2a2a', padding: '16px', marginBottom: '14px' }}>
+                      {/* Month nav */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                        <button type="button" onClick={prevMonth} disabled={!canGoPrev} style={{ background: canGoPrev ? '#222' : 'transparent', border: '1px solid #333', color: canGoPrev ? '#d1d5db' : '#333', borderRadius: '8px', padding: '5px 11px', cursor: canGoPrev ? 'pointer' : 'default', fontWeight: '700', fontSize: '.82rem' }}>&lt;</button>
+                        <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: '700', color: 'white', fontSize: '.95rem' }}>{MONTH_NAMES[calMonth]} {calYear}</div>
+                        <button type="button" onClick={nextMonth} style={{ background: '#222', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', padding: '5px 11px', cursor: 'pointer', fontWeight: '700', fontSize: '.82rem' }}>&gt;</button>
+                      </div>
+                      {/* Day headers */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '4px' }}>
+                        {DAY_LABELS.map(d => <div key={d} style={{ textAlign: 'center', fontSize: '.62rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', padding: '4px 0' }}>{d}</div>)}
+                      </div>
+                      {/* Day grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+                        {Array.from({ length: calFirstDay }).map((_, i) => <div key={'e'+i} />)}
+                        {Array.from({ length: calDaysInMonth }).map((_, i) => {
+                          const day = i + 1;
+                          const d = new Date(calYear, calMonth, day);
+                          const key = formatDateKey(d);
+                          const isPast = d < todayMidnight;
+                          const slotCount = slotsPerDate[key] || 0;
+                          const hasSlots = slotCount > 0;
+                          const isSelected = form.date === key;
+                          const isToday = now.getDate() === day && now.getMonth() === calMonth && now.getFullYear() === calYear;
+                          const canClick = !isPast && hasSlots;
+                          return (
+                            <button key={day} type="button" onClick={() => {
+                              if (!canClick) return;
+                              setF('date', key); setF('time', '');
+                            }} style={{
+                              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                              aspectRatio: '1', borderRadius: '10px', padding: '2px', position: 'relative',
+                              border: isSelected ? '2px solid #a855f7' : isToday ? '1.5px solid #555' : '1px solid transparent',
+                              background: isSelected ? 'linear-gradient(135deg, rgba(168,85,247,.25), rgba(219,39,119,.15))' : canClick ? 'rgba(168,85,247,.06)' : 'transparent',
+                              color: isPast ? '#2a2a2a' : isSelected ? '#e9d5ff' : hasSlots ? '#d1d5db' : '#3a3a3a',
+                              cursor: canClick ? 'pointer' : 'default',
+                              fontWeight: isSelected ? '800' : '600', fontSize: '.82rem',
+                              transition: 'all .15s',
+                            }}>
+                              {day}
+                              {hasSlots && !isPast && (
+                                <span style={{ fontSize: '.52rem', fontWeight: '800', color: isSelected ? '#e9d5ff' : slotCount <= 2 ? '#f59e0b' : '#10b981', marginTop: '1px', lineHeight: 1 }}>
+                                  {slotCount} slot{slotCount !== 1 ? 's' : ''}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {/* Selected date display */}
+                      {form.date && (
+                        <div style={{ marginTop: '12px', padding: '8px 12px', background: 'rgba(168,85,247,.1)', border: '1px solid rgba(168,85,247,.25)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: '.8rem', fontWeight: '700', color: '#d8b4fe' }}>📅 {form.date}</span>
+                          <button type="button" onClick={() => { setF('date', ''); setF('time', ''); }} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '.72rem', fontWeight: '700', cursor: 'pointer' }}>Clear</button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Time slots */}
+                    <label style={{ marginBottom: '8px', display: 'block' }}>Preferred Time</label>
+                    {form.date && timesForDate.length > 0 ? (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
                         {timesForDate.map(tm => (
                           <button key={tm} type="button" onClick={() => setF('time', tm)} style={{
-                            padding: '8px 14px', borderRadius: '10px',
-                            border: form.time === tm ? '2px solid transparent' : '1.5px solid var(--border)',
-                            background: form.time === tm ? 'var(--black)' : 'var(--soft)',
-                            color: form.time === tm ? 'white' : '#374151',
-                            fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.78rem',
+                            padding: '10px 16px', borderRadius: '10px',
+                            border: form.time === tm ? '2px solid #a855f7' : '1.5px solid #2a2a2a',
+                            background: form.time === tm ? 'linear-gradient(135deg, rgba(168,85,247,.25), rgba(219,39,119,.12))' : '#151515',
+                            color: form.time === tm ? '#e9d5ff' : '#9ca3af',
+                            fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.8rem',
                             cursor: 'pointer', transition: 'all .15s',
                           }}>{tm}</button>
                         ))}
                       </div>
-                    ) : availDates.length > 0 ? (
-                      <div style={{ color: '#9ca3af', fontSize: '.82rem', padding: '10px 0' }}>Pick a date first</div>
+                    ) : form.date ? (
+                      <div style={{ color: '#6b7280', fontSize: '.82rem', padding: '10px 0' }}>No time slots for this date</div>
                     ) : (
+                      <div style={{ color: '#6b7280', fontSize: '.82rem', padding: '10px 0' }}>Pick a date first</div>
+                    )}
+                  </div>
+                ) : (
+                  /* Fallback when no availability is set — plain text inputs */
+                  <div className="row2">
+                    <div className="fg">
+                      <label>Preferred Date <span style={{ color: '#ef4444' }}>*</span></label>
+                      <input type="text" value={form.date} onChange={e => setF('date', e.target.value)} placeholder="e.g. Monday, March 10" />
+                    </div>
+                    <div className="fg">
+                      <label>Preferred Time</label>
                       <select value={form.time} onChange={e => setF('time', e.target.value)}>
                         <option value="">Select a time</option>
                         <option>Morning (8am-12pm)</option>
@@ -323,9 +408,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                         <option>Evening (4pm-7pm)</option>
                         <option>Flexible</option>
                       </select>
-                    )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
