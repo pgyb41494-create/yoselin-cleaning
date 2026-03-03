@@ -405,7 +405,7 @@ export default function AdminPage() {
     try {
       const newPhotos = [];
       for (const file of galleryFiles) {
-        const fileName = `bookings/admin/gallery/${Date.now()}_${file.name}`;
+        const fileName = `gallery/${Date.now()}_${file.name}`;
         const storageRef = ref(storage, fileName);
         await uploadBytes(storageRef, file);
         const url = await getDownloadURL(storageRef);
@@ -419,25 +419,22 @@ export default function AdminPage() {
           createdAt: new Date().toISOString(),
         });
       }
-      // Load existing photos from all chunks
+      // Shift existing chunks up by 1, put new photos in chunk 0
       const indexSnap = await getDoc(doc(db, 'settings', 'galleryIndex'));
       const existingCount = indexSnap.exists() ? (indexSnap.data().count || 0) : 0;
-      let allExisting = [];
+      const existingChunks = [];
       for (let i = 0; i < existingCount; i++) {
         try {
           const chunkSnap = await getDoc(doc(db, 'settings', `gallery_${i}`));
-          if (chunkSnap.exists()) allExisting.push(...(chunkSnap.data().photos || []));
-        } catch (e) {}
+          existingChunks.push(chunkSnap.exists() ? (chunkSnap.data().photos || []) : []);
+        } catch (e) { existingChunks.push([]); }
       }
-      const allPhotos = [...newPhotos, ...allExisting];
-      const CHUNK_SIZE = 20;
-      const chunks = [];
-      for (let i = 0; i < allPhotos.length; i += CHUNK_SIZE) { chunks.push(allPhotos.slice(i, i + CHUNK_SIZE)); }
-      for (let i = 0; i < chunks.length; i++) { await setDoc(doc(db, 'settings', `gallery_${i}`), { photos: chunks[i] }); }
-      // Clean up leftover old chunks
-      const oldCount = existingCount;
-      for (let ci = chunks.length; ci < oldCount; ci++) { try { await setDoc(doc(db, 'settings', `gallery_${ci}`), { photos: [] }); } catch(e) {} }
-      await setDoc(doc(db, 'settings', 'galleryIndex'), { count: chunks.length, updatedAt: Date.now() });
+      for (let i = existingChunks.length - 1; i >= 0; i--) {
+        await setDoc(doc(db, 'settings', `gallery_${i + 1}`), { photos: existingChunks[i] });
+      }
+      await setDoc(doc(db, 'settings', 'gallery_0'), { photos: newPhotos });
+      const newCount = existingCount + 1;
+      await setDoc(doc(db, 'settings', 'galleryIndex'), { count: newCount, updatedAt: Date.now() });
       setGalleryLabel('');
       setGalleryDesc('');
       setGalleryFiles([]);
@@ -451,31 +448,22 @@ export default function AdminPage() {
     if (!window.confirm('Delete this photo?')) return;
     // Delete from storage
     try { if (photo.fileName) await deleteObject(ref(storage, photo.fileName)); } catch (e) {}
-    // Load all chunks, filter out this photo, re-save
+    // Find which chunk has this photo and only update that one chunk
     try {
       const indexSnap = await getDoc(doc(db, 'settings', 'galleryIndex'));
       const count = indexSnap.exists() ? (indexSnap.data().count || 0) : 0;
-      let allPhotos = [];
       for (let i = 0; i < count; i++) {
         try {
           const chunkSnap = await getDoc(doc(db, 'settings', `gallery_${i}`));
-          if (chunkSnap.exists()) allPhotos.push(...(chunkSnap.data().photos || []));
+          const chunkPhotos = chunkSnap.exists() ? (chunkSnap.data().photos || []) : [];
+          const filtered = chunkPhotos.filter(p => p.id !== photo.id);
+          if (filtered.length < chunkPhotos.length) {
+            await setDoc(doc(db, 'settings', `gallery_${i}`), { photos: filtered });
+            await setDoc(doc(db, 'settings', 'galleryIndex'), { count, updatedAt: Date.now() });
+            break;
+          }
         } catch (e) {}
       }
-      const updated = allPhotos.filter(p => p.id !== photo.id);
-      const CHUNK_SIZE = 20;
-      const chunks = [];
-      for (let i = 0; i < updated.length; i += CHUNK_SIZE) chunks.push(updated.slice(i, i + CHUNK_SIZE));
-      // Overwrite existing chunks
-      for (let i = 0; i < Math.max(chunks.length, count); i++) {
-        if (i < chunks.length) {
-          await setDoc(doc(db, 'settings', `gallery_${i}`), { photos: chunks[i] });
-        } else {
-          // Delete leftover chunks
-          try { await setDoc(doc(db, 'settings', `gallery_${i}`), { photos: [] }); } catch(e) {}
-        }
-      }
-      await setDoc(doc(db, 'settings', 'galleryIndex'), { count: chunks.length, updatedAt: Date.now() });
     } catch (e) { alert('Delete failed: ' + e.message); }
   };
 
