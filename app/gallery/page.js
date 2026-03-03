@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, onSnapshot, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-import { db, auth, ADMIN_EMAILS } from '../../lib/firebase';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { db, auth, storage, ADMIN_EMAILS } from '../../lib/firebase';
 
 
 
@@ -103,14 +104,18 @@ export default function GalleryPage() {
     setUploading(true);
     setUploadProgress('');
     try {
-      // Compress all images
       const newPhotos = [];
       for (let i = 0; i < uploadFiles.length; i++) {
-        setUploadProgress(`Compressing ${i + 1} of ${uploadFiles.length}...`);
-        const dataUrl = await compressImage(uploadFiles[i]);
+        setUploadProgress(`Uploading ${i + 1} of ${uploadFiles.length}...`);
+        const file = uploadFiles[i];
+        const fileName = `bookings/admin/gallery/${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, fileName);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
         newPhotos.push({
           id: Date.now().toString() + '_' + i + '_' + Math.random().toString(36).slice(2, 6),
-          url: dataUrl,
+          url,
+          fileName,
           label: uploadLabel || '',
           description: uploadDesc || '',
           category: uploadCategory || '',
@@ -134,8 +139,8 @@ export default function GalleryPage() {
       // Merge new photos at the front
       const allPhotos = [...newPhotos, ...allExisting];
 
-      // Split into chunks of ~4 photos per doc (to stay under 1MB Firestore limit)
-      const CHUNK_SIZE = 4;
+      // Split into chunks (URLs are small so 20 per doc is fine)
+      const CHUNK_SIZE = 20;
       const chunks = [];
       for (let i = 0; i < allPhotos.length; i += CHUNK_SIZE) {
         chunks.push(allPhotos.slice(i, i + CHUNK_SIZE));
@@ -144,6 +149,10 @@ export default function GalleryPage() {
       // Write each chunk
       for (let i = 0; i < chunks.length; i++) {
         await setDoc(doc(db, 'settings', `gallery_${i}`), { photos: chunks[i] });
+      }
+      // Clean up leftover old chunks
+      for (let i = chunks.length; i < existingCount; i++) {
+        try { await setDoc(doc(db, 'settings', `gallery_${i}`), { photos: [] }); } catch (e) {}
       }
 
       // Update index
@@ -165,6 +174,11 @@ export default function GalleryPage() {
   const handleDeletePhoto = async (photo) => {
     if (!window.confirm('Delete this photo?')) return;
     try {
+      // Delete from Firebase Storage if it has a fileName
+      if (photo.fileName) {
+        try { await deleteObject(ref(storage, photo.fileName)); } catch (e) { console.warn('Storage delete skipped:', e); }
+      }
+
       // Load all photos
       const indexSnap = await getDoc(doc(db, 'settings', 'galleryIndex'));
       const existingCount = indexSnap.exists() ? (indexSnap.data().count || 0) : 0;
@@ -180,7 +194,7 @@ export default function GalleryPage() {
       allPhotos = allPhotos.filter(p => p.id !== photo.id);
 
       // Re-chunk and save
-      const CHUNK_SIZE = 4;
+      const CHUNK_SIZE = 20;
       const chunks = [];
       for (let i = 0; i < allPhotos.length; i += CHUNK_SIZE) {
         chunks.push(allPhotos.slice(i, i + CHUNK_SIZE));
