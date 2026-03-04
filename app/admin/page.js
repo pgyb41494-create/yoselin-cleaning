@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -529,8 +529,8 @@ export default function AdminPage() {
     { key: 'calendar',     label: 'Calendar'     },
     { key: 'availability', label: 'Availability' },
     { key: 'create',       label: 'Create Quote' },
-    { key: 'gallery',      label: '📷 Gallery'   },
-    { key: 'pricing',      label: '💰 Pricing'   },
+    { key: 'gallery',      label: 'ðŸ“· Gallery'   },
+    { key: 'pricing',      label: 'ðŸ’° Pricing'   },
   ];
 
   const btnStyle = (color) => ({
@@ -744,7 +744,7 @@ export default function AdminPage() {
                       ))}
                       {daySched.slice(0, 1).map(e => (
                         <div key={e.id} style={{ background: 'rgba(168,85,247,.15)', border: '1px solid rgba(168,85,247,.35)', color: '#c084fc', fontSize: '.63rem', fontWeight: '700', padding: '2px 6px', borderRadius: '5px', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          ↻ {e.clientName?.split(' ')[0] || 'Recurring'}
+                          â†» {e.clientName?.split(' ')[0] || 'Recurring'}
                         </div>
                       ))}
                       {totalDots > 3 && <div style={{ fontSize: '.62rem', color: '#6b7280', fontWeight: '700', marginTop: '2px' }}>+{totalDots-3} more</div>}
@@ -757,7 +757,7 @@ export default function AdminPage() {
               <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #222', marginTop: '20px', overflow: 'hidden' }}>
                 <div style={{ padding: '14px 20px', borderBottom: '1px solid #222', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ fontWeight: '700', color: 'white' }}>{MONTH_NAMES[calMonth]} {calSelected}</div>
-                  <button onClick={() => setCalSelected(null)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.1rem' }}>×</button>
+                  <button onClick={() => setCalSelected(null)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.1rem' }}>Ã—</button>
                 </div>
                 {getRequestsForDay(calSelected).map(r => (
                   <div key={r.id} style={{ padding: '14px 20px', borderBottom: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
@@ -877,11 +877,11 @@ export default function AdminPage() {
                 {/* Quick preset buttons */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
                   {[
-                    { label: '🌅 Morning',   times: ALL_TIMES.slice(0, 12) },
-                    { label: '☀ Afternoon', times: ALL_TIMES.slice(12, 22) },
-                    { label: '🌆 Evening',   times: ALL_TIMES.slice(22) },
-                    { label: '📅 All Day',   times: ALL_TIMES },
-                    { label: '✕ Clear',      times: [] },
+                    { label: 'ðŸŒ… Morning',   times: ALL_TIMES.slice(0, 12) },
+                    { label: 'â˜€ Afternoon', times: ALL_TIMES.slice(12, 22) },
+                    { label: 'ðŸŒ† Evening',   times: ALL_TIMES.slice(22) },
+                    { label: 'ðŸ“… All Day',   times: ALL_TIMES },
+                    { label: 'âœ• Clear',      times: [] },
                   ].map(({ label, times }) => (
                     <button key={label} onClick={() => setSelectedTimes(times)} style={{ padding: '7px 13px', borderRadius: '99px', border: '1px solid #2a2a2a', background: '#1a1a1a', color: '#d1d5db', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}>{label}</button>
                   ))}
@@ -958,7 +958,7 @@ export default function AdminPage() {
               <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #1f1f1f', overflow: 'hidden', marginTop: '20px' }}>
                 <div style={{ padding: '14px 18px', borderBottom: '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ color: '#9ca3af', fontSize: '.75rem', fontWeight: '700', letterSpacing: '.4px', textTransform: 'uppercase' }}>Saved Slots ({availability.length} total)</div>
-                  <button onClick={clearAllAvailability} style={{ padding: '6px 14px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.4)', color: '#ef4444', borderRadius: '8px', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer' }}>🗑 Clear All</button>
+                  <button onClick={clearAllAvailability} style={{ padding: '6px 14px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.4)', color: '#ef4444', borderRadius: '8px', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer' }}>ðŸ—‘ Clear All</button>
                 </div>
                 <div style={{ padding: '14px 18px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {(() => {
@@ -968,13 +968,13 @@ export default function AdminPage() {
                       <div key={date} style={{ background: '#151515', borderRadius: '12px', border: '1px solid #222', padding: '10px 14px', minWidth: '160px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '7px', gap: '8px' }}>
                           <div style={{ fontSize: '.72rem', fontWeight: '700', color: '#a855f7', textTransform: 'uppercase' }}>{date}</div>
-                          <button onClick={() => clearDateSlots(slots)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.8rem', padding: '0', lineHeight: 1, fontWeight: '700' }}>🗑</button>
+                          <button onClick={() => clearDateSlots(slots)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.8rem', padding: '0', lineHeight: 1, fontWeight: '700' }}>ðŸ—‘</button>
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                           {slots.map(s => (
                             <span key={s.id} style={{ background: '#1a1a1a', color: '#d1d5db', fontSize: '.7rem', fontWeight: '700', padding: '3px 8px', borderRadius: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               {s.time}
-                              <button onClick={() => deleteDoc(doc(db, 'availability', s.id))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.72rem', padding: '0', lineHeight: 1 }}>×</button>
+                              <button onClick={() => deleteDoc(doc(db, 'availability', s.id))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.72rem', padding: '0', lineHeight: 1 }}>Ã—</button>
                             </span>
                           ))}
                         </div>
@@ -992,10 +992,10 @@ export default function AdminPage() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
               <div>
-                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white' }}>📷 Gallery Manager</div>
-                <div style={{ fontSize: '.8rem', color: '#6b7280', marginTop: '3px' }}>{galleryPhotos.length} photo{galleryPhotos.length !== 1 ? 's' : ''} · visible at <a href="/gallery" target="_blank" style={{ color: '#a855f7', textDecoration: 'none' }}>/gallery</a></div>
+                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white' }}>ðŸ“· Gallery Manager</div>
+                <div style={{ fontSize: '.8rem', color: '#6b7280', marginTop: '3px' }}>{galleryPhotos.length} photo{galleryPhotos.length !== 1 ? 's' : ''} Â· visible at <a href="/gallery" target="_blank" style={{ color: '#a855f7', textDecoration: 'none' }}>/gallery</a></div>
               </div>
-              {galleryUploadDone && <span style={{ fontSize: '.85rem', color: '#10b981', fontWeight: '700' }}>✅ Uploaded!</span>}
+              {galleryUploadDone && <span style={{ fontSize: '.85rem', color: '#10b981', fontWeight: '700' }}>âœ… Uploaded!</span>}
             </div>
 
             {/* Upload Box */}
@@ -1005,10 +1005,10 @@ export default function AdminPage() {
               {/* File picker */}
               <label style={{ display: 'block', marginBottom: '16px', cursor: 'pointer' }}>
                 <div style={{ background: '#1a1a1a', border: '1.5px solid #333', borderRadius: '12px', padding: '20px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📁</div>
+                  <div style={{ fontSize: '2rem', marginBottom: '8px' }}>ðŸ“</div>
                   <div style={{ fontWeight: '700', color: '#a855f7', fontSize: '.88rem', marginBottom: '4px' }}>Click to choose photos</div>
-                  <div style={{ fontSize: '.75rem', color: '#6b7280' }}>JPG, PNG · Multiple allowed · From your phone or computer</div>
-                  {galleryFiles.length > 0 && <div style={{ marginTop: '10px', fontSize: '.82rem', color: '#10b981', fontWeight: '700' }}>✅ {galleryFiles.length} file{galleryFiles.length !== 1 ? 's' : ''} selected</div>}
+                  <div style={{ fontSize: '.75rem', color: '#6b7280' }}>JPG, PNG Â· Multiple allowed Â· From your phone or computer</div>
+                  {galleryFiles.length > 0 && <div style={{ marginTop: '10px', fontSize: '.82rem', color: '#10b981', fontWeight: '700' }}>âœ… {galleryFiles.length} file{galleryFiles.length !== 1 ? 's' : ''} selected</div>}
                 </div>
                 <input type="file" accept="image/*" multiple onChange={e => setGalleryFiles(Array.from(e.target.files))} style={{ display: 'none' }} />
               </label>
@@ -1023,9 +1023,9 @@ export default function AdminPage() {
                   <label style={{ display: 'block', fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>Category</label>
                   <select value={galleryCategory} onChange={e => setGalleryCategory(e.target.value)}
                     style={{ width: '100%', padding: '9px 13px', background: '#1a1a1a', border: '1.5px solid #2a2a2a', borderRadius: '9px', color: 'white', fontSize: '.83rem', outline: 'none' }}>
-                    <option value="before">🔴 Before</option>
-                    <option value="after">✅ After</option>
-                    <option value="featured">⭐ Featured</option>
+                    <option value="before">ðŸ”´ Before</option>
+                    <option value="after">âœ… After</option>
+                    <option value="featured">â­ Featured</option>
                   </select>
                 </div>
               </div>
@@ -1038,7 +1038,7 @@ export default function AdminPage() {
 
               <button onClick={uploadGalleryPhotos} disabled={galleryUploading || galleryFiles.length === 0}
                 style={{ width: '100%', padding: '14px', background: galleryFiles.length > 0 ? 'linear-gradient(135deg,#a855f7,#db2777)' : '#1f1f1f', color: galleryFiles.length > 0 ? 'white' : '#555', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.92rem', cursor: galleryFiles.length > 0 ? 'pointer' : 'not-allowed', opacity: galleryUploading ? .7 : 1 }}>
-                {galleryUploading ? '⏳ Uploading...' : galleryFiles.length === 0 ? 'Select photos first' : `📤 Upload ${galleryFiles.length} Photo${galleryFiles.length !== 1 ? 's' : ''}`}
+                {galleryUploading ? 'â³ Uploading...' : galleryFiles.length === 0 ? 'Select photos first' : `ðŸ“¤ Upload ${galleryFiles.length} Photo${galleryFiles.length !== 1 ? 's' : ''}`}
               </button>
             </div>
 
@@ -1054,7 +1054,7 @@ export default function AdminPage() {
                         <div style={{ position: 'absolute', top: '6px', left: '6px', background: photo.category === 'before' ? '#ef4444' : photo.category === 'after' ? '#10b981' : '#a855f7', color: 'white', fontSize: '.6rem', fontWeight: '800', padding: '2px 7px', borderRadius: '99px', textTransform: 'uppercase' }}>
                           {photo.category}
                         </div>
-                        <button onClick={() => deleteGalleryPhoto(photo)} style={{ position: 'absolute', top: '6px', right: '6px', width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(239,68,68,.85)', border: 'none', color: 'white', cursor: 'pointer', fontSize: '.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                        <button onClick={() => deleteGalleryPhoto(photo)} style={{ position: 'absolute', top: '6px', right: '6px', width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(239,68,68,.85)', border: 'none', color: 'white', cursor: 'pointer', fontSize: '.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Ã—</button>
                       </div>
                       <div style={{ padding: '9px 12px' }}>
                         <div style={{ fontWeight: '700', color: 'white', fontSize: '.78rem', marginBottom: '2px' }}>{photo.label}</div>
@@ -1077,7 +1077,7 @@ export default function AdminPage() {
                 <div style={{ fontSize: '.8rem', color: '#6b7280', marginTop: '3px' }}>Tap a field, type the new price, then tap outside ? changes are saved when you press Save</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {priceSaved && <span style={{ fontSize: '.82rem', color: '#10b981', fontWeight: '700' }}>✅ Saved!</span>}
+                {priceSaved && <span style={{ fontSize: '.82rem', color: '#10b981', fontWeight: '700' }}>âœ… Saved!</span>}
                 <button onClick={savePricing} disabled={priceSaving} style={{ padding: '11px 24px', background: 'linear-gradient(135deg,#a855f7,#db2777)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer', opacity: priceSaving ? .6 : 1 }}>
                   {priceSaving ? 'Saving...' : 'Save All Prices'}
                 </button>
@@ -1127,7 +1127,7 @@ export default function AdminPage() {
             </PriceCard>
 
             <div style={{ background: 'rgba(168,85,247,.06)', border: '1px solid rgba(168,85,247,.2)', borderRadius: '14px', padding: '14px 18px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>💡</span>
+              <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>ðŸ’¡</span>
               <div style={{ fontSize: '.82rem', color: '#9ca3af', lineHeight: 1.6 }}>
                 Tap any field and type the new value. The keyboard stays open while you move between fields. Hit <strong style={{ color: 'white' }}>Save All Prices</strong> when done ? changes apply instantly on the booking form.
               </div>
@@ -1218,77 +1218,77 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Details Grid — two clean columns */}
+            {/* Details Grid â€” two clean columns */}
             <div style={{ margin: '0 24px', borderRadius: '14px', border: '1px solid #232a3a', overflow: 'hidden', background: '#161c28' }}>
               {/* Contact row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid #232a3a' }}>
                 <div style={{ padding: '14px 18px', borderRight: '1px solid #232a3a' }}>
-                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>📧 Email</div>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>ðŸ“§ Email</div>
                   <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db', wordBreak: 'break-all' }}>{selected.email}</div>
                 </div>
                 <div style={{ padding: '14px 18px' }}>
-                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🕒 Submitted</div>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>ðŸ•’ Submitted</div>
                   <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db' }}>{selected.submittedAt}</div>
                 </div>
               </div>
               {/* Address full width */}
               <div style={{ padding: '14px 18px', borderBottom: '1px solid #232a3a' }}>
-                <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>📍 Address</div>
+                <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>ðŸ“ Address</div>
                 <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db' }}>{selected.address || 'N/A'}</div>
               </div>
               {/* Bathrooms + Rooms */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid #232a3a' }}>
                 <div style={{ padding: '14px 18px', borderRight: '1px solid #232a3a' }}>
-                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🚿 Bathrooms</div>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>ðŸš¿ Bathrooms</div>
                   <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db', lineHeight: 1.5 }}>{selected.bathrooms || 'None'}</div>
                 </div>
                 <div style={{ padding: '14px 18px' }}>
-                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🛏 Rooms</div>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>ðŸ› Rooms</div>
                   <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db', lineHeight: 1.5 }}>{selected.rooms || 'None'}</div>
                 </div>
               </div>
               {/* Add-ons full width */}
               <div style={{ padding: '14px 18px', borderBottom: '1px solid #232a3a' }}>
-                <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>✨ Add-Ons</div>
+                <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>âœ¨ Add-Ons</div>
                 <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db' }}>{selected.addons || 'None'}</div>
               </div>
               {/* Pets + Walk-through */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid #232a3a' }}>
                 <div style={{ padding: '14px 18px', borderRight: '1px solid #232a3a' }}>
-                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🐾 Pets</div>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>ðŸ¾ Pets</div>
                   <div style={{ fontSize: '.84rem', fontWeight: '600', color: selected.pets === 'yes' ? '#f59e0b' : '#d1d5db' }}>{selected.pets === 'yes' ? 'Yes' : 'No'}</div>
                 </div>
                 <div style={{ padding: '14px 18px' }}>
-                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🏠 Walk-Through</div>
-                  <div style={{ fontSize: '.84rem', fontWeight: '600', color: (selected.walkthrough === 'Yes' || selected.walkThrough === 'yes') ? '#f59e0b' : '#d1d5db' }}>{(selected.walkthrough === 'Yes' || selected.walkThrough === 'yes') ? 'Yes ⚠️' : 'No'}</div>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>ðŸ  Walk-Through</div>
+                  <div style={{ fontSize: '.84rem', fontWeight: '600', color: (selected.walkthrough === 'Yes' || selected.walkThrough === 'yes') ? '#f59e0b' : '#d1d5db' }}>{(selected.walkthrough === 'Yes' || selected.walkThrough === 'yes') ? 'Yes âš ï¸' : 'No'}</div>
                 </div>
               </div>
               {/* Discounts */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid #232a3a' }}>
                 <div style={{ padding: '14px 18px', borderRight: '1px solid #232a3a' }}>
-                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🎁 First-Time</div>
-                  <div style={{ fontSize: '.84rem', fontWeight: '600', color: selected.firstTime === 'yes' ? '#10b981' : '#d1d5db' }}>{selected.firstTime === 'yes' ? 'Yes — 10% off' : 'No'}</div>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>ðŸŽ First-Time</div>
+                  <div style={{ fontSize: '.84rem', fontWeight: '600', color: selected.firstTime === 'yes' ? '#10b981' : '#d1d5db' }}>{selected.firstTime === 'yes' ? 'Yes â€” 10% off' : 'No'}</div>
                 </div>
                 <div style={{ padding: '14px 18px' }}>
-                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>👴 Senior</div>
-                  <div style={{ fontSize: '.84rem', fontWeight: '600', color: selected.senior === 'yes' ? '#10b981' : '#d1d5db' }}>{selected.senior === 'yes' ? 'Yes — 10% off' : 'No'}</div>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>ðŸ‘´ Senior</div>
+                  <div style={{ fontSize: '.84rem', fontWeight: '600', color: selected.senior === 'yes' ? '#10b981' : '#d1d5db' }}>{selected.senior === 'yes' ? 'Yes â€” 10% off' : 'No'}</div>
                 </div>
               </div>
               {/* Access + Referral */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: selected.otherRequests ? '1px solid #232a3a' : 'none' }}>
                 <div style={{ padding: '14px 18px', borderRight: '1px solid #232a3a' }}>
-                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🔑 Home Access</div>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>ðŸ”‘ Home Access</div>
                   <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db' }}>{selected.access || 'N/A'}</div>
                 </div>
                 <div style={{ padding: '14px 18px' }}>
-                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>📣 Referral</div>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>ðŸ“£ Referral</div>
                   <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db' }}>{selected.referral || 'N/A'}</div>
                 </div>
               </div>
               {/* Other requests */}
               {selected.otherRequests && (
                 <div style={{ padding: '14px 18px' }}>
-                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>💬 Other Requests</div>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>ðŸ’¬ Other Requests</div>
                   <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db', lineHeight: 1.5 }}>{selected.otherRequests}</div>
                 </div>
               )}
