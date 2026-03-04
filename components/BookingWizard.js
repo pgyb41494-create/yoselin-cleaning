@@ -313,20 +313,20 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                 {/* ── VISUAL CALENDAR DATE PICKER ── */}
                 {availDates.length > 0 ? (
                   <div style={{ marginTop: '4px' }}>
-                    <label style={{ marginBottom: '10px', display: 'block' }}>Preferred Date <span style={{ color: '#ef4444' }}>*</span></label>
-                    <div style={{ background: '#151515', borderRadius: '16px', border: '1.5px solid #2a2a2a', padding: '16px', marginBottom: '14px' }}>
+                    <label style={{ marginBottom: '8px', display: 'block' }}>Preferred Date <span style={{ color: '#ef4444' }}>*</span></label>
+                    <div style={{ background: '#131313', borderRadius: '14px', border: '1px solid #232323', padding: '12px 12px 10px', marginBottom: '12px' }}>
                       {/* Month nav */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                        <button type="button" onClick={prevMonth} disabled={!canGoPrev} style={{ background: canGoPrev ? '#222' : 'transparent', border: '1px solid #333', color: canGoPrev ? '#d1d5db' : '#333', borderRadius: '8px', padding: '5px 11px', cursor: canGoPrev ? 'pointer' : 'default', fontWeight: '700', fontSize: '.82rem' }}>&lt;</button>
-                        <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: '700', color: 'white', fontSize: '.95rem' }}>{MONTH_NAMES[calMonth]} {calYear}</div>
-                        <button type="button" onClick={nextMonth} style={{ background: '#222', border: '1px solid #333', color: '#d1d5db', borderRadius: '8px', padding: '5px 11px', cursor: 'pointer', fontWeight: '700', fontSize: '.82rem' }}>&gt;</button>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                        <button type="button" onClick={prevMonth} disabled={!canGoPrev} style={{ background: 'none', border: 'none', color: canGoPrev ? '#9ca3af' : '#2a2a2a', cursor: canGoPrev ? 'pointer' : 'default', fontSize: '1.1rem', padding: '2px 8px', lineHeight: 1 }}>&#x2039;</button>
+                        <div style={{ fontSize: '.8rem', fontWeight: '700', color: 'white', letterSpacing: '.3px' }}>{MONTH_NAMES[calMonth].slice(0,3)} {calYear}</div>
+                        <button type="button" onClick={nextMonth} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.1rem', padding: '2px 8px', lineHeight: 1 }}>&#x203A;</button>
                       </div>
                       {/* Day headers */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '4px' }}>
-                        {DAY_LABELS.map(d => <div key={d} style={{ textAlign: 'center', fontSize: '.62rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', padding: '4px 0' }}>{d}</div>)}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '3px' }}>
+                        {DAY_LABELS.map(d => <div key={d} style={{ textAlign: 'center', fontSize: '.58rem', fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', padding: '2px 0' }}>{d[0]}</div>)}
                       </div>
                       {/* Day grid */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
                         {Array.from({ length: calFirstDay }).map((_, i) => <div key={'e'+i} />)}
                         {Array.from({ length: calDaysInMonth }).map((_, i) => {
                           const day = i + 1;
@@ -344,51 +344,67 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                               setF('date', key); setF('time', '');
                             }} style={{
                               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                              aspectRatio: '1', borderRadius: '10px', padding: '2px', position: 'relative',
-                              border: isSelected ? '2px solid #a855f7' : isToday ? '1.5px solid #555' : '1px solid transparent',
-                              background: isSelected ? 'linear-gradient(135deg, rgba(168,85,247,.25), rgba(219,39,119,.15))' : canClick ? 'rgba(168,85,247,.06)' : 'transparent',
-                              color: isPast ? '#2a2a2a' : isSelected ? '#e9d5ff' : hasSlots ? '#d1d5db' : '#3a3a3a',
+                              height: '32px', borderRadius: '7px', padding: '0',
+                              border: isSelected ? '1.5px solid #a855f7' : isToday ? '1px solid #3a3a3a' : '1px solid transparent',
+                              background: isSelected ? 'linear-gradient(135deg,#a855f7,#db2777)' : canClick ? 'rgba(168,85,247,.07)' : 'transparent',
+                              color: isPast ? '#282828' : isSelected ? 'white' : hasSlots ? '#d1d5db' : '#333',
                               cursor: canClick ? 'pointer' : 'default',
-                              fontWeight: isSelected ? '800' : '600', fontSize: '.82rem',
-                              transition: 'all .15s',
+                              fontWeight: isSelected ? '800' : '500', fontSize: '.78rem',
+                              transition: 'all .12s', gap: '1px',
                             }}>
-                              {day}
+                              <span style={{ lineHeight: 1 }}>{day}</span>
                               {hasSlots && !isPast && (
-                                <span style={{ fontSize: '.52rem', fontWeight: '800', color: isSelected ? '#e9d5ff' : slotCount <= 2 ? '#f59e0b' : '#10b981', marginTop: '1px', lineHeight: 1 }}>
-                                  {slotCount} slot{slotCount !== 1 ? 's' : ''}
-                                </span>
+                                <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: isSelected ? 'rgba(255,255,255,.7)' : slotCount <= 2 ? '#f59e0b' : '#10b981', flexShrink: 0 }} />
                               )}
                             </button>
                           );
                         })}
                       </div>
-                      {/* Selected date display */}
+                      {/* Legend + clear */}
+                      <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                            <span style={{ fontSize: '.6rem', color: '#6b7280' }}>Available</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} />
+                            <span style={{ fontSize: '.6rem', color: '#6b7280' }}>Filling up</span>
+                          </div>
+                        </div>
+                        {form.date && (
+                          <button type="button" onClick={() => { setF('date', ''); setF('time', ''); }} style={{ background: 'none', border: 'none', color: '#4b5563', fontSize: '.65rem', fontWeight: '700', cursor: 'pointer', textDecoration: 'underline' }}>Clear</button>
+                        )}
+                      </div>
                       {form.date && (
-                        <div style={{ marginTop: '12px', padding: '8px 12px', background: 'rgba(168,85,247,.1)', border: '1px solid rgba(168,85,247,.25)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: '.8rem', fontWeight: '700', color: '#d8b4fe' }}>📅 {form.date}</span>
-                          <button type="button" onClick={() => { setF('date', ''); setF('time', ''); }} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '.72rem', fontWeight: '700', cursor: 'pointer' }}>Clear</button>
+                        <div style={{ marginTop: '8px', padding: '6px 10px', background: 'rgba(168,85,247,.1)', border: '1px solid rgba(168,85,247,.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '.7rem' }}>&#x1F4C5;</span>
+                          <span style={{ fontSize: '.75rem', fontWeight: '700', color: '#c4b5fd' }}>{form.date}</span>
                         </div>
                       )}
                     </div>
 
                     {/* Time slots */}
-                    <label style={{ marginBottom: '8px', display: 'block' }}>Preferred Time</label>
                     {form.date && timesForDate.length > 0 ? (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
-                        {timesForDate.map(tm => (
-                          <button key={tm} type="button" onClick={() => setF('time', tm)} style={{
-                            padding: '10px 16px', borderRadius: '10px',
-                            border: form.time === tm ? '2px solid #a855f7' : '1.5px solid #2a2a2a',
-                            background: form.time === tm ? 'linear-gradient(135deg, rgba(168,85,247,.25), rgba(219,39,119,.12))' : '#151515',
-                            color: form.time === tm ? '#e9d5ff' : '#9ca3af',
-                            fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.8rem',
-                            cursor: 'pointer', transition: 'all .15s',
-                          }}>{tm}</button>
-                        ))}
+                      <div>
+                        <label style={{ marginBottom: '7px', display: 'block', fontSize: '.78rem' }}>Preferred Time</label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {timesForDate.map(tm => (
+                            <button key={tm} type="button" onClick={() => setF('time', tm)} style={{
+                              padding: '8px 14px', borderRadius: '8px',
+                              border: form.time === tm ? '1.5px solid #a855f7' : '1px solid #232323',
+                              background: form.time === tm ? 'rgba(168,85,247,.15)' : '#131313',
+                              color: form.time === tm ? '#d8b4fe' : '#6b7280',
+                              fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.76rem',
+                              cursor: 'pointer', transition: 'all .12s',
+                            }}>{tm}</button>
+                          ))}
+                        </div>
                       </div>
                     ) : form.date ? (
-                      <div style={{ color: '#6b7280', fontSize: '.82rem', padding: '10px 0' }}>No time slots for this date</div>
-                    ) : (
+                      <div style={{ color: '#4b5563', fontSize: '.78rem', padding: '6px 0' }}>No time slots for this date</div>
+                    ) : null}
+                  </div>                ) : (
                       <div style={{ color: '#6b7280', fontSize: '.82rem', padding: '10px 0' }}>Pick a date first</div>
                     )}
                   </div>
