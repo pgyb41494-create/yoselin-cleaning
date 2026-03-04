@@ -677,9 +677,32 @@ export default function AdminPage() {
                             <div style={{ fontSize: '.75rem', color: '#6b7280' }}>{r.phone || r.email}</div>
                             {r.adminNotes && <div style={{ fontSize: '.72rem', color: '#a855f7', marginTop: '2px' }}>Note: {r.adminNotes.slice(0, 45)}{r.adminNotes.length > 45 ? '?' : ''}</div>}
                           </td>
-                          <td style={{ padding: '12px 15px', fontSize: '.83rem', color: '#d1d5db', whiteSpace: 'nowrap' }}>
-                            {r.date || '?'}
-                            {r.time && r.time !== 'N/A' && <div style={{ fontSize: '.72rem', color: '#6b7280' }}>{r.time}</div>}
+                          <td style={{ padding: '12px 15px', whiteSpace: 'nowrap' }}>
+                            {(() => {
+                              const d = r.date && r.date !== 'N/A' && r.date !== 'TBD' ? parseDateString(r.date) : null;
+                              if (d) {
+                                const dn = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+                                const mn = MONTH_NAMES[d.getMonth()].slice(0,3);
+                                return (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <div style={{ width: '38px', height: '42px', borderRadius: '8px', background: 'linear-gradient(135deg, rgba(168,85,247,.2), rgba(219,39,119,.1))', border: '1px solid rgba(168,85,247,.2)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                      <div style={{ fontSize: '.42rem', fontWeight: '800', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '.5px', lineHeight: 1 }}>{mn}</div>
+                                      <div style={{ fontSize: '1rem', fontWeight: '900', color: 'white', lineHeight: 1.1 }}>{d.getDate()}</div>
+                                    </div>
+                                    <div>
+                                      <div style={{ fontSize: '.82rem', fontWeight: '700', color: '#d1d5db' }}>{dn}, {mn} {d.getDate()}</div>
+                                      {r.time && r.time !== 'N/A' && <div style={{ fontSize: '.72rem', color: '#a78bfa', fontWeight: '600', marginTop: '1px' }}>{r.time}</div>}
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <div>
+                                  <div style={{ fontSize: '.83rem', color: '#d1d5db' }}>{r.date || '—'}</div>
+                                  {r.time && r.time !== 'N/A' && <div style={{ fontSize: '.72rem', color: '#6b7280' }}>{r.time}</div>}
+                                </div>
+                              );
+                            })()}
                           </td>
                           <td style={{ padding: '12px 15px' }}>
                             <strong style={{ color: '#60a5fa', fontFamily: 'Playfair Display,serif', fontSize: '1rem' }}>${r.estimate}</strong>
@@ -1202,18 +1225,62 @@ export default function AdminPage() {
                     {estimateSaved && <span style={{ fontSize: '.72rem', color: '#10b981', fontWeight: '700' }}>Saved!</span>}
                   </div>
                 </div>
-                <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
-                  {[
-                    ['\uD83D\uDCC5', 'Date', selected.date || 'TBD'],
-                    ['\uD83D\uDD52', 'Time', selected.time || 'TBD'],
-                    ['\uD83D\uDCF1', 'Phone', selected.phone || 'N/A'],
-                    ['\uD83D\uDD01', 'Frequency', selected.frequency || 'once'],
-                  ].map(([ico, label, val], i) => (
-                    <div key={label} style={{ padding: '12px 16px', borderBottom: i < 2 ? '1px solid #2a3345' : 'none', borderRight: i % 2 === 0 ? '1px solid #2a3345' : 'none' }}>
-                      <div style={{ fontSize: '.62rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '3px' }}>{ico} {label}</div>
-                      <div style={{ fontSize: '.88rem', fontWeight: '700', color: 'white' }}>{val}</div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  {/* Date & Time - styled card */}
+                  {(() => {
+                    const dateStr = selected.date || 'TBD';
+                    const parsed = dateStr !== 'TBD' && dateStr !== 'N/A' ? parseDateString(dateStr) : null;
+                    const dayName = parsed ? ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][parsed.getDay()] : '';
+                    const monthName = parsed ? MONTH_NAMES[parsed.getMonth()] : '';
+                    const dayNum = parsed ? parsed.getDate() : '';
+                    const year = parsed ? parsed.getFullYear() : '';
+                    return (
+                      <div style={{ borderBottom: '1px solid #2a3345' }}>
+                        <div style={{ padding: '10px 16px', background: 'rgba(168,85,247,.06)', borderBottom: '1px solid #232a3a', display: 'flex', alignItems: 'center', gap: '7px' }}>
+                          <span style={{ fontSize: '.72rem' }}>\uD83D\uDCC5</span>
+                          <span style={{ fontSize: '.6rem', fontWeight: '800', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '1px' }}>Preferred Date & Time</span>
+                        </div>
+                        <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                          {parsed ? (
+                            <div style={{ width: '58px', flexShrink: 0, borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(168,85,247,.25)', border: '1px solid rgba(168,85,247,.25)' }}>
+                              <div style={{ background: 'linear-gradient(135deg, #a855f7, #db2777)', padding: '4px 0 2px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '.5rem', fontWeight: '800', color: 'rgba(255,255,255,.9)', textTransform: 'uppercase', letterSpacing: '1.2px', lineHeight: 1 }}>{monthName.slice(0,3)}</div>
+                              </div>
+                              <div style={{ background: '#1a1a2e', padding: '6px 0 5px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '1.4rem', fontWeight: '900', color: 'white', lineHeight: 1 }}>{dayNum}</div>
+                                <div style={{ fontSize: '.48rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.5px', marginTop: '1px' }}>{dayName.slice(0,3)}</div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ width: '58px', height: '58px', borderRadius: '12px', background: '#1a1a2e', border: '1px solid #2a2a2a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.3rem' }}>\uD83D\uDCC5</div>
+                          )}
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '.9rem', fontWeight: '800', color: 'white', lineHeight: 1.2, marginBottom: '1px' }}>
+                              {parsed ? `${dayName}, ${monthName} ${dayNum}` : dateStr}
+                            </div>
+                            {year && <div style={{ fontSize: '.7rem', fontWeight: '600', color: '#6b7280' }}>{year}</div>}
+                          </div>
+                          {(selected.time && selected.time !== 'N/A' && selected.time !== 'TBD') && (
+                            <div style={{ background: 'rgba(168,85,247,.1)', border: '1px solid rgba(168,85,247,.2)', borderRadius: '10px', padding: '8px 14px', textAlign: 'center', flexShrink: 0 }}>
+                              <div style={{ fontSize: '.46rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '3px' }}>Time</div>
+                              <div style={{ fontSize: '.88rem', fontWeight: '800', color: '#d8b4fe' }}>{selected.time}</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {/* Phone & Frequency */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+                    <div style={{ padding: '12px 16px', borderRight: '1px solid #2a3345' }}>
+                      <div style={{ fontSize: '.62rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '3px' }}>\uD83D\uDCF1 Phone</div>
+                      <div style={{ fontSize: '.88rem', fontWeight: '700', color: 'white' }}>{selected.phone || 'N/A'}</div>
                     </div>
-                  ))}
+                    <div style={{ padding: '12px 16px' }}>
+                      <div style={{ fontSize: '.62rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '3px' }}>\uD83D\uDD01 Frequency</div>
+                      <div style={{ fontSize: '.88rem', fontWeight: '700', color: 'white' }}>{selected.frequency || 'once'}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
