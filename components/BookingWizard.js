@@ -580,6 +580,53 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
           <div>
             <div className="page-title">Review and Submit</div>
             <div className="page-sub">Add any notes and submit your request</div>
+
+            {/* Date & Time Summary Card */}
+            {(form.date || form.time) && (() => {
+              const parsed = form.date ? new Date(form.date) : null;
+              const dayName = parsed && !isNaN(parsed) ? ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][parsed.getDay()] : '';
+              const monthName = parsed && !isNaN(parsed) ? MONTH_NAMES[parsed.getMonth()] : '';
+              const dayNum = parsed && !isNaN(parsed) ? parsed.getDate() : '';
+              const year = parsed && !isNaN(parsed) ? parsed.getFullYear() : '';
+              return (
+                <div style={{ background: '#111', border: '1.5px solid #2a2a2a', borderRadius: '18px', overflow: 'hidden', marginBottom: '18px' }}>
+                  <div style={{ padding: '12px 18px', background: 'linear-gradient(135deg, rgba(168,85,247,.12), rgba(219,39,119,.06))', borderBottom: '1px solid #2a2a2a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '.78rem' }}>\uD83D\uDCC5</span>
+                    <span style={{ fontSize: '.68rem', fontWeight: '800', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '1px' }}>Preferred Date & Time</span>
+                  </div>
+                  <div style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '18px' }}>
+                    {parsed && !isNaN(parsed) ? (
+                      <div style={{ width: '76px', flexShrink: 0, borderRadius: '14px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(168,85,247,.25)', border: '1px solid rgba(168,85,247,.3)' }}>
+                        <div style={{ background: 'linear-gradient(135deg, #a855f7, #db2777)', padding: '5px 0 3px', textAlign: 'center' }}>
+                          <div style={{ fontSize: '.6rem', fontWeight: '800', color: 'rgba(255,255,255,.9)', textTransform: 'uppercase', letterSpacing: '1.5px', lineHeight: 1 }}>{monthName.slice(0,3)}</div>
+                        </div>
+                        <div style={{ background: '#1a1a2e', padding: '8px 0 6px', textAlign: 'center' }}>
+                          <div style={{ fontSize: '1.8rem', fontWeight: '900', color: 'white', lineHeight: 1 }}>{dayNum}</div>
+                          <div style={{ fontSize: '.58rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.6px', marginTop: '2px' }}>{dayName.slice(0,3)}</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ width: '76px', height: '76px', borderRadius: '14px', background: '#1a1a2e', border: '1px solid #2a2a2a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.6rem' }}>\uD83D\uDCC5</div>
+                    )}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '1.05rem', fontWeight: '800', color: 'white', lineHeight: 1.3, marginBottom: '2px' }}>
+                        {parsed && !isNaN(parsed) ? `${dayName}, ${monthName} ${dayNum}` : form.date}
+                      </div>
+                      {year && <div style={{ fontSize: '.78rem', fontWeight: '600', color: '#6b7280', marginBottom: '6px' }}>{year}</div>}
+                      {form.time && form.time !== 'N/A' && (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(168,85,247,.12)', border: '1px solid rgba(168,85,247,.2)', borderRadius: '10px', padding: '6px 14px' }}>
+                          <span style={{ fontSize: '.74rem' }}>\uD83D\uDD52</span>
+                          <span style={{ fontSize: '.84rem', fontWeight: '700', color: '#d8b4fe' }}>{form.time}</span>
+                        </div>
+                      )}
+                      {(!form.time || form.time === 'N/A') && (
+                        <div style={{ fontSize: '.78rem', color: '#555', fontStyle: 'italic' }}>No time selected</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
             <div className="wcard">
               <div className="card-header">
                 <div className="card-icon">N</div>
