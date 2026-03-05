@@ -404,9 +404,6 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                     ) : form.date ? (
                       <div style={{ color: '#4b5563', fontSize: '.78rem', padding: '6px 0' }}>No time slots for this date</div>
                     ) : null}
-                  </div>                ) : (
-                      <div style={{ color: '#6b7280', fontSize: '.82rem', padding: '10px 0' }}>Pick a date first</div>
-                    )}
                   </div>
                 ) : (
                   /* Fallback when no availability is set — plain text inputs */
