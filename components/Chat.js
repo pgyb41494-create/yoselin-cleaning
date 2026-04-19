@@ -109,10 +109,11 @@ function Toast({ toast, onDismiss }) {
 }
 
 /* ── Typing indicator ── */
-function TypingIndicator() {
+function TypingIndicator({ name }) {
+  const display = name || 'Typing...';
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-      <div style={{ fontSize: '.68rem', color: '#9ca3af', fontWeight: 700, marginBottom: '3px' }}>Yoselin</div>
+      <div style={{ fontSize: '.68rem', color: '#9ca3af', fontWeight: 700, marginBottom: '3px' }}>{display}</div>
       <div style={{
         background: '#1f1f2e', border: '1px solid #2a2a2a',
         borderRadius: '18px', borderBottomLeftRadius: '5px',
@@ -144,6 +145,7 @@ export default function Chat({
   const [sending, setSending] = useState(false);
   const [sendAnim, setSendAnim] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [typingName, setTypingName] = useState(null);
   const [toasts, setToasts] = useState([]);
   const [newMsgIds, setNewMsgIds] = useState(new Set());
   const bottomRef = useRef(null);
@@ -183,8 +185,11 @@ export default function Chat({
         });
         const fromOther = incoming.filter(m => m.sender !== senderRole);
         if (fromOther.length > 0) {
+          const first = fromOther[0];
+          const name = first.senderName || clientName || (senderRole === 'admin' ? 'Customer' : 'Yoselin');
+          setTypingName(name);
           setIsTyping(true);
-          setTimeout(() => setIsTyping(false), 900);
+          setTimeout(() => { setIsTyping(false); setTypingName(null); }, 900);
           fromOther.forEach(m => {
             setToasts(t => [...t, { id: m.id, senderName: m.senderName || clientName || 'New message', text: m.text }]);
           });
@@ -310,7 +315,7 @@ export default function Chat({
             }}
           >
             {renderMessages()}
-            {isTyping && <TypingIndicator />}
+            {isTyping && <TypingIndicator name={typingName} />}
             <div ref={bottomRef} />
           </div>
 
@@ -405,7 +410,7 @@ export default function Chat({
             background: '#0a0a0a', display: 'flex', flexDirection: 'column', gap: '10px',
           }}>
             {renderMessages()}
-            {isTyping && <TypingIndicator />}
+            {isTyping && <TypingIndicator name={typingName} />}
             <div ref={bottomRef} />
           </div>
 
