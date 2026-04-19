@@ -350,6 +350,7 @@ export default function Chat({
     <>
       {toasts.map(t => <Toast key={t.id} toast={t} onDismiss={() => dismissToast(t.id)} />)}
       <div
+        className="chat-overlay"
         style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)',
           zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center',

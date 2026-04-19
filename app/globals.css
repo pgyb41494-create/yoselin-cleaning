@@ -798,6 +798,89 @@ tr:hover td { background: var(--soft); }
 .am-link-btn:hover { color: #9ca3af; }
 .am-divider { display: flex; align-items: center; gap: 12px; margin: 14px 0; }
 .am-divider::before, .am-divider::after { content: ''; flex: 1; height: 1px; background: #2a2a2a; }
+
+/* ---------------------------------------
+   Mobile helpers & responsive overrides
+   --------------------------------------- */
+
+/* lightweight container utility */
+.container { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+
+/* full-width button helper for stacked mobile actions */
+.btn-block { width: 100%; display: inline-flex; justify-content: center; }
+
+/* ensure site content doesn't get hidden behind the persistent CTA */
+.site-root { padding-bottom: 84px; }
+
+@media (max-width: 900px) {
+  .admin-body, .ad-body, .cd-body, .portal-body { padding-left: 14px; padding-right: 14px; }
+  .ad-tabs { overflow-x: auto; }
+  .ad-new-quote-btn { padding: 9px 12px; font-size: .82rem; }
+  .persistent-book-cta { right: 14px; bottom: 14px; padding: 10px 14px; }
+  .modal { max-width: calc(100% - 32px) !important; border-radius: 14px !important; padding: 18px !important; }
+}
+
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero-sub { max-width: 100%; }
+}
+
+@media (max-width: 600px) {
+  html, body { font-size: 15px; }
+  .nav { padding: 12px 14px; }
+  .nav-brand { font-size: 1rem; }
+  .hero { padding: 28px 18px; min-height: unset; }
+  .hero-title { font-size: clamp(1.6rem, 6vw, 2.6rem); }
+  .hero-btns { flex-direction: column; gap: 10px; }
+
+  /* Homepage specific overrides to beat inline styles */
+  .hp-hero { padding: 28px 18px !important; text-align: center !important; }
+  .hp-hero .btn-primary, .hp-hero .btn-ghost { width: 100% !important; }
+  .hp-nav { padding: 10px 12px !important; height: auto !important; }
+  .hp-nav img { height: 56px !important; }
+
+  /* Make primary actions full-width on mobile by default */
+  .btn, .btn-primary, .btn-pink, .btn-success, .btn-outline-blue { width: 100%; justify-content: center; }
+  .btn-icon { width: 40px; height: 40px; border-radius: 10px; }
+
+  /* Chat panel: force full-width overlay on small screens */
+  .chat-panel-anim, .chat-panel { max-width: 100% !important; width: 100% !important; height: 65vh !important; border-radius: 14px 14px 0 0 !important; margin: 0 !important; }
+  .chat-overlay { align-items: flex-end !important; padding-bottom: 0 !important; }
+  .chat-inline > div { height: auto !important; max-height: 52vh !important; overflow-y: auto !important; }
+
+  /* Modals & window overlays should use nearly full width on small screens */
+  .modal, .win-modal, .sbox { max-width: calc(100% - 24px) !important; width: calc(100% - 24px) !important; border-radius: 12px !important; padding: 14px !important; }
+  .modal-actions, .act-actions { flex-direction: column !important; gap: 10px !important; }
+
+  /* Tables: hide less important columns for readability */
+  .table-wrap { overflow-x: auto; }
+  .table-wrap table th:nth-child(n+5), .table-wrap table td:nth-child(n+5) { display: none; }
+  .table-wrap table th, .table-wrap table td { padding: 8px 10px; font-size: .78rem; }
+
+  /* Admin cards & grids stack vertically */
+  .ad-cards { grid-template-columns: 1fr !important; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Persistent CTA — center & full width with safe margins */
+  .persistent-book-cta { left: 12px; right: 12px; bottom: 12px; padding: 12px 18px; border-radius: 12px; justify-content: center; }
+
+  /* Auth & upload sizing */
+  .auth-card { padding: 28px 20px; }
+  .auth-page { padding: 12px; }
+  .photo-thumb { width: 76px; height: 76px; }
+
+  /* Booking wizard spacing */
+  .extras-grid { grid-template-columns: 1fr !important; }
+  .row2 { grid-template-columns: 1fr !important; }
+  .wizard-body, .wcard { padding: 14px !important; border-radius: 12px; }
+
+  /* Make wide buttons collapse nicely */
+  .btn.wide { min-width: 0; }
+
+  /* Give some bottom safe-space so floating CTAs and keyboards don't cover inputs */
+  .floating-bottom-safe { padding-bottom: 96px !important; }
+}
+
 .am-divider span { color: #4b5563; font-size: .75rem; }
 .am-google { width: 100%; padding: 12px; background: white; color: #1f2937; border: none; border-radius: 12px; font-size: .9rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: opacity .2s; margin-bottom: 16px; }
 .am-google:hover { opacity: .9; }

@@ -63,20 +63,20 @@ export default function ChatPanel({ requestId, clientName, senderRole, senderNam
     : 'Yoselin - Your Cleaner';
 
   return (
-    <div style={s.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div style={s.panel}>
-        <div style={s.head}>
-          <div style={s.headInfo}>
-            <div style={s.avatar}></div>
+    <div className="chat-overlay" style={s.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="chat-panel" style={s.panel}>
+        <div className="chat-head" style={s.head}>
+          <div className="chat-head-info" style={s.headInfo}>
+            <div className="chat-avatar" style={s.avatar}></div>
             <div>
-              <div style={s.name}>{headLabel}</div>
-              <div style={s.status}>Insured • Background-Checked • Satisfaction Guarantee</div>
+              <div className="chat-name" style={s.name}>{headLabel}</div>
+              <div className="chat-status" style={s.status}>Insured • Background-Checked • Satisfaction Guarantee</div>
             </div>
           </div>
-          <button style={s.closeBtn} onClick={onClose}></button>
+          <button className="chat-close" style={s.closeBtn} onClick={onClose}></button>
         </div>
 
-        <div style={s.msgs}>
+        <div className="chat-msgs" style={s.msgs}>
           {messages.length === 0 && (
             <div style={s.empty}>No messages yet. Say hello! </div>
           )}
