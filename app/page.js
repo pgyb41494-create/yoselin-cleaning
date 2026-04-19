@@ -227,7 +227,7 @@ export default function HomePage() {
         <p className="hp-hero-intro">Serving Fairfield, Ohio and surrounding areas. Reliable, insured, and background-checked cleaning services for homes and small businesses.</p>
         <div className="hp-hero-btns">
           <button className="btn-primary btn-large" onClick={() => router.push('/book')}>Book Now — Free Estimate</button>
-          <a href="tel:5133709082" className="btn-ghost" style={{display:'inline-flex',alignItems:'center',justifyContent:'center'}}>Call 513‑370‑9082</a>
+          <a href="tel:5132576942" className="btn-ghost" style={{display:'inline-flex',alignItems:'center',justifyContent:'center'}}>Call 513-257-6942</a>
         </div>
         <div style={{ display:'flex', gap:'10px', justifyContent:'center', flexWrap:'wrap', marginTop:'18px' }}>
           {['Insured', 'Background-checked', '100% Satisfaction Guarantee'].map((b,i)=>(
@@ -380,8 +380,8 @@ export default function HomePage() {
         </div>
         <div className="hp-footer-contact">
           <p>Text or Call</p>
-          <a href="tel:5133709082">513-370-9082</a>
-          <a href="tel:5132576942">513-257-6942</a>
+          <a href="tel:5133709082 (Spanish)">513-370-9082</a>
+          <a href="tel:5132576942 (English)">513-257-6942</a>
         </div>
         <div className="hp-footer-brand">
           <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '120px', objectFit: 'contain', marginBottom: '10px' }} />

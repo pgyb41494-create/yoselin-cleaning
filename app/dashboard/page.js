@@ -592,7 +592,7 @@ export default function DashboardPage() {
                       </div>
                       <textarea value={reviewText} onChange={e => setReviewText(e.target.value)} placeholder="Tell others about your experience..." rows={3}
                         style={{ width: '100%', padding: '12px 14px', background: '#1f1f1f', border: '1.5px solid #2a2a2a', borderRadius: '12px', color: 'white', fontSize: '.87rem', fontFamily: "'DM Sans', sans-serif", outline: 'none', resize: 'vertical', marginBottom: '12px' }} />
-                      <button onClick={submitReview} disabled={reviewBusy || !reviewText.trim()} style={{ width: '100%', padding: '13px', background: reviewText.trim() ? 'var(--blue)' : '#1f1f1f', color: reviewText.trim() ? 'white' : '#4b5563', border: 'none', borderRadius: '12px', fontSize: '.92rem', fontWeight: '700', cursor: reviewText.trim() ? 'pointer' : 'not-allowed', fontFamily: "'DM Sans', sans-serif" }}>
+                      <button onClick={submitReview} disabled={reviewBusy || !reviewText.trim()} className={reviewText.trim() ? 'btn btn-primary' : 'btn'} style={{ width: '100%', padding: '13px', borderRadius: '12px', fontSize: '.92rem' }}>
                         {reviewBusy ? 'Submitting...' : 'Submit Review'}
                       </button>
                     </>
@@ -718,12 +718,12 @@ export default function DashboardPage() {
                 ))}
               </div>
               <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <button onClick={() => setActiveTab('messages')} style={{ width: '100%', padding: '13px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.92rem', cursor: 'pointer' }}>
+                <button onClick={() => setActiveTab('messages')} className="btn btn-primary" style={{ width: '100%', padding: '13px' }}>
                   Send a Message
                 </button>
                 {!reschedDone ? (
                   !reschedOpen ? (
-                    <button onClick={() => setReschedOpen(true)} style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px solid #2a2a2a', color: '#9ca3af', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>
+                    <button onClick={() => setReschedOpen(true)} className="btn" style={{ width: '100%', padding: '11px' }}>
                       Request a Reschedule
                     </button>
                   ) : (
@@ -740,10 +740,10 @@ export default function DashboardPage() {
                           style={{ width: '100%', padding: '9px 12px', background: '#141414', border: '1.5px solid #333', borderRadius: '9px', color: 'white', fontSize: '.83rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
                       </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={submitReschedule} disabled={reschedBusy || !reschedDates.trim()} style={{ flex: 1, padding: '10px', background: reschedDates.trim() ? 'var(--blue)' : '#2a2a2a', color: reschedDates.trim() ? 'white' : '#555', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: reschedDates.trim() ? 'pointer' : 'not-allowed' }}>
+                        <button onClick={submitReschedule} disabled={reschedBusy || !reschedDates.trim()} className={reschedDates.trim() ? 'btn btn-primary wide' : 'btn wide'} style={{ flex: 1 }}>
                           {reschedBusy ? 'Sending...' : 'Send Request'}
                         </button>
-                        <button onClick={() => setReschedOpen(false)} style={{ padding: '10px 16px', background: 'transparent', border: '1.5px solid #2a2a2a', color: '#6b7280', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>Cancel</button>
+                        <button onClick={() => setReschedOpen(false)} className="btn" style={{ padding: '10px 16px' }}>Cancel</button>
                       </div>
                     </div>
                   )
@@ -755,7 +755,7 @@ export default function DashboardPage() {
                 )}
                 {(latest.status === 'new' || latest.status === 'confirmed') && !cancelDone && (
                   !cancelOpen ? (
-                    <button onClick={() => setCancelOpen(true)} style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>
+                    <button onClick={() => setCancelOpen(true)} className="btn btn-danger-outline" style={{ width: '100%', padding: '11px' }}>
                       &#x274C; Cancel Booking
                     </button>
                   ) : (
@@ -763,10 +763,10 @@ export default function DashboardPage() {
                       <div style={{ fontWeight: '700', color: '#ef4444', fontSize: '.88rem', marginBottom: '6px' }}>&#x26A0; Cancel this booking?</div>
                       <div style={{ fontSize: '.78rem', color: '#9ca3af', marginBottom: '14px', lineHeight: 1.5 }}>This will mark your booking as cancelled. You can always submit a new request whenever you are ready.</div>
                       <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={cancelBooking} disabled={cancelBusy} style={{ flex: 1, padding: '10px', background: 'rgba(239,68,68,.15)', border: '1.5px solid rgba(239,68,68,.4)', color: '#ef4444', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>
+                        <button onClick={cancelBooking} disabled={cancelBusy} className="btn btn-danger-outline" style={{ flex: 1 }}>
                           {cancelBusy ? 'Cancelling...' : 'Yes, Cancel'}
                         </button>
-                        <button onClick={() => setCancelOpen(false)} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1.5px solid #2a2a2a', color: '#6b7280', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>Keep Booking</button>
+                        <button onClick={() => setCancelOpen(false)} className="btn" style={{ flex: 1 }}>Keep Booking</button>
                       </div>
                     </div>
                   )
@@ -820,7 +820,7 @@ export default function DashboardPage() {
                           </div>
                         )}
                         <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '.9rem', fontWeight: '900', color: '#60a5fa' }}>{'$' + entry.estimate}</div>
-                        <button onClick={() => cancelScheduleEntry(entry.id)} title="Cancel this appointment" style={{ width: '28px', height: '28px', borderRadius: '7px', border: '1px solid rgba(239,68,68,.3)', background: 'rgba(239,68,68,.08)', color: '#ef4444', cursor: 'pointer', fontSize: '.82rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
+                        <button onClick={() => cancelScheduleEntry(entry.id)} title="Cancel this appointment" className="btn btn-icon btn-danger-icon" style={{ flexShrink: 0 }}>✕</button>
                       </div>
                     </div>
                   );
@@ -880,7 +880,7 @@ export default function DashboardPage() {
                 <input type="text" value={settingsName} onChange={e => setSettingsName(e.target.value)} placeholder="Your full name"
                   style={{ width: '100%', padding: '10px 13px', background: '#1f1f1f', border: '1.5px solid #2a2a2a', borderRadius: '10px', color: 'white', fontSize: '.87rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
               </div>
-              <button onClick={saveName} disabled={settingsBusy} style={{ padding: '11px 22px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>
+              <button onClick={saveName} disabled={settingsBusy} className="btn btn-primary">
                 {settingsBusy ? 'Saving...' : 'Save Name'}
               </button>
             </div>
@@ -894,7 +894,7 @@ export default function DashboardPage() {
                       style={{ width: '100%', padding: '10px 13px', background: '#1f1f1f', border: '1.5px solid #2a2a2a', borderRadius: '10px', color: 'white', fontSize: '.87rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
                   </div>
                 ))}
-                <button onClick={savePassword} disabled={settingsBusy} style={{ padding: '11px 22px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>
+                <button onClick={savePassword} disabled={settingsBusy} className="btn btn-primary">
                   {settingsBusy ? 'Updating...' : 'Update Password'}
                 </button>
               </div>
@@ -908,7 +908,7 @@ export default function DashboardPage() {
             <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '20px' }}>
               <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '8px' }}>Sign Out</div>
               <p style={{ color: '#9ca3af', fontSize: '.84rem', marginBottom: '14px' }}>This will sign you out on this device.</p>
-              <button onClick={() => { signOut(auth); router.push('/'); }} style={{ padding: '11px 22px', background: 'rgba(239,68,68,.1)', border: '1.5px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>
+              <button onClick={() => { signOut(auth); router.push('/'); }} className="btn btn-danger-outline">
                 Sign Out
               </button>
             </div>

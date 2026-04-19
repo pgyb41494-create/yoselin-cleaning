@@ -647,7 +647,7 @@ export default function AdminPage() {
                     const done = requests.filter(r => r.status === 'done');
                     if (!window.confirm('Delete all ' + done.length + ' completed requests?')) return;
                     for (const r of done) await deleteDoc(doc(db, 'requests', r.id));
-                  }} style={{ padding: '9px 14px', background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.3)', color: '#ef4444', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  }} className="btn btn-danger-outline">
                     Clear Done
                   </button>
                 )}
@@ -713,13 +713,11 @@ export default function AdminPage() {
                           <td style={{ padding: '12px 15px' }}>
                             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                               <button className="view-btn" onClick={() => setSelected(r)}>Details</button>
-                              <button onClick={() => setChatReq(r)} style={{
-                                ...btnStyle((unreadMap[r.id] || 0) > 0 ? '#ef4444' : '#60a5fa'),
-                                background: (unreadMap[r.id] || 0) > 0 ? '#ef4444' : 'rgba(96,165,250,.15)',
-                                color: (unreadMap[r.id] || 0) > 0 ? 'white' : '#60a5fa',
-                              }}>Chat{(unreadMap[r.id] || 0) > 0 ? ` (${unreadMap[r.id]})` : ''}</button>
-                              {r.status === 'new'       && <button onClick={() => confirmReq(r)} style={btnStyle('#10b981')}>Confirm</button>}
-                              {r.status === 'confirmed' && <button onClick={() => markDone(r)}   style={btnStyle('#a855f7')}>Done</button>}
+                              <button onClick={() => setChatReq(r)} className={'btn ' + ((unreadMap[r.id] || 0) > 0 ? 'btn-danger' : 'btn-outline-blue')}>
+                                Chat{(unreadMap[r.id] || 0) > 0 ? ` (${unreadMap[r.id]})` : ''}
+                              </button>
+                              {r.status === 'new'       && <button onClick={() => confirmReq(r)} className="btn btn-success">Confirm</button>}
+                              {r.status === 'confirmed' && <button onClick={() => markDone(r)}   className="btn btn-pink">Done</button>}
                             </div>
                           </td>
                         </tr>
