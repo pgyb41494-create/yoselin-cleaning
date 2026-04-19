@@ -86,7 +86,7 @@ function Toast({ toast, onDismiss }) {
     >
       <div style={{
         width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
-        background: 'linear-gradient(135deg,#f472b6,#4a9eff)',
+        background: 'var(--blue)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: '1rem', fontWeight: '700', color: 'white',
       }}>
@@ -112,7 +112,7 @@ function Toast({ toast, onDismiss }) {
 function TypingIndicator() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-      <div style={{ fontSize: '.68rem', color: '#9ca3af', fontWeight: 700, marginBottom: '3px' }}>Owner</div>
+      <div style={{ fontSize: '.68rem', color: '#9ca3af', fontWeight: 700, marginBottom: '3px' }}>Yoselin</div>
       <div style={{
         background: '#1f1f2e', border: '1px solid #2a2a2a',
         borderRadius: '18px', borderBottomLeftRadius: '5px',
@@ -229,7 +229,7 @@ export default function Chat({
       text: t,
       sender: senderRole,
       senderName: senderRole === 'admin'
-        ? 'Owner'
+        ? 'Yoselin'
         : (currentUser?.displayName?.split(' ')[0] || 'You'),
       senderPhoto: currentUser?.photoURL || null,
       createdAt: serverTimestamp(),
@@ -254,7 +254,7 @@ export default function Chat({
   const renderMessages = () =>
     messages.length === 0 ? (
       <div style={{ color: '#6b7280', textAlign: 'center', padding: '40px 20px', fontSize: '.85rem' }}>
-        {'No messages yet. Say hello! 👋'}
+        {'No messages yet. Say hello!'}
       </div>
     ) : (
       messages.map((m, idx) => {
@@ -278,7 +278,7 @@ export default function Chat({
                 maxWidth: '78%', padding: '11px 15px', borderRadius: '18px',
                 borderBottomRightRadius: isMe ? '5px' : '18px',
                 borderBottomLeftRadius: isMe ? '18px' : '5px',
-                background: isMe ? 'linear-gradient(135deg,#1a6fd4,#db2777)' : '#1f1f2e',
+                background: isMe ? 'var(--blue)' : '#1f1f2e',
                 color: 'white',
                 border: isMe ? 'none' : '1px solid #2a2a2a',
                 fontSize: '.87rem', lineHeight: 1.45, wordBreak: 'break-word',
@@ -370,7 +370,7 @@ export default function Chat({
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{
                 width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0,
-                background: 'linear-gradient(135deg,#f472b6,#4a9eff)',
+                background: 'var(--blue)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '.9rem', fontWeight: 700, color: 'white',
               }}>

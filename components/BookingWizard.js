@@ -165,6 +165,25 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
   const price = calcPrice();
 
+  const startingFrom = (() => {
+    try {
+      const BP = livePrices?.bathrooms || BPRICES;
+      const RP = livePrices?.rooms || RPRICES;
+      const minBP = Math.min(...Object.values(BP));
+      const minRP = Math.min(...Object.values(RP));
+      return Math.max(0, Math.round(Math.min(minBP, minRP)));
+    } catch (e) { return 0; }
+  })();
+
+  const estimateDuration = () => {
+    const bathCount = Object.values(baths).reduce((s, v) => s + (v || 0), 0);
+    const roomCount = Object.values(rooms).reduce((s, v) => s + (v || 0), 0);
+    const extrasCount = Object.values(extras).filter(Boolean).length;
+    const minutes = bathCount * 30 + roomCount * 25 + extrasCount * 10;
+    const hours = Math.max(1, Math.ceil(minutes / 60));
+    return hours + ' hour' + (hours > 1 ? 's' : '');
+  };
+
   const availDates   = [...new Set(availability.map(s => s.date))];
   const timesForDate = availability.filter(s => s.date === form.date).map(s => s.time);
 
@@ -231,7 +250,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     const docRef = await addDoc(collection(db, 'requests'), req);
     await addDoc(collection(db, 'chats', docRef.id, 'messages'), {
       text: 'Hi ' + form.firstName + "! Thank you for reaching out. I've received your request and will get back to you within 24 hours to confirm your appointment!",
-      sender: 'admin', senderName: 'Owner', createdAt: serverTimestamp(),
+      sender: 'admin', senderName: 'Yoselin', createdAt: serverTimestamp(),
     });
     if (form.date && form.time && form.date !== 'N/A' && form.time !== 'N/A') {
       try {
@@ -280,8 +299,15 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
         {step === 0 && (
           <div>
-            <div className="page-title">{adminMode ? 'Client Information' : 'Your Information'}</div>
-            <div className="page-sub">Tell us who you are and how to reach you</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+              <div>
+                <div className="page-title">{adminMode ? 'Client Information' : 'Your Information'}</div>
+                <div className="page-sub">Tell us who you are and how to reach you</div>
+              </div>
+              <div style={{ background: 'var(--black)', border: '1px solid var(--border)', padding: '10px 12px', borderRadius: 12, fontWeight: 800, color: 'white' }}>
+                {startingFrom > 0 ? `Starting at $${startingFrom}` : 'Starting prices available'}
+              </div>
+            </div>
             <div className="wcard">
               <div className="card-body">
                 <div className="row2">
@@ -346,7 +372,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                               height: '32px', borderRadius: '7px', padding: '0',
                               border: isSelected ? '1.5px solid #a855f7' : isToday ? '1px solid #3a3a3a' : '1px solid transparent',
-                              background: isSelected ? 'linear-gradient(135deg,#a855f7,#db2777)' : canClick ? 'rgba(168,85,247,.07)' : 'transparent',
+                              background: isSelected ? 'var(--pink-deep)' : canClick ? 'rgba(167,139,250,.07)' : 'transparent',
                               color: isPast ? '#282828' : isSelected ? 'white' : hasSlots ? '#d1d5db' : '#333',
                               cursor: canClick ? 'pointer' : 'default',
                               fontWeight: isSelected ? '800' : '500', fontSize: '.78rem',
@@ -430,10 +456,10 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
             <div onClick={() => setWalkthrough(w => !w)} style={{
               marginTop: '16px', borderRadius: '16px',
               border: walkthrough ? '2px solid #1a6fd4' : '2px dashed #3a3a3a',
-              background: walkthrough ? 'linear-gradient(135deg, rgba(26,111,212,.15), rgba(219,39,119,.08))' : '#141414',
+              background: walkthrough ? 'rgba(26,111,212,.06)' : '#141414',
               padding: '20px 22px', cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: '18px',
             }}>
-              <div style={{ width: '52px', height: '52px', borderRadius: '14px', flexShrink: 0, background: walkthrough ? 'linear-gradient(135deg,#1a6fd4,#db2777)' : '#222', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem', transition: 'all .2s' }}>{'\uD83C\uDFE0'}</div>
+              <div style={{ width: '52px', height: '52px', borderRadius: '14px', flexShrink: 0, background: walkthrough ? 'var(--blue)' : '#222', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem', transition: 'all .2s' }}>W</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: '800', fontSize: '.98rem', color: walkthrough ? 'white' : '#9ca3af', marginBottom: '4px', transition: 'color .2s' }}>
                   Request a Free Walk-Through
@@ -603,14 +629,13 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               const year = parsed && !isNaN(parsed) ? parsed.getFullYear() : '';
               return (
                 <div style={{ background: '#111', border: '1.5px solid #2a2a2a', borderRadius: '18px', overflow: 'hidden', marginBottom: '18px' }}>
-                  <div style={{ padding: '12px 18px', background: 'linear-gradient(135deg, rgba(168,85,247,.12), rgba(219,39,119,.06))', borderBottom: '1px solid #2a2a2a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '.78rem' }}>\uD83D\uDCC5</span>
+                    <div style={{ padding: '12px 18px', background: 'rgba(167,139,250,.06)', borderBottom: '1px solid #2a2a2a', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontSize: '.68rem', fontWeight: '800', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '1px' }}>Preferred Date & Time</span>
                   </div>
                   <div style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '18px' }}>
                     {parsed && !isNaN(parsed) ? (
                       <div style={{ width: '76px', flexShrink: 0, borderRadius: '14px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(168,85,247,.25)', border: '1px solid rgba(168,85,247,.3)' }}>
-                        <div style={{ background: 'linear-gradient(135deg, #a855f7, #db2777)', padding: '5px 0 3px', textAlign: 'center' }}>
+                        <div style={{ background: 'var(--pink-deep)', padding: '5px 0 3px', textAlign: 'center' }}>
                           <div style={{ fontSize: '.6rem', fontWeight: '800', color: 'rgba(255,255,255,.9)', textTransform: 'uppercase', letterSpacing: '1.5px', lineHeight: 1 }}>{monthName.slice(0,3)}</div>
                         </div>
                         <div style={{ background: '#1a1a2e', padding: '8px 0 6px', textAlign: 'center' }}>
@@ -676,9 +701,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               </div>
             </div>
 
-            <div className="wcard">
-              <div className="card-header" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,.18), rgba(26,111,212,.1))' }}>
-                <div className="card-icon" style={{ fontSize: '1.2rem' }}>{'\uD83C\uDFF7\uFE0F'}</div>
+                <div className="wcard">
+              <div className="card-header">
+                <div className="card-icon" style={{ fontSize: '1.2rem' }}>D</div>
                 <div>
                   <div className="card-title">Discounts</div>
                   <div className="card-sub">Any applicable discounts will be applied to your estimate</div>
@@ -723,6 +748,19 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                     <span style={{ fontSize: '.82rem', fontWeight: '700', color: '#10b981' }}>Discount applied!</span>
                   </div>
                 )}
+              </div>
+            </div>
+
+            <div className="wcard">
+              <div className="card-header">
+                <div className="card-icon">✓</div>
+                <div><div className="card-title">What's included</div></div>
+              </div>
+              <div className="card-body">
+                <div style={{ fontSize: '.95rem', marginBottom: '10px' }}>
+                  {price.lines && price.lines.length > 0 ? price.lines.slice(0,6).map((l,i) => (<div key={i} style={{ marginBottom: '6px' }}>• {l}</div>)) : <div>No rooms selected</div>}
+                </div>
+                <div style={{ fontSize: '.85rem', color: '#6b7280' }}>Estimated time: {estimateDuration()}</div>
               </div>
             </div>
 

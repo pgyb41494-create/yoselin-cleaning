@@ -16,7 +16,12 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href="/favicon.png" />
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
       </head>
-      <body>{children}</body>
+      <body>
+        <div className="site-root">
+          {children}
+          <a href="/book" className="persistent-book-cta">Book Now</a>
+        </div>
+      </body>
     </html>
   );
 }

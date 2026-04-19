@@ -113,7 +113,7 @@ function HistoryTab({ requests }) {
                   <div style={{ fontSize: '.76rem', color: '#6b7280' }}>{req.address?.split(',')[0] || 'Address TBD'}</div>
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: '900', background: 'linear-gradient(135deg,#f472b6,#4a9eff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: '900', color: 'var(--pink-deep)' }}>
                     {'$' + req.estimate}
                   </div>
                   <div style={{ fontSize: '.68rem', color: '#6b7280' }}>Estimate</div>
@@ -300,7 +300,7 @@ export default function DashboardPage() {
     await updateDoc(doc(db, 'requests', latest.id), { status: 'cancelled' });
     await addDoc(collection(db, 'chats', latest.id, 'messages'), {
       text: 'Your booking has been cancelled as requested. Feel free to book again any time!',
-      sender: 'admin', senderName: 'Owner', createdAt: serverTimestamp(),
+      sender: 'admin', senderName: 'Yoselin', createdAt: serverTimestamp(),
     });
     setCancelBusy(false); setCancelDone(true); setCancelOpen(false);
   };
@@ -360,7 +360,7 @@ export default function DashboardPage() {
 
   const btn = (label, onClick, style = {}) => (
     <button onClick={onClick} style={{
-      padding: '13px 28px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)',
+      padding: '13px 28px', background: 'var(--blue)',
       color: 'white', border: 'none', borderRadius: '12px',
       fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.92rem',
       cursor: 'pointer', ...style,
@@ -379,14 +379,14 @@ export default function DashboardPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
           {user?.photoURL
             ? <img src={user.photoURL} className="nav-avatar" alt="" />
-            : <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '.8rem', flexShrink: 0 }}>{firstName[0]?.toUpperCase()}</div>
+            : <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--blue)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '.8rem', flexShrink: 0 }}>{firstName[0]?.toUpperCase()}</div>
           }
           <button className="signout-btn" onClick={() => { signOut(auth); router.push('/'); }}>Sign Out</button>
         </div>
       </nav>
 
       {/* HERO */}
-      <div style={{ background: 'linear-gradient(135deg,#151515 0%,#1a1040 100%)', padding: '24px 24px 20px' }}>
+      <div style={{ background: 'rgba(21,16,40,0.95)', padding: '24px 24px 20px' }}>
         <div style={{ maxWidth: '760px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
           <div>
             <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: '900', color: 'white', marginBottom: '4px' }}>
@@ -451,7 +451,7 @@ export default function DashboardPage() {
 
             {isConfirmed && countdown && (
               <div style={{
-                background: countdown.urgent ? 'linear-gradient(135deg,rgba(16,185,129,.12),rgba(6,95,70,.18))' : 'linear-gradient(135deg,rgba(26,111,212,.1),rgba(219,39,119,.06))',
+                background: countdown.urgent ? 'rgba(16,185,129,.08)' : 'rgba(26,111,212,.06)',
                 border: '1.5px solid ' + (countdown.urgent ? '#10b981' : '#1a6fd4') + '33',
                 borderRadius: '16px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px',
               }}>
@@ -477,14 +477,14 @@ export default function DashboardPage() {
 
             {!latest ? (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '18px', padding: '40px 24px', textAlign: 'center' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>&#x2728;</div>
+                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}></div>
                 <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white', marginBottom: '8px' }}>Get Your Free Quote</h2>
                 <p style={{ color: '#9ca3af', fontSize: '.85rem', marginBottom: '24px', lineHeight: '1.6' }}>Fill out a quick form and get a custom estimate. No commitment needed.</p>
                 {btn('Get a Quote', () => router.push('/book'))}
               </div>
             ) : isDone ? (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '18px', padding: '36px 24px', textAlign: 'center' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>&#x1F389;</div>
+                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>✓</div>
                 <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white', marginBottom: '8px' }}>Job Complete!</h2>
                 <p style={{ color: '#9ca3af', fontSize: '.85rem', marginBottom: '24px', lineHeight: '1.6' }}>Your cleaning has been marked complete. Hope everything is sparkling!</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
@@ -497,7 +497,7 @@ export default function DashboardPage() {
                 <div style={{ fontSize: '.7rem', color: '#6b7280', fontWeight: '700', letterSpacing: '.5px', textTransform: 'uppercase', marginBottom: '12px' }}>Booking #{latest.id.slice(-6).toUpperCase()}</div>
                 <div style={{ background: 'rgba(96,165,250,.04)', borderRadius: '14px', border: '1px solid rgba(96,165,250,.12)', overflow: 'hidden', marginBottom: '14px' }}>
                   <div style={{ padding: '9px 14px', background: 'rgba(96,165,250,.06)', borderBottom: '1px solid rgba(96,165,250,.1)', display: 'flex', alignItems: 'center', gap: '7px' }}>
-                    <span style={{ fontSize: '.72rem' }}>📅</span>
+                    <span style={{ fontSize: '.72rem' }}>Date</span>
                     <span style={{ fontSize: '.62rem', fontWeight: '800', color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '1px' }}>Preferred Date &amp; Time</span>
                   </div>
                   <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -506,7 +506,7 @@ export default function DashboardPage() {
                       if (pd) {
                         return (
                           <div style={{ width: '62px', flexShrink: 0, borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 16px rgba(26,111,212,.2)', border: '1px solid rgba(96,165,250,.25)' }}>
-                            <div style={{ background: 'linear-gradient(135deg, #1a6fd4, #db2777)', padding: '4px 0 3px', textAlign: 'center' }}>
+                            <div style={{ background: 'var(--blue)', padding: '4px 0 3px', textAlign: 'center' }}>
                               <div style={{ fontSize: '.52rem', fontWeight: '800', color: 'rgba(255,255,255,.9)', textTransform: 'uppercase', letterSpacing: '1.2px', lineHeight: 1 }}>{MONTH_NAMES_DASH[pd.getMonth()].slice(0,3)}</div>
                             </div>
                             <div style={{ background: '#1a1a2e', padding: '7px 0 5px', textAlign: 'center' }}>
@@ -516,7 +516,7 @@ export default function DashboardPage() {
                           </div>
                         );
                       }
-                      return <div style={{ width: '62px', height: '62px', borderRadius: '12px', background: '#1a1a2e', border: '1px solid #2a2a2a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.4rem' }}>📅</div>;
+                      return <div style={{ width: '62px', height: '62px', borderRadius: '12px', background: '#1a1a2e', border: '1px solid #2a2a2a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.4rem' }}>Date</div>;
                     })()}
                     <div style={{ flex: 1 }}>
                       {(() => {
@@ -530,8 +530,8 @@ export default function DashboardPage() {
                         return pd ? <div style={{ fontSize: '.72rem', fontWeight: '600', color: '#6b7280', marginBottom: '4px' }}>{pd.getFullYear()}</div> : null;
                       })()}
                       {latest.time && latest.time !== 'N/A' && latest.time !== 'TBD' && (
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(96,165,250,.08)', border: '1px solid rgba(96,165,250,.18)', borderRadius: '10px', padding: '5px 12px' }}>
-                          <span style={{ fontSize: '.68rem' }}>🕒</span>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(96,165,250,.08)', border: '1px solid rgba(96,165,250,.18)', borderRadius: '10px', padding: '5px 12px' }}>
+                          <span style={{ fontSize: '.68rem' }}>Time</span>
                           <span style={{ fontSize: '.8rem', fontWeight: '700', color: '#93c5fd' }}>{latest.time}</span>
                         </div>
                       )}
@@ -543,7 +543,7 @@ export default function DashboardPage() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.8rem', fontWeight: '900', background: 'linear-gradient(135deg,#f472b6,#4a9eff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{'$' + latest.estimate}</div>
+                    <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.8rem', fontWeight: '900', color: 'var(--pink-deep)' }}>{'$' + latest.estimate}</div>
                     <div style={{ fontSize: '.68rem', color: '#6b7280' }}>Estimate</div>
                   </div>
                 </div>
@@ -585,14 +585,14 @@ export default function DashboardPage() {
                         {[1, 2, 3, 4, 5].map(s => (
                           <button key={s} onMouseEnter={() => setHoverStar(s)} onMouseLeave={() => setHoverStar(0)} onClick={() => setReviewStars(s)}
                             style={{ fontSize: '1.8rem', background: 'none', border: 'none', cursor: 'pointer', opacity: s <= (hoverStar || reviewStars) ? 1 : 0.25, transition: 'all .12s', lineHeight: 1, padding: '2px' }}>
-                            ⭐
+                            ★
                           </button>
                         ))}
                         <span style={{ color: '#9ca3af', fontSize: '.82rem', marginLeft: '6px' }}>{reviewStars} stars</span>
                       </div>
                       <textarea value={reviewText} onChange={e => setReviewText(e.target.value)} placeholder="Tell others about your experience..." rows={3}
                         style={{ width: '100%', padding: '12px 14px', background: '#1f1f1f', border: '1.5px solid #2a2a2a', borderRadius: '12px', color: 'white', fontSize: '.87rem', fontFamily: "'DM Sans', sans-serif", outline: 'none', resize: 'vertical', marginBottom: '12px' }} />
-                      <button onClick={submitReview} disabled={reviewBusy || !reviewText.trim()} style={{ width: '100%', padding: '13px', background: reviewText.trim() ? 'linear-gradient(135deg,#f59e0b,#db2777)' : '#1f1f1f', color: reviewText.trim() ? 'white' : '#4b5563', border: 'none', borderRadius: '12px', fontSize: '.92rem', fontWeight: '700', cursor: reviewText.trim() ? 'pointer' : 'not-allowed', fontFamily: "'DM Sans', sans-serif" }}>
+                      <button onClick={submitReview} disabled={reviewBusy || !reviewText.trim()} style={{ width: '100%', padding: '13px', background: reviewText.trim() ? 'var(--blue)' : '#1f1f1f', color: reviewText.trim() ? 'white' : '#4b5563', border: 'none', borderRadius: '12px', fontSize: '.92rem', fontWeight: '700', cursor: reviewText.trim() ? 'pointer' : 'not-allowed', fontFamily: "'DM Sans', sans-serif" }}>
                         {reviewBusy ? 'Submitting...' : 'Submit Review'}
                       </button>
                     </>
@@ -625,7 +625,7 @@ export default function DashboardPage() {
               {loyalty.next ? (
                 <>
                   <div style={{ height: '6px', background: '#2a2a2a', borderRadius: '99px', overflow: 'hidden', marginBottom: '6px' }}>
-                    <div style={{ height: '100%', width: Math.min(100, (allDone / loyalty.nextAt) * 100) + '%', background: 'linear-gradient(90deg,' + loyalty.color + ',' + loyalty.color + '99)', borderRadius: '99px', transition: 'width .5s' }} />
+                    <div style={{ height: '100%', width: Math.min(100, (allDone / loyalty.nextAt) * 100) + '%', background: loyalty.color, borderRadius: '99px', transition: 'width .5s' }} />
                   </div>
                   <div style={{ fontSize: '.7rem', color: '#6b7280', display: 'flex', justifyContent: 'space-between' }}>
                     <span>{allDone} / {loyalty.nextAt} jobs</span>
@@ -695,7 +695,7 @@ export default function DashboardPage() {
               <div style={{ background: '#151515', padding: '18px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <div style={{ fontSize: '.7rem', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>Your Estimate</div>
-                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '2.2rem', fontWeight: '900', background: 'linear-gradient(135deg,#f472b6,#4a9eff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{'$' + latest.estimate}</div>
+                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '2.2rem', fontWeight: '900', color: 'var(--pink-deep)' }}>{'$' + latest.estimate}</div>
                   <div style={{ fontSize: '.7rem', color: '#6b7280', marginTop: '3px' }}>Final price confirmed before service</div>
                 </div>
                 <span className={'badge badge-' + latest.status}>{statusLabel}</span>
@@ -718,7 +718,7 @@ export default function DashboardPage() {
                 ))}
               </div>
               <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <button onClick={() => setActiveTab('messages')} style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.92rem', cursor: 'pointer' }}>
+                <button onClick={() => setActiveTab('messages')} style={{ width: '100%', padding: '13px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.92rem', cursor: 'pointer' }}>
                   Send a Message
                 </button>
                 {!reschedDone ? (
@@ -740,7 +740,7 @@ export default function DashboardPage() {
                           style={{ width: '100%', padding: '9px 12px', background: '#141414', border: '1.5px solid #333', borderRadius: '9px', color: 'white', fontSize: '.83rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
                       </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={submitReschedule} disabled={reschedBusy || !reschedDates.trim()} style={{ flex: 1, padding: '10px', background: reschedDates.trim() ? 'linear-gradient(135deg,#1a6fd4,#db2777)' : '#2a2a2a', color: reschedDates.trim() ? 'white' : '#555', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: reschedDates.trim() ? 'pointer' : 'not-allowed' }}>
+                        <button onClick={submitReschedule} disabled={reschedBusy || !reschedDates.trim()} style={{ flex: 1, padding: '10px', background: reschedDates.trim() ? 'var(--blue)' : '#2a2a2a', color: reschedDates.trim() ? 'white' : '#555', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: reschedDates.trim() ? 'pointer' : 'not-allowed' }}>
                           {reschedBusy ? 'Sending...' : 'Send Request'}
                         </button>
                         <button onClick={() => setReschedOpen(false)} style={{ padding: '10px 16px', background: 'transparent', border: '1.5px solid #2a2a2a', color: '#6b7280', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>Cancel</button>
@@ -801,7 +801,7 @@ export default function DashboardPage() {
                   const diff = Math.round((new Date(entry.date).setHours(0,0,0,0) - now2.setHours(0,0,0,0)) / 86400000);
                   return (
                     <div key={entry.id} style={{ padding: '14px 20px', borderBottom: '1px solid #1e1e1e', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                      <div style={{ width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Playfair Display, serif', fontWeight: '900', fontSize: '.9rem', background: isNext ? 'linear-gradient(135deg,#1a6fd4,#db2777)' : '#1f1f1f', color: isNext ? 'white' : '#6b7280' }}>
+                      <div style={{ width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Playfair Display, serif', fontWeight: '900', fontSize: '.9rem', background: isNext ? 'var(--blue)' : '#1f1f1f', color: isNext ? 'white' : '#6b7280' }}>
                         {i + 1}
                       </div>
                       <div style={{ flex: 1, minWidth: '120px' }}>
@@ -829,7 +829,7 @@ export default function DashboardPage() {
             )}
             {upcomingSchedule.length > 1 && (
               <button onClick={cancelAllRecurring} style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px solid rgba(239,68,68,.25)', color: '#ef4444', borderRadius: '12px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.85rem', cursor: 'pointer' }}>
-                ✕ Cancel All Remaining Recurring Appointments ({upcomingSchedule.length})
+                Cancel All Remaining Recurring Appointments ({upcomingSchedule.length})
               </button>
             )}
             {schedule.filter(e => e.status === 'done').length > 0 && (
@@ -861,14 +861,14 @@ export default function DashboardPage() {
         {safeTab === 'settings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>Account Settings</div>
-            {settingsMsg && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: 'rgba(16,185,129,.12)', color: '#10b981', border: '1px solid rgba(16,185,129,.2)' }}>✅ {settingsMsg}</div>}
+            {settingsMsg && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: 'rgba(16,185,129,.12)', color: '#10b981', border: '1px solid rgba(16,185,129,.2)' }}>{settingsMsg}</div>}
             {settingsErr && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: 'rgba(239,68,68,.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,.2)' }}>⚠️ {settingsErr}</div>}
             <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '20px' }}>
               <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '16px' }}>Profile</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '18px', paddingBottom: '18px', borderBottom: '1px solid #2a2a2a' }}>
                 {user?.photoURL
                   ? <img src={user.photoURL} style={{ width: '44px', height: '44px', borderRadius: '50%' }} alt="" />
-                  : <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '1.1rem' }}>{firstName[0]?.toUpperCase()}</div>
+                  : <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'var(--blue)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '1.1rem' }}>{firstName[0]?.toUpperCase()}</div>
                 }
                 <div>
                   <div style={{ fontWeight: '700', color: 'white', fontSize: '.9rem' }}>{user?.displayName || 'No name set'}</div>
@@ -880,7 +880,7 @@ export default function DashboardPage() {
                 <input type="text" value={settingsName} onChange={e => setSettingsName(e.target.value)} placeholder="Your full name"
                   style={{ width: '100%', padding: '10px 13px', background: '#1f1f1f', border: '1.5px solid #2a2a2a', borderRadius: '10px', color: 'white', fontSize: '.87rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
               </div>
-              <button onClick={saveName} disabled={settingsBusy} style={{ padding: '11px 22px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>
+              <button onClick={saveName} disabled={settingsBusy} style={{ padding: '11px 22px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>
                 {settingsBusy ? 'Saving...' : 'Save Name'}
               </button>
             </div>
@@ -894,7 +894,7 @@ export default function DashboardPage() {
                       style={{ width: '100%', padding: '10px 13px', background: '#1f1f1f', border: '1.5px solid #2a2a2a', borderRadius: '10px', color: 'white', fontSize: '.87rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
                   </div>
                 ))}
-                <button onClick={savePassword} disabled={settingsBusy} style={{ padding: '11px 22px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>
+                <button onClick={savePassword} disabled={settingsBusy} style={{ padding: '11px 22px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>
                   {settingsBusy ? 'Updating...' : 'Update Password'}
                 </button>
               </div>

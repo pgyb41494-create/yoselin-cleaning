@@ -189,65 +189,49 @@ export default function HomePage() {
       )}
 
       {/* NAVBAR */}
-      <nav className="hp-nav">
-        <div className="hp-nav-left">
-          <div className="hp-tab-wrap">
-            <button className="hp-tab-btn" onClick={() => setTabOpen(!tabOpen)}>
-              <span /><span /><span />
-            </button>
-            {tabOpen && (
-              <div className="hp-tab-dropdown">
-                <a href="#pics"    onClick={() => setTabOpen(false)}>📷 {'Pics'}</a>
-                <a href="#reviews" onClick={() => setTabOpen(false)}>⭐ {'Reviews'}</a>
-              </div>
-            )}
-          </div>
+      <nav className="hp-nav" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          <button className="hp-tab-btn" onClick={() => setTabOpen(!tabOpen)} style={{background:'none',border:'none',cursor:'pointer'}}>
+            <span style={{display:'block',width:18,height:2,background:'#fff',margin:'3px 0'}} />
+            <span style={{display:'block',width:18,height:2,background:'#fff',margin:'3px 0'}} />
+            <span style={{display:'block',width:18,height:2,background:'#fff',margin:'3px 0'}} />
+          </button>
+          {tabOpen && (
+            <div className="hp-tab-dropdown">
+              <a href="#pics"    onClick={() => setTabOpen(false)}>Pics</a>
+              <a href="#reviews" onClick={() => setTabOpen(false)}>Reviews</a>
+            </div>
+          )}
+          <a href="/" style={{display:'flex',alignItems:'center'}}>
+            <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '64px', objectFit: 'contain' }} />
+          </a>
         </div>
 
-        <div className="hp-nav-brand">
-          <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '190px', objectFit: 'contain' }} />
-        </div>
-
-        <div className="hp-nav-right">
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <button onClick={() => router.push('/book')} style={{ padding: '10px 18px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '999px', fontWeight: 800, cursor: 'pointer' }}>Book Now</button>
           {currentUser ? (
             <>
               <button className="hp-nav-login" onClick={() => router.push(isAdmin ? '/admin' : '/dashboard')}>{isAdmin ? 'Admin' : 'Dashboard'}</button>
-              <button onClick={() => signOut(auth)} style={{ background: 'none', border: '1px solid rgba(255,255,255,.15)', color: '#9ca3af', padding: '6px 14px', borderRadius: '99px', fontSize: '.78rem', cursor: 'pointer' }}>{'Sign Out'}</button>
+              <button onClick={() => signOut(auth)} style={{ background: 'none', border: '1px solid rgba(255,255,255,.15)', color: '#9ca3af', padding: '6px 14px', borderRadius: '99px', fontSize: '.78rem', cursor: 'pointer' }}>Sign Out</button>
             </>
           ) : (
-            <button className="hp-nav-login" onClick={() => setAuthMode('login')}>{'Login'}</button>
+            <button className="hp-nav-login" onClick={() => setAuthMode('login')}>Login</button>
           )}
         </div>
       </nav>
 
       {/* HERO */}
-      <section className="hp-hero" style={{ position:'relative', overflow:'hidden' }}>
-        {/* Animated glow orbs */}
-        <div className="hp-hero-orb hp-hero-orb-1" />
-        <div className="hp-hero-orb hp-hero-orb-2" />
-        <div className="hp-hero-orb hp-hero-orb-3" />
-        {/* Floating sparkle particles */}
-        {[{l:'18%',d:'2.8s',sz:6,delay:'0s',c:'rgba(219,39,119,.7)'},{l:'35%',d:'3.4s',sz:4,delay:'1s',c:'rgba(168,85,247,.8)'},{l:'55%',d:'2.5s',sz:5,delay:'.4s',c:'rgba(26,111,212,.7)'},{l:'72%',d:'3.8s',sz:7,delay:'1.6s',c:'rgba(244,114,182,.8)'},{l:'85%',d:'2.2s',sz:4,delay:'.9s',c:'rgba(96,165,250,.7)'},{l:'10%',d:'3.1s',sz:5,delay:'2s',c:'rgba(168,85,247,.6)'}].map((p,i)=>(          <div key={i} className="hp-sparkle" style={{ left:p.l, bottom:'-8px', width:p.sz, height:p.sz, background:p.c, animationDuration:p.d, animationDelay:p.delay }} />
-        ))}
-        <p className="hp-hero-tagline anim-fadeInUp delay-1">✨ {'Ready To Make Your Place Shine'}</p>
-        <h1 className="hp-hero-title anim-fadeInUp delay-2">{'Professional Cleaning'}<br /><span>{'You Can Trust'}</span></h1>
-        <p className="hp-hero-intro anim-fadeInUp delay-3">
-          We bring the sparkle back to your home or office. Detail-focused, reliable, and always on time. Based in Fairfield, Ohio serving the surrounding area.
-        </p>
-        <div className="hp-hero-btns anim-fadeInUp delay-4">
-          {currentUser ? (
-            <button className="hp-btn-primary" onClick={() => router.push(isAdmin ? '/admin' : '/dashboard')}>{isAdmin ? 'Go to Admin Panel' : 'Go to Dashboard'}</button>
-          ) : (
-            <>
-              <button className="hp-btn-primary" onClick={() => setAuthMode('signup')}>{'Create Account'}</button>
-              <button className="hp-btn-outline" onClick={() => setAuthMode('login')}>{'Log In'}</button>
-            </>
-          )}
+      <section className="hp-hero" style={{ padding: '48px 18px', textAlign: 'center' }}>
+        <p className="hp-hero-tagline">Insured • Background-checked • 100% Satisfaction Guarantee</p>
+        <h1 className="hp-hero-title">Professional Home & Office Cleaning</h1>
+        <p className="hp-hero-intro">Serving Fairfield, Ohio and surrounding areas. Reliable, insured, and background-checked cleaning services for homes and small businesses.</p>
+        <div className="hp-hero-btns">
+          <button className="btn-primary btn-large" onClick={() => router.push('/book')}>Book Now — Free Estimate</button>
+          <a href="tel:5133709082" className="btn-ghost" style={{display:'inline-flex',alignItems:'center',justifyContent:'center'}}>Call 513‑370‑9082</a>
         </div>
-        {/* Trust badges */}
-        <div className="anim-fadeIn delay-5" style={{ display:'flex', gap:'10px', justifyContent:'center', flexWrap:'wrap', marginTop:'20px' }}>
-          {['✅ Insured & Trusted', '📍 Fairfield, Ohio', '⭐ 5-Star Rated'].map((b,i)=>(
-            <span key={i} style={{ fontSize:'.74rem', fontWeight:'700', color:'#9ca3af', background:'rgba(255,255,255,.05)', border:'1px solid rgba(255,255,255,.1)', borderRadius:'99px', padding:'5px 13px' }}>{b}</span>
+        <div style={{ display:'flex', gap:'10px', justifyContent:'center', flexWrap:'wrap', marginTop:'18px' }}>
+          {['Insured', 'Background-checked', '100% Satisfaction Guarantee'].map((b,i)=>(
+            <span key={i} style={{ fontSize:'.74rem', fontWeight:'700', color:'#9ca3af', background:'rgba(255,255,255,.03)', border:'1px solid rgba(255,255,255,.06)', borderRadius:'99px', padding:'6px 14px' }}>{b}</span>
           ))}
         </div>
       </section>
@@ -257,19 +241,19 @@ export default function HomePage() {
         <div className="hp-section-label anim-fadeInUp">{'What We Offer'}</div>
         <div className="hp-services-grid">
           <div className="hp-service-card anim-fadeInUp delay-2">
-            <div className="hsc-icon">🏠</div>
+            <div className="hsc-icon" aria-hidden="true"></div>
             <h3>{'Residential'}</h3>
             <p>{'Full home cleaning tailored to your schedule. Weekly, bi-weekly, or one-time deep cleans.'}</p>
             <div className="hsc-price">{'From $120'}</div>
           </div>
           <div className="hp-service-card anim-fadeInUp delay-3">
-            <div className="hsc-icon">🚚</div>
+            <div className="hsc-icon" aria-hidden="true"></div>
             <h3>{'Move Out / In'}</h3>
             <p>Leave your old place spotless or start fresh in your new home. Landlord-ready results.</p>
             <div className="hsc-price">{'From $150'}</div>
           </div>
           <div className="hp-service-card anim-fadeInUp delay-4">
-            <div className="hsc-icon">🏢</div>
+            <div className="hsc-icon" aria-hidden="true"></div>
             <h3>{'Light Commercial'}</h3>
             <p>Offices, studios, and small businesses. Flexible scheduling before or after hours.</p>
             <div className="hsc-price">{'From $250'}</div>
@@ -279,19 +263,19 @@ export default function HomePage() {
 
       {/* HOW IT WORKS */}
       <section style={{ padding: '70px 24px 60px', maxWidth: '900px', margin: '0 auto' }}>
-        <div className="hp-section-label">{'How It Works'}</div>
+        <div className="hp-section-label">How It Works</div>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '0', position: 'relative', marginTop: '10px', flexWrap: 'wrap' }}>
           {[
-            { step: '1', icon: '📋', title: 'Book Online', desc: 'Fill out a quick form with your details and get an instant estimate. No phone calls needed.' },
-            { step: '2', icon: '✨', title: 'We Clean', desc: 'Our team arrives on time with all supplies. Sit back while we make your space sparkle.' },
-            { step: '3', icon: '😊', title: 'You Relax', desc: 'Come home to a spotless space. Love it or we will make it right - guaranteed.' },
+            { step: '1', title: 'Book Online or Call', desc: 'Choose a service online or call us for a quick estimate.' },
+            { step: '2', title: 'We Arrive On Time', desc: 'On-time, uniformed cleaner arrives with all supplies.' },
+            { step: '3', title: '100% Satisfaction', desc: 'We fix it if you’re not happy — satisfaction guaranteed.' },
           ].map((s, i) => (
-            <div key={i} style={{ flex: '1 1 250px', maxWidth: '280px', textAlign: 'center', padding: '20px 20px', position: 'relative', zIndex: 1 }}>
-              <div style={{ width: '88px', height: '88px', borderRadius: '50%', margin: '0 auto 18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', background: i === 0 ? 'rgba(168,85,247,.12)' : i === 1 ? 'rgba(219,39,119,.12)' : 'rgba(96,165,250,.12)', border: '2px solid ' + (i === 0 ? 'rgba(168,85,247,.3)' : i === 1 ? 'rgba(219,39,119,.3)' : 'rgba(96,165,250,.3)'), boxShadow: '0 0 30px ' + (i === 0 ? 'rgba(168,85,247,.15)' : i === 1 ? 'rgba(219,39,119,.15)' : 'rgba(96,165,250,.15)') }}>
-                {s.icon}
+            <div key={i} style={{ flex: '1 1 250px', maxWidth: '320px', textAlign: 'center', padding: '20px 20px', position: 'relative', zIndex: 1 }}>
+              <div style={{ width: '68px', height: '68px', borderRadius: '50%', margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)' }}>
+                {s.step}
               </div>
-              <div style={{ fontSize: '.65rem', fontWeight: '800', letterSpacing: '1.5px', textTransform: 'uppercase', color: i === 0 ? '#a855f7' : i === 1 ? '#db2777' : '#60a5fa', marginBottom: '8px' }}>{'Step'} {s.step}</div>
-              <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.15rem', fontWeight: '700', color: 'white', margin: '0 0 8px' }}>{s.title}</h3>
+              <div style={{ fontSize: '.65rem', fontWeight: '800', letterSpacing: '1.5px', textTransform: 'uppercase', color: '#9ca3af', marginBottom: '8px' }}>{'Step'} {s.step}</div>
+              <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.05rem', fontWeight: '700', color: 'white', margin: '0 0 8px' }}>{s.title}</h3>
               <p style={{ fontSize: '.84rem', color: '#9ca3af', lineHeight: '1.65', margin: 0 }}>{s.desc}</p>
             </div>
           ))}
@@ -306,19 +290,18 @@ export default function HomePage() {
 
         <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0 20px' }}>
           <button onClick={() => router.push('/gallery')}
-            style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '22px 52px', background: 'linear-gradient(135deg,#a855f7,#db2777)', color: 'white', border: 'none', borderRadius: '20px', fontFamily: "'DM Sans',sans-serif", fontWeight: '900', fontSize: '1.25rem', cursor: 'pointer', boxShadow: '0 6px 40px rgba(168,85,247,.5), 0 0 80px rgba(219,39,119,.2)', letterSpacing: '.3px', transition: 'transform .15s, box-shadow .15s' }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 8px 60px rgba(168,85,247,.7), 0 0 100px rgba(219,39,119,.3)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 6px 40px rgba(168,85,247,.5), 0 0 80px rgba(219,39,119,.2)'; }}>
-            <span style={{ fontSize: '1.5rem' }}>📷</span>
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '18px 44px', background: 'var(--pink-deep)', color: 'white', border: 'none', borderRadius: '14px', fontFamily: "'DM Sans',sans-serif", fontWeight: '800', fontSize: '1.05rem', cursor: 'pointer', boxShadow: '0 8px 30px rgba(219,39,119,.18)', letterSpacing: '.3px', transition: 'transform .12s, box-shadow .12s' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(219,39,119,.22)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(219,39,119,.18)'; }}>
             {'See All Photos'}
-            <span style={{ fontSize: '1.1rem', opacity: .85 }}>→</span>
+            <span style={{ fontSize: '1.05rem', opacity: .95 }}>→</span>
           </button>
         </div>
 
         {/* Reviews */}
         <div id="reviews" style={{ position: 'relative', marginTop: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', gap: '3px', fontSize: '1.1rem' }}>{'⭐'.repeat(5)}</div>
+            <div style={{ display: 'flex', gap: '3px', fontSize: '1.1rem' }}>{'★'.repeat(5)}</div>
             <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: '900', color: 'white' }}>5.0</div>
             <div style={{ fontSize: '.8rem', color: '#9ca3af' }}>· {reviews.length} 'reviews' + ' \u00b7 ' + 'All 5-star'</div>
           </div>
@@ -332,13 +315,13 @@ export default function HomePage() {
             {reviews.map((r, i) => (
               <div key={r.id || r.name || i} style={{
                 flexShrink: 0, width: '280px',
-                background: 'linear-gradient(160deg, #161616 0%, #111 100%)',
-                border: '1px solid #2a2a2a', borderRadius: '18px',
-                padding: '20px',
+                background: '#0f0f10',
+                border: '1px solid #222', borderRadius: '18px',
+                padding: '18px',
                 display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px',
               }}>
                 <div>
-                  <div style={{ fontSize: '.95rem', marginBottom: '10px', letterSpacing: '1px' }}>{'⭐'.repeat(r.stars)}</div>
+                  <div style={{ fontSize: '.95rem', marginBottom: '10px', letterSpacing: '1px' }}>{'★'.repeat(r.stars)}</div>
                   <p style={{ color: '#d1d5db', fontSize: '.83rem', lineHeight: '1.65', margin: 0 }}>
                     &ldquo;{r.text}&rdquo;
                   </p>
@@ -346,7 +329,7 @@ export default function HomePage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '12px', borderTop: '1px solid #222' }}>
                   <div style={{
                     width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0,
-                    background: 'linear-gradient(135deg,#a855f7,#db2777)',
+                    background: 'var(--pink-deep)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontWeight: '800', fontSize: '.88rem', color: 'white',
                   }}>{r.name[0]}</div>
@@ -365,7 +348,7 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-          <div style={{ position: 'absolute', right: 0, top: '42px', bottom: '12px', width: '60px', background: 'linear-gradient(to left,#151515 30%,transparent)', pointerEvents: 'none', borderRadius: '0 18px 18px 0' }} />
+          <div style={{ position: 'absolute', right: 0, top: '42px', bottom: '12px', width: '60px', background: 'linear-gradient(to left, rgba(21,21,21,1) 30%, transparent)', pointerEvents: 'none', borderRadius: '0 18px 18px 0' }} />
         </div>
       </section>
 
@@ -374,7 +357,7 @@ export default function HomePage() {
         <div className="hp-section-label">{'Locations'}</div>
         <div className="hp-location-stack">
           <div className="hp-location-box">
-            <span className="hp-loc-pin">📍</span>
+            <span className="hp-loc-pin" aria-hidden="true"></span>
             <div>
               <strong>{'Based In Fairfield, Ohio'}</strong>
               <p>{'Serving Fairfield and surrounding cities in the Cincinnati area'}</p>
@@ -389,11 +372,14 @@ export default function HomePage() {
       {/* FOOTER */}
       <footer className="hp-footer">
         <div className="hp-footer-links">
-          <a href="/policy">{'Policy'}</a>
-          <a href="#">{'Careers'}</a>
+          <a href="/policy">Policy</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="#">Careers</a>
+          <a href="https://www.google.com/maps/search/?api=1&query=Yoselin%27s+Cleaning+Fairfield+OH" target="_blank" rel="noopener noreferrer">Google Business</a>
         </div>
         <div className="hp-footer-contact">
-          <p>{'Text or Call'}</p>
+          <p>Text or Call</p>
           <a href="tel:5133709082">513-370-9082</a>
           <a href="tel:5132576942">513-257-6942</a>
         </div>
@@ -409,7 +395,7 @@ export default function HomePage() {
       {authMode === 'verify' && (
         <div className="am-overlay">
           <div className="am-modal" style={{textAlign:'center'}}>
-            <div className="am-logo">📧</div>
+            <div className="am-logo">Email</div>
             <h2 className="am-title">{'Check Your Email'}</h2>
             <p className="am-sub" style={{marginBottom:'6px'}}>
               {'We sent a verification link to'}<br />
@@ -419,7 +405,7 @@ export default function HomePage() {
               {'Click the link in the email, then press the button below.'}
             </p>
             {verifyError   && <p className="am-error" style={{marginBottom:'12px'}}>{verifyError}</p>}
-            {verifyResent  && <p style={{color:'#10b981',fontSize:'.8rem',marginBottom:'12px'}}>✅ {'Email resent! Check your inbox.'}</p>}
+            {verifyResent  && <p style={{color:'#10b981',fontSize:'.8rem',marginBottom:'12px'}}>{'Email resent! Check your inbox.'}</p>}
             <button className="am-submit" onClick={checkVerification} disabled={busy} style={{marginBottom:'10px'}}>
               {busy ? '...' : "I've Verified My Email"}
             </button>
@@ -450,7 +436,7 @@ export default function HomePage() {
 
             {resetSent ? (
               <div className="am-reset-success">
-                <div style={{fontSize:'2rem',marginBottom:'8px'}}>📧</div>
+                <div style={{fontSize:'2rem',marginBottom:'8px'}}>Email</div>
                 <p>{'Password reset email sent! Check your inbox.'}</p>
                 <button className="am-link-btn" onClick={() => setResetSent(false)}>{'Back to Login'}</button>
               </div>

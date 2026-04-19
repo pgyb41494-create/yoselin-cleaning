@@ -11,7 +11,7 @@ const s = {
   panel: { background: 'white', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: '600px', height: '80vh', display: 'flex', flexDirection: 'column' },
   head: { padding: '18px 22px', borderBottom: '1.5px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0d0d0d', borderRadius: '24px 24px 0 0' },
   headInfo: { display: 'flex', alignItems: 'center', gap: '12px' },
-  avatar: { width: '38px', height: '38px', borderRadius: '50%', background: 'linear-gradient(135deg,#f472b6,#4a9eff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' },
+  avatar: { width: '38px', height: '38px', borderRadius: '50%', background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' },
   name: { fontWeight: 700, color: 'white', fontSize: '.95rem' },
   status: { fontSize: '.72rem', color: '#9ca3af', marginTop: '1px' },
   closeBtn: { background: 'rgba(255,255,255,.1)', border: 'none', color: 'white', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', fontSize: '1rem' },
@@ -19,7 +19,7 @@ const s = {
   empty: { textAlign: 'center', padding: '40px 20px', color: '#9ca3af', fontSize: '.85rem' },
   inputWrap: { padding: '14px 16px', borderTop: '1.5px solid #e2e8f0', display: 'flex', gap: '10px', background: 'white' },
   input: { flex: 1, padding: '11px 15px', border: '1.5px solid #e2e8f0', borderRadius: '99px', fontFamily: "'DM Sans', sans-serif", fontSize: '.88rem', outline: 'none' },
-  sendBtn: { padding: '11px 20px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '99px', fontFamily: "'DM Sans', sans-serif", fontSize: '.84rem', fontWeight: 700, cursor: 'pointer' },
+  sendBtn: { padding: '11px 20px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '99px', fontFamily: "'DM Sans', sans-serif", fontSize: '.84rem', fontWeight: 700, cursor: 'pointer' },
 };
 
 export default function ChatPanel({ requestId, clientName, senderRole, senderName, onClose }) {
@@ -60,7 +60,7 @@ export default function ChatPanel({ requestId, clientName, senderRole, senderNam
 
   const headLabel = senderRole === 'admin'
     ? `${clientName}  Chat`
-    : '\u2728 Yoselin - Your Cleaner';
+    : 'Yoselin - Your Cleaner';
 
   return (
     <div style={s.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -70,7 +70,7 @@ export default function ChatPanel({ requestId, clientName, senderRole, senderNam
             <div style={s.avatar}></div>
             <div>
               <div style={s.name}>{headLabel}</div>
-              <div style={s.status}>Yoselin's Cleaning Service</div>
+              <div style={s.status}>Insured • Background-Checked • Satisfaction Guarantee</div>
             </div>
           </div>
           <button style={s.closeBtn} onClick={onClose}></button>
@@ -91,9 +91,7 @@ export default function ChatPanel({ requestId, clientName, senderRole, senderNam
                   maxWidth: '78%', padding: '11px 15px', borderRadius: '18px',
                   borderBottomRightRadius: isMe ? '5px' : '18px',
                   borderBottomLeftRadius: isMe ? '18px' : '5px',
-                  background: isMe
-                    ? 'linear-gradient(135deg,#1a6fd4,#db2777)'
-                    : '#0d0d0d',
+                  background: isMe ? 'var(--blue)' : '#0d0d0d',
                   color: 'white', fontSize: '.87rem', lineHeight: 1.45,
                 }}>
                   {msg.text}

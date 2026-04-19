@@ -287,7 +287,7 @@ export default function AdminPage() {
     notifyBookingConfirmed({ clientName: req.name, clientEmail: req.email, date: req.date, time: req.time, address: req.address, estimate: req.estimate });
     await addDoc(collection(db, 'chats', req.id, 'messages'), {
       text: 'Hi ' + req.name.split(' ')[0] + '! Your cleaning appointment has been confirmed for ' + req.date + '. Please reach out if you have any questions!',
-      sender: 'admin', senderName: 'Owner', createdAt: serverTimestamp(),
+      sender: 'admin', senderName: 'Yoselin', createdAt: serverTimestamp(),
     });
     await generateRecurringSchedule(req);
     setSelected(r => r ? { ...r, status: 'confirmed' } : r);
@@ -529,8 +529,8 @@ export default function AdminPage() {
     { key: 'calendar',     label: 'Calendar'     },
     { key: 'availability', label: 'Availability' },
     { key: 'create',       label: 'Create Quote' },
-    { key: 'gallery',      label: '📷 Gallery'   },
-    { key: 'pricing',      label: '💰 Pricing'   },
+    { key: 'gallery',      label: 'Gallery'   },
+    { key: 'pricing',      label: 'Pricing'   },
   ];
 
   const btnStyle = (color) => ({
@@ -685,7 +685,7 @@ export default function AdminPage() {
                                 const mn = MONTH_NAMES[d.getMonth()].slice(0,3);
                                 return (
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <div style={{ width: '38px', height: '42px', borderRadius: '8px', background: 'linear-gradient(135deg, rgba(168,85,247,.2), rgba(219,39,119,.1))', border: '1px solid rgba(168,85,247,.2)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <div style={{ width: '38px', height: '42px', borderRadius: '8px', background: 'rgba(167,139,250,.06)', border: '1px solid rgba(168,85,247,.18)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                       <div style={{ fontSize: '.42rem', fontWeight: '800', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '.5px', lineHeight: 1 }}>{mn}</div>
                                       <div style={{ fontSize: '1rem', fontWeight: '900', color: 'white', lineHeight: 1.1 }}>{d.getDate()}</div>
                                     </div>
@@ -900,11 +900,11 @@ export default function AdminPage() {
                 {/* Quick preset buttons */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
                   {[
-                    { label: '🌅 Morning',   times: ALL_TIMES.slice(0, 12) },
-                    { label: '☀ Afternoon', times: ALL_TIMES.slice(12, 22) },
-                    { label: '🌆 Evening',   times: ALL_TIMES.slice(22) },
-                    { label: '📅 All Day',   times: ALL_TIMES },
-                    { label: '✕ Clear',      times: [] },
+                    { label: 'Morning',   times: ALL_TIMES.slice(0, 12) },
+                    { label: 'Afternoon', times: ALL_TIMES.slice(12, 22) },
+                    { label: 'Evening',   times: ALL_TIMES.slice(22) },
+                    { label: 'All Day',   times: ALL_TIMES },
+                    { label: 'Clear',     times: [] },
                   ].map(({ label, times }) => (
                     <button key={label} onClick={() => setSelectedTimes(times)} style={{ padding: '7px 13px', borderRadius: '99px', border: '1px solid #2a2a2a', background: '#1a1a1a', color: '#d1d5db', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}>{label}</button>
                   ))}
@@ -960,7 +960,7 @@ export default function AdminPage() {
 
                 <button onClick={applyAvailability} disabled={saving || selectedDates.size===0 || selectedTimes.length===0} style={{
                   marginTop: '14px', width: '100%', padding: '14px',
-                  background: selectedDates.size>0 && selectedTimes.length>0 ? 'linear-gradient(135deg,#a855f7,#db2777)' : '#1f1f1f',
+                  background: selectedDates.size>0 && selectedTimes.length>0 ? 'var(--pink-deep)' : '#1f1f1f',
                   color: selectedDates.size>0 && selectedTimes.length>0 ? 'white' : '#444',
                   border: 'none', borderRadius: '12px',
                   fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.92rem',
@@ -981,7 +981,7 @@ export default function AdminPage() {
               <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #1f1f1f', overflow: 'hidden', marginTop: '20px' }}>
                 <div style={{ padding: '14px 18px', borderBottom: '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ color: '#9ca3af', fontSize: '.75rem', fontWeight: '700', letterSpacing: '.4px', textTransform: 'uppercase' }}>Saved Slots ({availability.length} total)</div>
-                  <button onClick={clearAllAvailability} style={{ padding: '6px 14px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.4)', color: '#ef4444', borderRadius: '8px', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer' }}>🗑 Clear All</button>
+                  <button onClick={clearAllAvailability} style={{ padding: '6px 14px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.4)', color: '#ef4444', borderRadius: '8px', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer' }}>Clear All</button>
                 </div>
                 <div style={{ padding: '14px 18px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {(() => {
@@ -991,7 +991,7 @@ export default function AdminPage() {
                       <div key={date} style={{ background: '#151515', borderRadius: '12px', border: '1px solid #222', padding: '10px 14px', minWidth: '160px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '7px', gap: '8px' }}>
                           <div style={{ fontSize: '.72rem', fontWeight: '700', color: '#a855f7', textTransform: 'uppercase' }}>{date}</div>
-                          <button onClick={() => clearDateSlots(slots)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.8rem', padding: '0', lineHeight: 1, fontWeight: '700' }}>🗑</button>
+                          <button onClick={() => clearDateSlots(slots)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.8rem', padding: '0', lineHeight: 1, fontWeight: '700' }}>Clear</button>
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                           {slots.map(s => (
@@ -1015,10 +1015,10 @@ export default function AdminPage() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
               <div>
-                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white' }}>📷 Gallery Manager</div>
+                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white' }}>Gallery Manager</div>
                 <div style={{ fontSize: '.8rem', color: '#6b7280', marginTop: '3px' }}>{galleryPhotos.length} photo{galleryPhotos.length !== 1 ? 's' : ''} · visible at <a href="/gallery" target="_blank" style={{ color: '#a855f7', textDecoration: 'none' }}>/gallery</a></div>
               </div>
-              {galleryUploadDone && <span style={{ fontSize: '.85rem', color: '#10b981', fontWeight: '700' }}>✅ Uploaded!</span>}
+              {galleryUploadDone && <span style={{ fontSize: '.85rem', color: '#10b981', fontWeight: '700' }}>Uploaded!</span>}
             </div>
 
             {/* Upload Box */}
@@ -1028,10 +1028,10 @@ export default function AdminPage() {
               {/* File picker */}
               <label style={{ display: 'block', marginBottom: '16px', cursor: 'pointer' }}>
                 <div style={{ background: '#1a1a1a', border: '1.5px solid #333', borderRadius: '12px', padding: '20px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📁</div>
+                  <div style={{ fontSize: '2rem', marginBottom: '8px' }}>Files</div>
                   <div style={{ fontWeight: '700', color: '#a855f7', fontSize: '.88rem', marginBottom: '4px' }}>Click to choose photos</div>
                   <div style={{ fontSize: '.75rem', color: '#6b7280' }}>JPG, PNG · Multiple allowed · From your phone or computer</div>
-                  {galleryFiles.length > 0 && <div style={{ marginTop: '10px', fontSize: '.82rem', color: '#10b981', fontWeight: '700' }}>✅ {galleryFiles.length} file{galleryFiles.length !== 1 ? 's' : ''} selected</div>}
+                  {galleryFiles.length > 0 && <div style={{ marginTop: '10px', fontSize: '.82rem', color: '#10b981', fontWeight: '700' }}>{galleryFiles.length} file{galleryFiles.length !== 1 ? 's' : ''} selected</div>}
                 </div>
                 <input type="file" accept="image/*" multiple onChange={e => setGalleryFiles(Array.from(e.target.files))} style={{ display: 'none' }} />
               </label>
@@ -1046,9 +1046,9 @@ export default function AdminPage() {
                   <label style={{ display: 'block', fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>Category</label>
                   <select value={galleryCategory} onChange={e => setGalleryCategory(e.target.value)}
                     style={{ width: '100%', padding: '9px 13px', background: '#1a1a1a', border: '1.5px solid #2a2a2a', borderRadius: '9px', color: 'white', fontSize: '.83rem', outline: 'none' }}>
-                    <option value="before">🔴 Before</option>
-                    <option value="after">✅ After</option>
-                    <option value="featured">⭐ Featured</option>
+                    <option value="before">Before</option>
+                    <option value="after">After</option>
+                    <option value="featured">Featured</option>
                   </select>
                 </div>
               </div>
@@ -1060,8 +1060,8 @@ export default function AdminPage() {
               </div>
 
               <button onClick={uploadGalleryPhotos} disabled={galleryUploading || galleryFiles.length === 0}
-                style={{ width: '100%', padding: '14px', background: galleryFiles.length > 0 ? 'linear-gradient(135deg,#a855f7,#db2777)' : '#1f1f1f', color: galleryFiles.length > 0 ? 'white' : '#555', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.92rem', cursor: galleryFiles.length > 0 ? 'pointer' : 'not-allowed', opacity: galleryUploading ? .7 : 1 }}>
-                {galleryUploading ? '⏳ Uploading...' : galleryFiles.length === 0 ? 'Select photos first' : `📤 Upload ${galleryFiles.length} Photo${galleryFiles.length !== 1 ? 's' : ''}`}
+                style={{ width: '100%', padding: '14px', background: galleryFiles.length > 0 ? 'var(--pink-deep)' : '#1f1f1f', color: galleryFiles.length > 0 ? 'white' : '#555', border: 'none', borderRadius: '12px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.92rem', cursor: galleryFiles.length > 0 ? 'pointer' : 'not-allowed', opacity: galleryUploading ? .7 : 1 }}>
+                {galleryUploading ? 'Uploading...' : galleryFiles.length === 0 ? 'Select photos first' : `Upload ${galleryFiles.length} Photo${galleryFiles.length !== 1 ? 's' : ''}`}
               </button>
             </div>
 
@@ -1100,8 +1100,8 @@ export default function AdminPage() {
                 <div style={{ fontSize: '.8rem', color: '#6b7280', marginTop: '3px' }}>Tap a field, type the new price, then tap outside ? changes are saved when you press Save</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {priceSaved && <span style={{ fontSize: '.82rem', color: '#10b981', fontWeight: '700' }}>✅ Saved!</span>}
-                <button onClick={savePricing} disabled={priceSaving} style={{ padding: '11px 24px', background: 'linear-gradient(135deg,#a855f7,#db2777)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer', opacity: priceSaving ? .6 : 1 }}>
+                {priceSaved && <span style={{ fontSize: '.82rem', color: '#10b981', fontWeight: '700' }}>Saved!</span>}
+                <button onClick={savePricing} disabled={priceSaving} style={{ padding: '11px 24px', background: 'var(--pink-deep)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer', opacity: priceSaving ? .6 : 1 }}>
                   {priceSaving ? 'Saving...' : 'Save All Prices'}
                 </button>
               </div>
@@ -1175,7 +1175,7 @@ export default function AdminPage() {
                 <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', fontWeight: '700', marginBottom: '4px', color: 'white' }}>Create a Quote</div>
                 <p style={{ fontSize: '.85rem', color: '#9ca3af', marginBottom: '20px' }}>Fill out the booking form on behalf of a client.</p>
                 <div style={{ background: '#111', borderRadius: '18px', border: '1px solid #222', overflow: 'hidden' }}>
-                  <div style={{ background: 'linear-gradient(135deg,#1a6fd4,#db2777)', padding: '18px 24px' }}>
+                  <div style={{ background: 'var(--blue)', padding: '18px 24px' }}>
                     <div style={{ fontFamily: 'Playfair Display, serif', color: 'white', fontSize: '1.1rem', fontWeight: '700' }}>New Client Quote</div>
                     <div style={{ color: 'rgba(255,255,255,.75)', fontSize: '.78rem', marginTop: '3px' }}>Same form your customers use</div>
                   </div>
@@ -1219,7 +1219,7 @@ export default function AdminPage() {
                     />
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-                    <button onClick={saveEstimate} disabled={estimateSaving} style={{ padding: '5px 14px', background: 'linear-gradient(135deg,#a855f7,#db2777)', color: 'white', border: 'none', borderRadius: '7px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.72rem', cursor: 'pointer', opacity: estimateSaving ? .6 : 1 }}>
+                    <button onClick={saveEstimate} disabled={estimateSaving} style={{ padding: '5px 14px', background: 'var(--pink-deep)', color: 'white', border: 'none', borderRadius: '7px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.72rem', cursor: 'pointer', opacity: estimateSaving ? .6 : 1 }}>
                       {estimateSaving ? 'Saving...' : 'Save Price'}
                     </button>
                     {estimateSaved && <span style={{ fontSize: '.72rem', color: '#10b981', fontWeight: '700' }}>Saved!</span>}
@@ -1243,7 +1243,7 @@ export default function AdminPage() {
                         <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '14px' }}>
                           {parsed ? (
                             <div style={{ width: '58px', flexShrink: 0, borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(168,85,247,.25)', border: '1px solid rgba(168,85,247,.25)' }}>
-                              <div style={{ background: 'linear-gradient(135deg, #a855f7, #db2777)', padding: '4px 0 2px', textAlign: 'center' }}>
+                              <div style={{ background: 'var(--pink-deep)', padding: '4px 0 2px', textAlign: 'center' }}>
                                 <div style={{ fontSize: '.5rem', fontWeight: '800', color: 'rgba(255,255,255,.9)', textTransform: 'uppercase', letterSpacing: '1.2px', lineHeight: 1 }}>{monthName.slice(0,3)}</div>
                               </div>
                               <div style={{ background: '#1a1a2e', padding: '6px 0 5px', textAlign: 'center' }}>
@@ -1290,50 +1290,50 @@ export default function AdminPage() {
               {/* Contact row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid #232a3a' }}>
                 <div style={{ padding: '14px 18px', borderRight: '1px solid #232a3a' }}>
-                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>📧 Email</div>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>Email</div>
                   <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db', wordBreak: 'break-all' }}>{selected.email}</div>
                 </div>
                 <div style={{ padding: '14px 18px' }}>
-                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🕒 Submitted</div>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>Submitted</div>
                   <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db' }}>{selected.submittedAt}</div>
                 </div>
               </div>
               {/* Address full width */}
               <div style={{ padding: '14px 18px', borderBottom: '1px solid #232a3a' }}>
-                <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>📍 Address</div>
+                <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>Address</div>
                 <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db' }}>{selected.address || 'N/A'}</div>
               </div>
               {/* Bathrooms + Rooms */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid #232a3a' }}>
                 <div style={{ padding: '14px 18px', borderRight: '1px solid #232a3a' }}>
-                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🚿 Bathrooms</div>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>Bathrooms</div>
                   <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db', lineHeight: 1.5 }}>{selected.bathrooms || 'None'}</div>
                 </div>
                 <div style={{ padding: '14px 18px' }}>
-                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🛏 Rooms</div>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>Rooms</div>
                   <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db', lineHeight: 1.5 }}>{selected.rooms || 'None'}</div>
                 </div>
               </div>
               {/* Add-ons full width */}
               <div style={{ padding: '14px 18px', borderBottom: '1px solid #232a3a' }}>
-                <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>✨ Add-Ons</div>
+                <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>Add-Ons</div>
                 <div style={{ fontSize: '.84rem', fontWeight: '600', color: '#d1d5db' }}>{selected.addons || 'None'}</div>
               </div>
               {/* Pets + Walk-through */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid #232a3a' }}>
                 <div style={{ padding: '14px 18px', borderRight: '1px solid #232a3a' }}>
-                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🐾 Pets</div>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>Pets</div>
                   <div style={{ fontSize: '.84rem', fontWeight: '600', color: selected.pets === 'yes' ? '#f59e0b' : '#d1d5db' }}>{selected.pets === 'yes' ? 'Yes' : 'No'}</div>
                 </div>
                 <div style={{ padding: '14px 18px' }}>
-                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🏠 Walk-Through</div>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>Walk-Through</div>
                   <div style={{ fontSize: '.84rem', fontWeight: '600', color: (selected.walkthrough === 'Yes' || selected.walkThrough === 'yes') ? '#f59e0b' : '#d1d5db' }}>{(selected.walkthrough === 'Yes' || selected.walkThrough === 'yes') ? 'Yes ⚠️' : 'No'}</div>
                 </div>
               </div>
               {/* Discounts */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid #232a3a' }}>
                 <div style={{ padding: '14px 18px', borderRight: '1px solid #232a3a' }}>
-                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>🎁 First-Time</div>
+                  <div style={{ fontSize: '.6rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '5px' }}>First-Time</div>
                   <div style={{ fontSize: '.84rem', fontWeight: '600', color: selected.firstTime === 'yes' ? '#10b981' : '#d1d5db' }}>{selected.firstTime === 'yes' ? 'Yes — 10% off' : 'No'}</div>
                 </div>
                 <div style={{ padding: '14px 18px' }}>
@@ -1388,7 +1388,7 @@ export default function AdminPage() {
             <div style={{ margin: '14px 24px 0', background: '#1a2030', borderRadius: '14px', border: '1px solid #232a3a', overflow: 'hidden' }}>
               <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: reschedMode ? '1px solid #232a3a' : 'none' }}>
                 <span style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af' }}>&#x1F4C5; Reschedule</span>
-                <button onClick={() => setReschedMode(m => !m)} style={{ background: reschedMode ? '#2a2a2a' : 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '8px', padding: '5px 13px', fontSize: '.73rem', fontWeight: '700', cursor: 'pointer' }}>
+                <button onClick={() => setReschedMode(m => !m)} style={{ background: reschedMode ? '#2a2a2a' : 'var(--blue)', color: 'white', border: 'none', borderRadius: '8px', padding: '5px 13px', fontSize: '.73rem', fontWeight: '700', cursor: 'pointer' }}>
                   {reschedMode ? 'Cancel' : 'Change Date / Time'}
                 </button>
               </div>
@@ -1411,7 +1411,7 @@ export default function AdminPage() {
                     </div>
                   </div>
                   <button onClick={saveReschedule} disabled={reschedSaving || !reschedDate.trim()}
-                    style={{ padding: '9px 20px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '9px', fontWeight: '700', fontSize: '.82rem', cursor: 'pointer', opacity: reschedSaving ? .6 : 1 }}>
+                    style={{ padding: '9px 20px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '9px', fontWeight: '700', fontSize: '.82rem', cursor: 'pointer', opacity: reschedSaving ? .6 : 1 }}>
                     {reschedSaving ? 'Saving...' : 'Save New Date'}
                   </button>
                 </div>
@@ -1439,12 +1439,12 @@ export default function AdminPage() {
             {/* Action Buttons */}
             <div style={{ padding: '18px 24px 24px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
               {selected.status === 'new' && (
-                <button onClick={() => confirmReq(selected)} style={{ flex: 1, minWidth: '160px', padding: '14px', borderRadius: '14px', border: 'none', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', fontSize: '.9rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <button onClick={() => confirmReq(selected)} style={{ flex: 1, minWidth: '160px', padding: '14px', borderRadius: '14px', border: 'none', background: '#059669', color: 'white', fontSize: '.9rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   &#x2705; Confirm Appointment
                 </button>
               )}
               {selected.status === 'confirmed' && (
-                <button onClick={() => markDone(selected)} style={{ flex: 1, minWidth: '160px', padding: '14px', borderRadius: '14px', border: 'none', background: 'linear-gradient(135deg, #a855f7, #7c3aed)', color: 'white', fontSize: '.9rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <button onClick={() => markDone(selected)} style={{ flex: 1, minWidth: '160px', padding: '14px', borderRadius: '14px', border: 'none', background: 'var(--pink-deep)', color: 'white', fontSize: '.9rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   &#x2705; Mark Done
                 </button>
               )}
@@ -1453,7 +1453,7 @@ export default function AdminPage() {
                   &#x274C; Cancel Booking
                 </button>
               )}
-              <button onClick={() => { setChatReq(selected); setSelected(null); }} style={{ flex: 1, minWidth: '140px', padding: '14px', borderRadius: '14px', border: 'none', background: 'linear-gradient(135deg, #1e3a5f, #1e40af)', color: '#93c5fd', fontSize: '.9rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <button onClick={() => { setChatReq(selected); setSelected(null); }} style={{ flex: 1, minWidth: '140px', padding: '14px', borderRadius: '14px', border: 'none', background: 'var(--blue)', color: '#93c5fd', fontSize: '.9rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                 &#x1F4AC; Chat with Client
               </button>
               <a href={'mailto:' + selected.email + '?subject=Your Cleaning Appointment Reminder&body=Hi ' + (selected.name ? selected.name.split(' ')[0] : '') + '%2C%0A%0AReminder: your cleaning is scheduled for ' + encodeURIComponent(selected.date) + ' at ' + encodeURIComponent(selected.time) + '.%0A%0A- Yoselin%27s Cleaning'}

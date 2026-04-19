@@ -178,25 +178,24 @@ export default function GalleryPage() {
           <button onClick={() => router.push('/')} style={{ padding: '9px 18px', background: 'transparent', border: '1.5px solid #2a2a2a', color: '#9ca3af', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>
             {'← Home'}
           </button>
-          <button onClick={() => router.push('/book')} style={{ padding: '9px 18px', background: 'linear-gradient(135deg,#1a6fd4,#db2777)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>
+          <button onClick={() => router.push('/book')} style={{ padding: '9px 18px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>
             {'Get a Quote'}
           </button>
         </div>
       </nav>
 
-      <div style={{ background: 'linear-gradient(135deg,#0d0d1a 0%,#1a0828 50%,#0d0d1a 100%)', padding: '52px 24px 40px', textAlign: 'center' }}>
+      <div style={{ background: 'rgba(13,13,26,0.95)', padding: '52px 24px 40px', textAlign: 'center' }}>
         <div style={{ fontSize: '.73rem', fontWeight: '800', color: '#a855f7', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '12px' }}>{'Real Results · Real Homes'}</div>
         <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.8rem,5vw,2.8rem)', fontWeight: '900', color: 'white', marginBottom: '16px', lineHeight: 1.2 }}>
-          {'See the '}<span style={{ background: 'linear-gradient(135deg,#f472b6,#a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{'Transformation'}</span>
+          {'See the '}<span style={{ color: 'var(--pink-deep)', fontWeight: 900 }}>{'Transformation'}</span>
         </h1>
         <p style={{ color: '#9ca3af', fontSize: 'clamp(.85rem,2.5vw,1rem)', maxWidth: '520px', margin: '0 auto 28px', lineHeight: 1.7 }}>
           {'Every photo is from a real job. We tackle the toughest messes and leave everything spotless.'}
         </p>
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          {[['✨', photos.length + ' Photos'], ['🏆', '5.0 Rating'], ['📍', 'Fairfield, OH']].map(function(arr) {
+          {[['Photos', photos.length + ' Photos'], ['Rating', '5.0 Rating'], ['Location', 'Fairfield, OH']].map(function(arr) {
             return (
-              <div key={arr[1]} style={{ background: 'rgba(168,85,247,.1)', border: '1px solid rgba(168,85,247,.2)', borderRadius: '99px', padding: '7px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>{arr[0]}</span>
+              <div key={arr[1]} style={{ background: 'rgba(168,85,247,.06)', border: '1px solid rgba(168,85,247,.12)', borderRadius: '99px', padding: '7px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '.78rem', fontWeight: '700', color: '#d8b4fe' }}>{arr[1]}</span>
               </div>
             );
@@ -205,21 +204,21 @@ export default function GalleryPage() {
         {isAdmin && (
           <div style={{ marginTop: '24px' }}>
             <button onClick={() => setShowUpload(!showUpload)} style={{
-              padding: '12px 28px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white',
+              padding: '12px 28px', background: '#059669', color: 'white',
               border: 'none', borderRadius: '12px', fontFamily: "'DM Sans',sans-serif", fontWeight: '800',
-              fontSize: '.9rem', cursor: 'pointer', boxShadow: '0 4px 20px rgba(16,185,129,.35)',
+              fontSize: '.9rem', cursor: 'pointer', boxShadow: '0 4px 20px rgba(5,150,105,.18)',
             }}>
-              {showUpload ? '✕ Close Upload' : '➕ Upload Photos'}
+              {showUpload ? 'Close Upload' : 'Upload Photos'}
             </button>
           </div>
         )}
       </div>
 
       {isAdmin && showUpload && (
-        <div style={{ background: 'linear-gradient(135deg,rgba(16,185,129,.06),rgba(5,150,105,.04))', borderBottom: '1.5px solid rgba(16,185,129,.2)', padding: '28px 24px' }}>
+        <div style={{ background: 'rgba(16,185,129,.04)', borderBottom: '1.5px solid rgba(16,185,129,.12)', padding: '28px 24px' }}>
           <div style={{ maxWidth: '600px', margin: '0 auto' }}>
             <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', fontWeight: '800', color: 'white', marginBottom: '18px', textAlign: 'center' }}>
-              {'📷 Upload Gallery Photos'}
+              {'Upload Gallery Photos'}
             </h3>
             <div style={{ marginBottom: '14px' }}>
               <label style={{ display: 'block', fontSize: '.78rem', fontWeight: '700', color: '#9ca3af', marginBottom: '6px' }}>Select Photos</label>
@@ -243,9 +242,9 @@ export default function GalleryPage() {
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {[
                   { value: '', label: 'None', color: '#6b7280' },
-                  { value: 'before', label: '🔴 Before', color: '#ef4444' },
-                  { value: 'after', label: '✅ After', color: '#10b981' },
-                  { value: 'general', label: '📷 General', color: '#a855f7' },
+                  { value: 'before', label: 'Before', color: '#ef4444' },
+                  { value: 'after', label: 'After', color: '#10b981' },
+                  { value: 'general', label: 'General', color: '#a855f7' },
                 ].map(function(opt) {
                   return (
                     <button key={opt.value} onClick={() => setUploadCategory(opt.value)} style={{
@@ -269,10 +268,10 @@ export default function GalleryPage() {
             <button onClick={handleUpload} disabled={uploading || !uploadFiles.length} style={{
               width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
               cursor: uploading || !uploadFiles.length ? 'not-allowed' : 'pointer',
-              background: uploading || !uploadFiles.length ? '#2a2a2a' : 'linear-gradient(135deg,#10b981,#059669)',
+              background: uploading || !uploadFiles.length ? '#2a2a2a' : '#059669',
               color: uploading || !uploadFiles.length ? '#6b7280' : 'white',
               fontFamily: "'DM Sans',sans-serif", fontWeight: '800', fontSize: '.95rem',
-              boxShadow: uploading || !uploadFiles.length ? 'none' : '0 4px 20px rgba(16,185,129,.35)',
+              boxShadow: uploading || !uploadFiles.length ? 'none' : '0 6px 26px rgba(5,150,105,.16)',
             }}>
               {uploading ? 'Uploading...' : 'Upload ' + (uploadFiles.length || '') + ' Photo' + (uploadFiles.length !== 1 ? 's' : '')}
             </button>
@@ -291,7 +290,7 @@ export default function GalleryPage() {
                 fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.82rem',
                 cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'capitalize',
               }}>
-                {cat === 'all' ? '📷 All' : cat === 'before' ? '🔴 Before' : cat === 'after' ? '✅ After' : cat}
+                {cat === 'all' ? 'All' : cat === 'before' ? 'Before' : cat === 'after' ? 'After' : cat}
               </button>
             );
           })}
@@ -301,12 +300,12 @@ export default function GalleryPage() {
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '28px 16px 80px' }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '80px', color: '#6b7280' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '12px' }}>{'📷'}</div>
+            <div style={{ fontSize: '2rem', marginBottom: '12px' }}>{'Photos'}</div>
             <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', color: 'white' }}>{'Loading gallery...'}</div>
           </div>
         ) : filteredPhotos.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px', color: '#6b7280' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>{'📷'}</div>
+            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>{'Photos'}</div>
             <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', color: 'white', marginBottom: '8px' }}>{'Photos Coming Soon'}</div>
             <div style={{ fontSize: '.85rem', lineHeight: 1.6, maxWidth: '320px', margin: '0 auto' }}>
               {"Check back soon — we're uploading our before & after photos of real client jobs."}
@@ -329,7 +328,7 @@ export default function GalleryPage() {
                       color: 'white', fontSize: '.65rem', fontWeight: '800', padding: '3px 9px', borderRadius: '99px',
                       textTransform: 'uppercase', letterSpacing: '.5px',
                     }}>
-                      {photo.category === 'before' ? '🔴 Before' : photo.category === 'after' ? '✅ After' : photo.category}
+                      {photo.category === 'before' ? 'Before' : photo.category === 'after' ? 'After' : photo.category}
                     </div>
                   )}
                   {isAdmin && (
@@ -339,13 +338,13 @@ export default function GalleryPage() {
                       borderRadius: '8px', padding: '4px 10px', fontSize: '.65rem', fontWeight: '800',
                       cursor: 'pointer', backdropFilter: 'blur(4px)',
                     }}>
-                      {'🗑 Delete'}
+                      {'Delete'}
                     </button>
                   )}
                   <div style={{ padding: '12px 14px' }}>
                     {photo.label && <div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem', marginBottom: '3px' }}>{photo.label}</div>}
                     {photo.description && <div style={{ fontSize: '.75rem', color: '#6b7280', lineHeight: 1.5 }}>{photo.description}</div>}
-                    <div style={{ fontSize: '.65rem', color: '#4b5563', marginTop: '6px' }}>{'🔍 Tap to enlarge'}</div>
+                    <div style={{ fontSize: '.65rem', color: '#4b5563', marginTop: '6px' }}>{'Tap to enlarge'}</div>
                   </div>
                 </div>
               );
@@ -360,7 +359,7 @@ export default function GalleryPage() {
             <img src={lightbox.url} alt={lightbox.label || ''} style={{ maxWidth: '90vw', maxHeight: '80vh', objectFit: 'contain', borderRadius: '14px', display: 'block' }} />
             {lightbox.label && (
               <div style={{ textAlign: 'center', marginTop: '14px', fontWeight: '700', color: 'white', fontSize: '.95rem' }}>
-                {(lightbox.category === 'before' ? '🔴 Before — ' : lightbox.category === 'after' ? '✅ After — ' : '') + lightbox.label}
+                {(lightbox.category === 'before' ? 'Before — ' : lightbox.category === 'after' ? 'After — ' : '') + lightbox.label}
               </div>
             )}
             <button onClick={() => setLightbox(null)} style={{ position: 'absolute', top: '-14px', right: '-14px', width: '36px', height: '36px', borderRadius: '50%', background: '#2a2a2a', border: '2px solid #444', color: 'white', fontSize: '1.2rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{'×'}</button>
