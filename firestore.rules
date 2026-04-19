@@ -14,9 +14,15 @@ service cloud.firestore {
       allow read, update: if request.auth != null && (
         resource.data.uid == request.auth.uid ||
         resource.data.userId == request.auth.uid ||
-        request.auth.token.email == 'pgyb41494@gmail.com'
+        request.auth.token.email == 'pgyb41494@gmail.com' ||
+        request.auth.token.email == 'cardonayoselin422@gmail.com' ||
+        request.auth.token.email == 'Cardonayoselin422@gmail.com'
       );
-      allow read, update, delete: if request.auth != null && request.auth.token.email == 'pgyb41494@gmail.com';
+      allow read, update, delete: if request.auth != null && (
+        request.auth.token.email == 'pgyb41494@gmail.com' ||
+        request.auth.token.email == 'cardonayoselin422@gmail.com' ||
+        request.auth.token.email == 'Cardonayoselin422@gmail.com'
+      );
     }
 
     // Chat messages
