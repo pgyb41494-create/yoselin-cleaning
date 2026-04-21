@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { notifyNewBooking } from '../lib/notifications';
 
 const BPRICES = { half: 15, small: 50, medium: 65, large: 80 };
 const RPRICES = { bed_small: 25, bed_medium: 30, bed_large: 35, liv_small: 20, liv_medium: 25, liv_large: 35, office: 10, kit_small: 45, kit_medium: 55, kit_large: 70, laundry: 10, basement: 75 };
@@ -252,6 +253,12 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       text: 'Hi ' + form.firstName + "! Thank you for reaching out. I've received your request and will get back to you within 24 hours to confirm your appointment!",
       sender: 'admin', senderName: 'Yoselin', createdAt: serverTimestamp(),
     });
+    // Notify admin via email and SMS (email-to-SMS gateways) — do not block UI
+    try {
+      notifyNewBooking({ clientName: req.name, clientEmail: req.email, date: req.date, address: req.address, estimate: req.estimate }).catch(e => console.warn('notifyNewBooking failed:', e));
+    } catch (e) {
+      console.warn('notifyNewBooking call error:', e);
+    }
     if (form.date && form.time && form.date !== 'N/A' && form.time !== 'N/A') {
       try {
         const slotSnap = await getDocs(query(collection(db, 'availability'), where('date', '==', form.date), where('time', '==', form.time)));
