@@ -8,7 +8,7 @@ import {
   updateProfile, sendPasswordResetEmail, sendEmailVerification,
 } from 'firebase/auth';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc, limit, getDoc } from 'firebase/firestore';
-import { auth, db, ADMIN_EMAIL, ADMIN_EMAILS } from '../lib/firebase';
+import { auth, db, ADMIN_EMAIL, ADMIN_EMAILS, FIREBASE_ENABLED } from '../lib/firebase';
 
 
 const FALLBACK_REVIEWS = [
@@ -42,6 +42,10 @@ export default function HomePage() {
   const [galleryPhotos, setGalleryPhotos] = useState([]);
 
   useEffect(() => {
+    if (!FIREBASE_ENABLED) {
+      setGalleryPhotos([]);
+      return;
+    }
     const unsub = onSnapshot(
       doc(db, 'settings', 'galleryIndex'),
       async (snap) => {
@@ -65,6 +69,10 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    if (!FIREBASE_ENABLED) {
+      setLiveReviews([]);
+      return;
+    }
     const unsub = onSnapshot(
       query(collection(db, 'reviews'), orderBy('createdAt', 'desc')),
       snap => setLiveReviews(snap.docs.map(d => ({ id: d.id, ...d.data() })) ),
@@ -90,6 +98,11 @@ export default function HomePage() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
+    if (!FIREBASE_ENABLED) {
+      setCurrentUser(null);
+      setLoading(false);
+      return;
+    }
     let timeout;
     try {
       const unsub = onAuthStateChanged(auth, (user) => {
