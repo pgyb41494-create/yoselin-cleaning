@@ -1,6 +1,7 @@
 ﻿'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { goToBooking } from '../lib/navigation';
 import {
   GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
@@ -87,6 +88,8 @@ export default function HomePage() {
   const [authError,     setAuthError]     = useState(false);
   const [currentUser,   setCurrentUser]   = useState(null);
 
+  const searchParams = useSearchParams();
+
   useEffect(() => {
     let timeout;
     try {
@@ -99,6 +102,12 @@ export default function HomePage() {
       return () => { unsub(); clearTimeout(timeout); };
     } catch { setLoading(false); setAuthError(true); }
   }, [router]);
+
+  useEffect(() => {
+    try {
+      if (searchParams.get('auth') === 'login') setAuthMode('login');
+    } catch (e) {}
+  }, [searchParams]);
 
   const redirect = (user) => {
     if (ADMIN_EMAILS.includes(user.email?.toLowerCase()) || ADMIN_EMAILS.includes(user.email)) router.push('/admin');
@@ -208,7 +217,7 @@ export default function HomePage() {
         </div>
 
         <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <button onClick={() => router.push('/book')} style={{ padding: '10px 18px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '999px', fontWeight: 800, cursor: 'pointer' }}>Book Now</button>
+          <button onClick={() => goToBooking(router)} style={{ padding: '10px 18px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '999px', fontWeight: 800, cursor: 'pointer' }}>Book Now</button>
           {currentUser ? (
             <>
               <button className="hp-nav-login" onClick={() => router.push(isAdmin ? '/admin' : '/dashboard')}>{isAdmin ? 'Admin' : 'Dashboard'}</button>
@@ -226,7 +235,7 @@ export default function HomePage() {
         <h1 className="hp-hero-title">Professional Home & Office Cleaning</h1>
         <p className="hp-hero-intro">Serving Fairfield, Ohio and surrounding areas. Reliable, insured, and background-checked cleaning services for homes and small businesses.</p>
         <div className="hp-hero-btns">
-          <button className="btn-primary btn-large" onClick={() => router.push('/book')}>Book Now — Free Estimate</button>
+          <button className="btn-primary btn-large" onClick={() => goToBooking(router)}>Book Now — Free Estimate</button>
           <a href="tel:5132576942" className="btn-ghost" style={{display:'inline-flex',alignItems:'center',justifyContent:'center'}}>Call 513-257-6942</a>
         </div>
         <div style={{ display:'flex', gap:'10px', justifyContent:'center', flexWrap:'wrap', marginTop:'18px' }}>
