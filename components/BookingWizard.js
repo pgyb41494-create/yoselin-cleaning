@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { notifyNewBooking } from '../lib/notifications';
 
 const BPRICES = { half: 15, small: 50, medium: 65, large: 80 };
 const RPRICES = { bed_small: 25, bed_medium: 30, bed_large: 35, liv_small: 20, liv_medium: 25, liv_large: 35, office: 10, kit_small: 45, kit_medium: 55, kit_large: 70, laundry: 10, basement: 75 };
@@ -248,6 +249,14 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       createdByAdmin: adminMode,
     };
     const docRef = await addDoc(collection(db, 'requests'), req);
+    notifyNewBooking({
+      clientName:  req.name,
+      clientEmail: req.email,
+      address:     req.address,
+      estimate:    req.estimate,
+      date:        req.date,
+      phone:       req.phone,
+    });
     await addDoc(collection(db, 'chats', docRef.id, 'messages'), {
       text: 'Hi ' + form.firstName + "! Thank you for reaching out. I've received your request and will get back to you within 24 hours to confirm your appointment!",
       sender: 'admin', senderName: 'Yoselin', createdAt: serverTimestamp(),
