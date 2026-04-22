@@ -332,9 +332,13 @@ export default function DashboardPage() {
 
   if (loading) return <div className="spinner-page"><div className="spinner"></div></div>;
 
-  const latest       = requests[0] || null;
+  // Prefer any active (new/confirmed) booking so a freshly-submitted quote
+  // always takes precedence over a previously-completed one, even when the
+  // new booking's serverTimestamp hasn't resolved yet (createdAt.seconds = undefined).
+  const pendingReq   = requests.find(r => r.status === 'new' || r.status === 'confirmed');
+  const latest       = pendingReq || requests[0] || null;
   const allDone      = requests.filter(r => r.status === 'done').length;
-  const isDone       = latest?.status === 'done';
+  const isDone       = !pendingReq && latest?.status === 'done';
   const isCancelled  = latest?.status === 'cancelled';
   const isConfirmed  = latest?.status === 'confirmed';
   const isNew        = latest?.status === 'new';
