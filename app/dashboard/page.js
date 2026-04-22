@@ -1,10 +1,9 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { goToBooking } from '../../lib/navigation';
 import { onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { collection, query, where, onSnapshot, addDoc, getDocs, serverTimestamp, doc, updateDoc, setDoc } from 'firebase/firestore';
-import { auth, db, ADMIN_EMAILS, FIREBASE_ENABLED } from '../../lib/firebase';
+import { auth, db, ADMIN_EMAILS } from '../../lib/firebase';
 import Chat from '../../components/Chat';
 import { useUnreadCount } from '../../lib/useUnreadCount';
 
@@ -202,7 +201,6 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (!FIREBASE_ENABLED) return;
     const reqId = requests[0]?.id;
     if (activeTab === 'messages' && reqId) {
       setDoc(doc(db, 'chatReads', `${reqId}_customer`), { lastReadAt: new Date() }, { merge: true }).catch(() => {});
@@ -211,8 +209,6 @@ export default function DashboardPage() {
   }, [activeTab, requests]);
 
   useEffect(() => {
-    if (!FIREBASE_ENABLED) { setLoading(false); return; }
-    if (!auth) { setLoading(false); return; }
     const unsubAuth = onAuthStateChanged(auth, (u) => {
       if (!u) { router.push('/'); return; }
       if (ADMIN_EMAILS.includes(u.email?.toLowerCase()) || ADMIN_EMAILS.includes(u.email)) { router.push('/admin'); return; }
@@ -231,7 +227,7 @@ export default function DashboardPage() {
       let snapA = null, snapB = null;
       const unsubA = onSnapshot(qById, s => { snapA = s; if (snapB) mergeSnaps([snapA, snapB]); else { setRequests(s.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); } }, () => setLoading(false));
       const unsubB = onSnapshot(qByEmail, s => { snapB = s; if (snapA) mergeSnaps([snapA, snapB]); }, () => {});
-      const unsubReq = () => { try { unsubA(); } catch(e){} try { unsubB(); } catch(e){} };
+      const unsubReq = () => { unsubA(); unsubB(); };
 
       Promise.all([
         getDocs(query(collection(db, 'schedule'), where('userId', '==', u.uid))),
@@ -246,7 +242,7 @@ export default function DashboardPage() {
       }).catch(() => {});
       unsubReqRef.current = unsubReq;
     });
-    return () => { try { unsubAuth(); } catch(e){} if (unsubReqRef.current) unsubReqRef.current(); };
+    return () => { unsubAuth(); if (unsubReqRef.current) unsubReqRef.current(); };
   }, [router]);
 
   useEffect(() => {
@@ -484,7 +480,7 @@ export default function DashboardPage() {
                 <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}></div>
                 <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white', marginBottom: '8px' }}>Get Your Free Quote</h2>
                 <p style={{ color: '#9ca3af', fontSize: '.85rem', marginBottom: '24px', lineHeight: '1.6' }}>Fill out a quick form and get a custom estimate. No commitment needed.</p>
-                {btn('Get a Quote', () => goToBooking(router))}
+                {btn('Get a Quote', () => router.push('/book'))}
               </div>
             ) : isDone ? (
               <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '18px', padding: '36px 24px', textAlign: 'center' }}>
@@ -492,7 +488,7 @@ export default function DashboardPage() {
                 <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white', marginBottom: '8px' }}>Job Complete!</h2>
                 <p style={{ color: '#9ca3af', fontSize: '.85rem', marginBottom: '24px', lineHeight: '1.6' }}>Your cleaning has been marked complete. Hope everything is sparkling!</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
-                  {btn('Book Again', () => goToBooking(router))}
+                  {btn('Book Again', () => router.push('/book'))}
                   <button onClick={() => router.push('/')} style={{ padding: '11px 28px', background: 'transparent', color: '#9ca3af', border: '1.5px solid #2a2a2a', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>Back to Home Page</button>
                 </div>
               </div>
@@ -668,7 +664,7 @@ export default function DashboardPage() {
                   <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>My Quote</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>View details</div></div>
                 </div>
               )}
-              <div onClick={() => goToBooking(router)} style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div onClick={() => router.push('/book')} style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(16,185,129,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>&#x2728;</div>
                 <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>{latest ? 'New Quote' : 'Get a Quote'}</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>Instant estimate</div></div>
               </div>

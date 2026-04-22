@@ -1,8 +1,7 @@
 ﻿'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore';
-import { db, FIREBASE_ENABLED } from '../lib/firebase';
-import { notifyNewBooking } from '../lib/notifications';
+import { db } from '../lib/firebase';
 
 const BPRICES = { half: 15, small: 50, medium: 65, large: 80 };
 const RPRICES = { bed_small: 25, bed_medium: 30, bed_large: 35, liv_small: 20, liv_medium: 25, liv_large: 35, office: 10, kit_small: 45, kit_medium: 55, kit_large: 70, laundry: 10, basement: 75 };
@@ -87,20 +86,18 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   });
 
   useEffect(() => {
-    if (!FIREBASE_ENABLED) return;
     getDoc(doc(db, 'settings', 'pricing')).then(snap => {
       if (snap.exists()) setLivePrices(snap.data());
     }).catch(() => {});
   }, []);
 
   useEffect(() => {
-    if (!FIREBASE_ENABLED) return;
     const unsub = onSnapshot(collection(db, 'availability'), snap => {
       const slots = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       slots.sort((a, b) => ((a.date || '') + (a.time || '')).localeCompare((b.date || '') + (b.time || '')));
       setAvailability(slots);
     });
-    return () => { try { unsub(); } catch (e) {} };
+    return () => unsub();
   }, []);
 
   useEffect(() => {
@@ -219,7 +216,6 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   };
 
   const handleSubmit = async () => {
-    if (!FIREBASE_ENABLED) { alert('Booking is temporarily unavailable.'); return; }
     if (!form.firstName.trim()) { alert('Please enter a name.'); return; }
     if (!form.phone.trim())     { alert('Please enter a phone number.'); return; }
     setSubmitting(true);
@@ -256,12 +252,6 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       text: 'Hi ' + form.firstName + "! Thank you for reaching out. I've received your request and will get back to you within 24 hours to confirm your appointment!",
       sender: 'admin', senderName: 'Yoselin', createdAt: serverTimestamp(),
     });
-    // Notify admin via email and SMS (email-to-SMS gateways) — do not block UI
-    try {
-      notifyNewBooking({ clientName: req.name, clientEmail: req.email, date: req.date, address: req.address, estimate: req.estimate }).catch(e => console.warn('notifyNewBooking failed:', e));
-    } catch (e) {
-      console.warn('notifyNewBooking call error:', e);
-    }
     if (form.date && form.time && form.date !== 'N/A' && form.time !== 'N/A') {
       try {
         const slotSnap = await getDocs(query(collection(db, 'availability'), where('date', '==', form.date), where('time', '==', form.time)));

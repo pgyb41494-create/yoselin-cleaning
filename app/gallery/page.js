@@ -1,11 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { goToBooking } from '../../lib/navigation';
 import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, auth, storage, ADMIN_EMAILS, FIREBASE_ENABLED } from '../../lib/firebase';
+import { db, auth, storage, ADMIN_EMAILS } from '../../lib/firebase';
 
 export default function GalleryPage() {
   const router = useRouter();
@@ -24,17 +23,14 @@ export default function GalleryPage() {
   const [uploadProgress, setUploadProgress] = useState('');
 
   useEffect(() => {
-    if (!FIREBASE_ENABLED) { setLoading(false); setCurrentUser(null); setIsAdmin(false); return; }
-    if (!auth) { setLoading(false); return; }
     const unsub = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user || null);
       setIsAdmin(user ? ADMIN_EMAILS.includes(user.email?.toLowerCase()) || ADMIN_EMAILS.includes(user.email) : false);
     });
-    return () => { try { unsub(); } catch (e) {} };
+    return () => unsub();
   }, []);
 
   useEffect(() => {
-    if (!FIREBASE_ENABLED || !db) { setLoading(false); setPhotos([]); return; }
     const unsub = onSnapshot(
       doc(db, 'settings', 'galleryIndex'),
       async (snap) => {
@@ -55,7 +51,7 @@ export default function GalleryPage() {
       },
       () => setLoading(false)
     );
-    return () => { try { unsub(); } catch (e) {} };
+    return () => unsub();
   }, []);
 
   useEffect(() => {
@@ -71,7 +67,6 @@ export default function GalleryPage() {
   }, [lightbox, photos, filter]);
 
   const handleUpload = async () => {
-    if (!FIREBASE_ENABLED) { alert('Gallery uploads are temporarily unavailable.'); return; }
     if (!uploadFiles.length) return;
     setUploading(true);
     setUploadProgress('');
@@ -127,7 +122,6 @@ export default function GalleryPage() {
   };
 
   const handleDeletePhoto = async (photo) => {
-    if (!FIREBASE_ENABLED) { alert('Gallery delete is temporarily unavailable.'); return; }
     if (!window.confirm('Delete this photo?')) return;
     try {
       if (photo.fileName) {
@@ -184,7 +178,7 @@ export default function GalleryPage() {
           <button onClick={() => router.push('/')} style={{ padding: '9px 18px', background: 'transparent', border: '1.5px solid #2a2a2a', color: '#9ca3af', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>
             {'← Home'}
           </button>
-          <button onClick={() => goToBooking(router)} style={{ padding: '9px 18px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>
+          <button onClick={() => router.push('/book')} style={{ padding: '9px 18px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>
             {'Get a Quote'}
           </button>
         </div>

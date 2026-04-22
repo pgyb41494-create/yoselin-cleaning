@@ -19,7 +19,7 @@ export default function RootLayout({ children }) {
       <body>
         <div className="site-root">
           {children}
-          <a href="/?auth=login" className="persistent-book-cta">Book Now</a>
+          <a href="/book" className="persistent-book-cta">Book Now</a>
         </div>
       </body>
     </html>

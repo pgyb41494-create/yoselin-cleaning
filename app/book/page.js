@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { auth, db, ADMIN_EMAIL, ADMIN_EMAILS, FIREBASE_ENABLED } from '../../lib/firebase';
+import { auth, db, ADMIN_EMAIL, ADMIN_EMAILS } from '../../lib/firebase';
 import BookingWizard from '../../components/BookingWizard';
 
 export default function BookPage() {
@@ -13,8 +13,6 @@ export default function BookPage() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    if (!FIREBASE_ENABLED) { setLoading(false); return; }
-    if (!auth) { setLoading(false); return; }
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (!u) { router.push('/'); return; }
       if (ADMIN_EMAILS.includes(u.email?.toLowerCase()) || ADMIN_EMAILS.includes(u.email)) { router.push('/admin'); return; }
@@ -32,7 +30,7 @@ export default function BookPage() {
       setUser(u);
       setLoading(false);
     });
-    return () => { try { unsub(); } catch (e) {} };
+    return () => unsub();
   }, [router]);
 
   if (loading) return <div className="spinner-page"><div className="spinner"></div></div>;
@@ -58,7 +56,7 @@ export default function BookPage() {
       <div className="guest-header">
         <div style={{ position: 'absolute', top: '15px', right: '16px', display: 'flex', gap: '8px', alignItems: 'center' }}>
           {user?.photoURL && <img src={user.photoURL} className="nav-avatar" alt="" />}
-          <button className="signout-btn" onClick={() => { if (FIREBASE_ENABLED && auth) { signOut(auth); } router.push('/'); }}>Sign Out</button>
+          <button className="signout-btn" onClick={() => { signOut(auth); router.push('/'); }}>Sign Out</button>
         </div>
         <h1>Yoselin&#39;s<br /><span>Cleaning Service</span></h1>
         <p>Professional - Reliable - Sparkling Clean</p>
