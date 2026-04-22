@@ -5,7 +5,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, orderBy, query, setDoc, writeBatch, getDoc, getDocs, where } from 'firebase/firestore';
 import { auth, db, storage, ADMIN_EMAIL, ADMIN_EMAILS } from '../../lib/firebase';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { notifyBookingConfirmed } from '../../lib/notifications';
+import { notifyBookingConfirmed, notifyBookingCancelled } from '../../lib/notifications';
 import Chat from '../../components/Chat';
 import BookingWizard from '../../components/BookingWizard';
 
@@ -299,18 +299,13 @@ export default function AdminPage() {
   };
 
   const cancelReq = async (req) => {
-    if (!window.confirm('Cancel and delete this booking for ' + req.name + '? This will remove it from the customer\'s view immediately.')) return;
-    // Delete the request entirely so it vanishes from customer dashboard
-    await deleteDoc(doc(db, 'requests', req.id));
-    // Delete chat messages for this request
-    try {
-      const chatSnap = await getDocs(collection(db, 'chats', req.id, 'messages'));
-      const cb = writeBatch(db);
-      chatSnap.docs.forEach(d => cb.delete(d.ref));
-      if (!chatSnap.empty) await cb.commit();
-    } catch(e) { console.warn('Could not delete chat:', e); }
-    setSelected(null);
-    // Also delete any future recurring schedule entries
+    if (!window.confirm('Cancel this booking for ' + req.name + '? The customer will see a \'Cancelled\' screen in their portal.')) return;
+    // Mark as cancelled so customer sees the Cancelled screen
+    await updateDoc(doc(db, 'requests', req.id), { status: 'cancelled' });
+    setSelected(r => r ? { ...r, status: 'cancelled' } : r);
+    // Send notifications to admin (record) and customer
+    notifyBookingCancelled({ clientName: req.name, clientEmail: req.email, date: req.date, address: req.address, estimate: req.estimate });
+    // Delete any future recurring schedule entries
     try {
       const schedSnap = await getDocs(query(collection(db, 'schedule'), where('parentRequestId', '==', req.id)));
       const b = writeBatch(db);
