@@ -170,15 +170,15 @@ export default function GalleryPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'transparent' }}>
-      <nav style={{ background: '#151515', borderBottom: '1px solid #1f1f1f', padding: '0 24px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <button onClick={() => router.push('/')} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+      <nav style={{ background: '#151515', borderBottom: '1px solid #1f1f1f', padding: '0 16px', minHeight: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+        <button onClick={() => router.push('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}>
           <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '50px', objectFit: 'contain' }} />
         </button>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button onClick={() => router.push('/')} style={{ padding: '9px 18px', background: 'transparent', border: '1.5px solid #2a2a2a', color: '#9ca3af', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>
+        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+          <button onClick={() => router.push('/')} style={{ padding: '9px 14px', background: 'transparent', border: '1.5px solid #2a2a2a', color: '#9ca3af', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>
             {'← Home'}
           </button>
-          <button onClick={() => router.push('/book')} style={{ padding: '9px 18px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>
+          <button onClick={() => router.push('/book')} style={{ padding: '9px 14px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: '10px', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.83rem', cursor: 'pointer' }}>
             {'Get a Quote'}
           </button>
         </div>
@@ -312,7 +312,7 @@ export default function GalleryPage() {
             </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '14px' }}>
             {filteredPhotos.map(function(photo, i) {
               return (
                 <div key={photo.id || i} style={{ borderRadius: '16px', overflow: 'hidden', border: '1.5px solid #2a2a2a', position: 'relative', background: '#181818', transition: 'transform .15s, border-color .15s' }}

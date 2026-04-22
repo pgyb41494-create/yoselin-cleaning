@@ -809,14 +809,12 @@ tr:hover td { background: var(--soft); }
 /* full-width button helper for stacked mobile actions */
 .btn-block { width: 100%; display: inline-flex; justify-content: center; }
 
-/* ensure site content doesn't get hidden behind the persistent CTA */
-.site-root { padding-bottom: 84px; }
+
 
 @media (max-width: 900px) {
   .admin-body, .ad-body, .cd-body, .portal-body { padding-left: 14px; padding-right: 14px; }
   .ad-tabs { overflow-x: auto; }
   .ad-new-quote-btn { padding: 9px 12px; font-size: .82rem; }
-  .persistent-book-cta { right: 14px; bottom: 14px; padding: 10px 14px; }
   .modal { max-width: calc(100% - 32px) !important; border-radius: 14px !important; padding: 18px !important; }
 }
 
@@ -860,9 +858,6 @@ tr:hover td { background: var(--soft); }
   /* Admin cards & grids stack vertically */
   .ad-cards { grid-template-columns: 1fr !important; }
   .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
-
-  /* Persistent CTA — center & full width with safe margins */
-  .persistent-book-cta { left: 12px; right: 12px; bottom: 12px; padding: 12px 18px; border-radius: 12px; justify-content: center; }
 
   /* Auth & upload sizing */
   .auth-card { padding: 28px 20px; }
@@ -1081,11 +1076,114 @@ tr:hover td { background: #222; }
   /* Chat */
   .chat-panel { border-radius: 0; }
   .chat-msgs { height: 320px !important; }
+
+  /* Portal */
+  .portal-body { padding: 16px 12px 60px; }
+  .portal-head { font-size: 1.2rem; }
+  .req-card { border-radius: 12px; }
+  .req-body { padding: 10px 14px !important; }
+  .prow { flex-direction: column; gap: 2px; }
+  .pk { font-size: .72rem; }
+  .pv { font-size: .8rem; }
+  .book-cta { padding: 22px 16px; }
+  .book-cta a { width: 100%; display: block; text-align: center; }
+
+  /* Admin — stats bar shrinks to 2-per-row on very small screens */
+  .ad-stats { flex-wrap: wrap; }
+  .ad-stat { flex: 0 0 calc(50% - 1px); min-width: unset; border-right: none; border-bottom: 1px solid #2a2a2a; padding: 8px 12px; }
+  .ad-stat:nth-child(odd) { border-right: 1px solid #2a2a2a; }
+
+  /* Admin nav — stack brand & actions */
+  .ad-nav { padding: 0 14px; height: auto; min-height: 52px; flex-wrap: wrap; gap: 6px; }
+  .ad-nav-left { flex-wrap: wrap; gap: 6px; }
+
+  /* Admin tabs — horizontal scroll */
+  .ad-tabs-row { padding: 0 8px; overflow-x: auto; }
+  .ad-tabs { gap: 0; width: max-content; }
+  .ad-tab { padding: 12px 12px; font-size: .76rem; }
+  .ad-tab-badge { font-size: .6rem; padding: 2px 5px; }
+
+  /* Client dashboard nav */
+  .cd-nav { padding: 0 14px; }
+  .cd-nav-name { display: none; }
+
+  /* Auth modal full width on mobile */
+  .am-modal { max-width: 100%; border-radius: 16px 16px 0 0; margin: auto 0 0 0; }
+  .am-overlay { align-items: flex-end; padding: 0; }
+
+  /* Booking wizard progress steps: hide text labels */
+  .dot-label { display: none; }
+  .dot-circle { width: 28px; height: 28px; font-size: .75rem; }
+  .steps-row { gap: 2px; }
+  .step-line { flex: 1; }
+
+  /* Wizard form: full-width fields */
+  .wizard-body { padding: 14px 10px 64px; }
+  .extras-grid { grid-template-columns: 1fr 1fr !important; }
+  .building-grid { grid-template-columns: repeat(3, 1fr) !important; }
+
+  /* Settings card */
+  .cd-settings-card { padding: 16px; }
+  .cdc-key { min-width: 80px; font-size: .72rem; }
+  .cdc-val { font-size: .76rem; }
+
+  /* Receipt cards */
+  .receipt-header { padding: 12px 14px; }
+  .receipt-body { padding: 10px 14px 0; }
+  .receipt-total { padding: 12px 14px; }
+  .receipt-total-amount { font-size: 1.5rem; }
+
+  /* Language fab: move it so it doesn't crowd mobile content */
+  .lang-fab { bottom: 14px; right: 14px; padding: 9px 14px; font-size: .75rem; }
 }
 
 /* --- AVAILABILITY GRID RESPONSIVE --- */
 @media (max-width: 700px) {
   .avail-grid { grid-template-columns: 1fr !important; }
+}
+
+/* --- VERY SMALL SCREENS (< 480px) --- */
+@media (max-width: 480px) {
+  /* Shrink hero titles further */
+  .hp-hero-title { font-size: 1.6rem !important; }
+  .hp-hero-tagline { font-size: .72rem !important; }
+
+  /* Single-column everything */
+  .hp-services-grid { grid-template-columns: 1fr !important; }
+  .hp-reviews-grid  { grid-template-columns: 1fr !important; }
+  .extras-grid      { grid-template-columns: 1fr !important; }
+  .building-grid    { grid-template-columns: repeat(2, 1fr) !important; }
+  .cd-actions-grid  { grid-template-columns: 1fr !important; }
+  .cd-tiles         { grid-template-columns: 1fr !important; }
+
+  /* Admin stats: 2-column grid stays fine; make values slightly smaller */
+  .ad-stat-val { font-size: 1.1rem; }
+
+  /* Full-width buttons in admin card actions */
+  .arc-actions { flex-direction: column; }
+  .arc-btn { width: 100%; text-align: center; }
+
+  /* Reduce wizard padding */
+  .wcard { padding: 12px !important; }
+  .wizard-body { padding: 10px 8px 72px; }
+
+  /* Chat panel: taller on very small screens */
+  .chat-panel { height: 70vh !important; }
+
+  /* Auth modal: edge-to-edge */
+  .am-modal { padding: 24px 16px 20px; }
+  .am-title { font-size: 1.2rem; }
+
+  /* Dashboard detail card key/value column layout */
+  .cdc-row { flex-direction: column; gap: 2px; }
+  .cdc-val { text-align: left; }
+
+  /* Portal: full-width book CTA button */
+  .book-cta a { box-sizing: border-box; }
+
+  /* Reduce receipt font sizes */
+  .receipt-total-amount { font-size: 1.3rem; }
+  .receipt-row { font-size: .75rem; }
 }
 
 /* bath-sum dark override */
@@ -1364,24 +1462,7 @@ tr:hover td { background: #222; }
   color: #d1d5db;
 }
 
-.persistent-book-cta {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 9999;
-  background: var(--blue);
-  color: white;
-  padding: 12px 18px;
-  border-radius: 999px;
-  font-weight: 800;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  box-shadow: 0 10px 30px rgba(2,6,23,.35);
-  transition: transform .12s ease, opacity .12s ease;
-}
-.persistent-book-cta:hover { transform: translateY(-3px); opacity: .98; }
+
 
 
 
