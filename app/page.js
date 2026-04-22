@@ -5,6 +5,7 @@ import {
   GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   updateProfile, sendPasswordResetEmail, sendEmailVerification,
+  setPersistence, browserLocalPersistence, browserSessionPersistence,
 } from 'firebase/auth';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc, limit, getDoc } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL, ADMIN_EMAILS } from '../lib/firebase';
@@ -84,6 +85,7 @@ export default function HomePage() {
   const [resetSent,     setResetSent]     = useState(false);
   const [verifyError,   setVerifyError]   = useState('');
   const [verifyResent,  setVerifyResent]  = useState(false);
+  const [rememberMe,    setRememberMe]    = useState(false);
   const [authError,     setAuthError]     = useState(false);
   const [currentUser,   setCurrentUser]   = useState(null);
 
@@ -115,7 +117,10 @@ export default function HomePage() {
   const handleLogin = async () => {
     setError(''); setBusy(true);
     if (!email || !password) { setError('Please fill in all fields.'); setBusy(false); return; }
-    try { const r = await signInWithEmailAndPassword(auth, email, password); redirect(r.user); }
+    try {
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+      const r = await signInWithEmailAndPassword(auth, email, password); redirect(r.user);
+    }
     catch (e) {
       setError(
         e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found'
@@ -468,6 +473,17 @@ export default function HomePage() {
                   </div>
                 </div>
                 {error && <p className="am-error">{error}</p>}
+                {authMode === 'login' && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', cursor: 'pointer', userSelect: 'none' }}>
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={e => setRememberMe(e.target.checked)}
+                      style={{ width: '16px', height: '16px', accentColor: 'var(--blue)', cursor: 'pointer', flexShrink: 0 }}
+                    />
+                    <span style={{ fontSize: '.82rem', color: '#9ca3af', fontWeight: '600' }}>Stay logged in</span>
+                  </label>
+                )}
                 <button className="am-submit" onClick={authMode === 'login' ? handleLogin : handleSignup} disabled={busy}>
                   {busy ? '...' : authMode === 'login' ? 'Log In' : 'Create Account'}
                 </button>
