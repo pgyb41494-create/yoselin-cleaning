@@ -22,7 +22,7 @@ export default function BookPage() {
         const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
         const latest = docs[0];
-        if (latest.status !== 'done') {
+        if (latest.status !== 'done' && latest.status !== 'cancelled') {
           router.push('/dashboard');
           return;
         }
