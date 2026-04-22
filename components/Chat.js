@@ -4,7 +4,7 @@ import {
   collection, addDoc, onSnapshot, orderBy, query,
   serverTimestamp, doc, setDoc, increment as fsIncrement,
 } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, FIREBASE_ENABLED } from '../lib/firebase';
 import { notifyAdminNewMessage, notifyCustomerNewMessage } from '../lib/notifications';
 
 /* ── Inject keyframe animations once ── */
@@ -157,6 +157,7 @@ export default function Chat({
 
   /* Listen to messages */
   useEffect(() => {
+    if (!FIREBASE_ENABLED) return;
     if (!requestId) return;
     const q = query(collection(db, 'chats', requestId, 'messages'), orderBy('createdAt', 'asc'));
     const unsub = onSnapshot(q, snap => {
@@ -203,7 +204,7 @@ export default function Chat({
         }, 600);
       }
     });
-    return () => unsub();
+    return () => { try { unsub(); } catch (e) {} };
   }, [requestId, senderRole, clientName]);
 
   /* Auto-scroll */
@@ -214,6 +215,7 @@ export default function Chat({
   /* Mark as read — updates both the chatUnread counter AND the chatReads lastReadAt
      so that useUnreadCount (which reads chatReads) correctly zeroes the badge */
   useEffect(() => {
+    if (!FIREBASE_ENABLED) return;
     if (!requestId) return;
     const field = senderRole === 'admin' ? 'unreadByAdmin' : 'unreadByCustomer';
     setDoc(doc(db, 'chatUnread', requestId), { [field]: 0 }, { merge: true }).catch(() => {});
@@ -223,6 +225,7 @@ export default function Chat({
 
   /* Send message — useCallback so it never changes reference */
   const send = useCallback(async () => {
+    if (!FIREBASE_ENABLED) { alert('Chat is temporarily unavailable.'); return; }
     const t = text.trim();
     if (!t || sending) return;
     setSending(true);

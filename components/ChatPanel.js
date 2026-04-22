@@ -4,7 +4,7 @@ import {
   collection, addDoc, onSnapshot, query,
   orderBy, serverTimestamp
 } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, FIREBASE_ENABLED } from '../lib/firebase';
 
 const s = {
   overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.7)', zIndex: 400, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' },
@@ -29,6 +29,7 @@ export default function ChatPanel({ requestId, clientName, senderRole, senderNam
   const bottomRef = useRef(null);
 
   useEffect(() => {
+    if (!FIREBASE_ENABLED) return;
     if (!requestId) return;
     const q = query(
       collection(db, 'chats', requestId, 'messages'),
@@ -37,7 +38,7 @@ export default function ChatPanel({ requestId, clientName, senderRole, senderNam
     const unsub = onSnapshot(q, (snap) => {
       setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
-    return () => unsub();
+    return () => { try { unsub(); } catch (e) {} };
   }, [requestId]);
 
   useEffect(() => {
@@ -45,6 +46,7 @@ export default function ChatPanel({ requestId, clientName, senderRole, senderNam
   }, [messages]);
 
   async function send() {
+    if (!FIREBASE_ENABLED) { alert('Chat is temporarily unavailable.'); return; }
     const trimmed = text.trim();
     if (!trimmed || sending) return;
     setSending(true);

@@ -1,7 +1,7 @@
 ﻿'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, FIREBASE_ENABLED } from '../lib/firebase';
 import { notifyNewBooking } from '../lib/notifications';
 
 const BPRICES = { half: 15, small: 50, medium: 65, large: 80 };
@@ -87,18 +87,20 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   });
 
   useEffect(() => {
+    if (!FIREBASE_ENABLED) return;
     getDoc(doc(db, 'settings', 'pricing')).then(snap => {
       if (snap.exists()) setLivePrices(snap.data());
     }).catch(() => {});
   }, []);
 
   useEffect(() => {
+    if (!FIREBASE_ENABLED) return;
     const unsub = onSnapshot(collection(db, 'availability'), snap => {
       const slots = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       slots.sort((a, b) => ((a.date || '') + (a.time || '')).localeCompare((b.date || '') + (b.time || '')));
       setAvailability(slots);
     });
-    return () => unsub();
+    return () => { try { unsub(); } catch (e) {} };
   }, []);
 
   useEffect(() => {
@@ -217,6 +219,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   };
 
   const handleSubmit = async () => {
+    if (!FIREBASE_ENABLED) { alert('Booking is temporarily unavailable.'); return; }
     if (!form.firstName.trim()) { alert('Please enter a name.'); return; }
     if (!form.phone.trim())     { alert('Please enter a phone number.'); return; }
     setSubmitting(true);

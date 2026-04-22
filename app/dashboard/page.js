@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { goToBooking } from '../../lib/navigation';
 import { onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { collection, query, where, onSnapshot, addDoc, getDocs, serverTimestamp, doc, updateDoc, setDoc } from 'firebase/firestore';
-import { auth, db, ADMIN_EMAILS } from '../../lib/firebase';
+import { auth, db, ADMIN_EMAILS, FIREBASE_ENABLED } from '../../lib/firebase';
 import Chat from '../../components/Chat';
 import { useUnreadCount } from '../../lib/useUnreadCount';
 
@@ -202,6 +202,7 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
+    if (!FIREBASE_ENABLED) return;
     const reqId = requests[0]?.id;
     if (activeTab === 'messages' && reqId) {
       setDoc(doc(db, 'chatReads', `${reqId}_customer`), { lastReadAt: new Date() }, { merge: true }).catch(() => {});
@@ -210,6 +211,8 @@ export default function DashboardPage() {
   }, [activeTab, requests]);
 
   useEffect(() => {
+    if (!FIREBASE_ENABLED) { setLoading(false); return; }
+    if (!auth) { setLoading(false); return; }
     const unsubAuth = onAuthStateChanged(auth, (u) => {
       if (!u) { router.push('/'); return; }
       if (ADMIN_EMAILS.includes(u.email?.toLowerCase()) || ADMIN_EMAILS.includes(u.email)) { router.push('/admin'); return; }
@@ -228,7 +231,7 @@ export default function DashboardPage() {
       let snapA = null, snapB = null;
       const unsubA = onSnapshot(qById, s => { snapA = s; if (snapB) mergeSnaps([snapA, snapB]); else { setRequests(s.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); } }, () => setLoading(false));
       const unsubB = onSnapshot(qByEmail, s => { snapB = s; if (snapA) mergeSnaps([snapA, snapB]); }, () => {});
-      const unsubReq = () => { unsubA(); unsubB(); };
+      const unsubReq = () => { try { unsubA(); } catch(e){} try { unsubB(); } catch(e){} };
 
       Promise.all([
         getDocs(query(collection(db, 'schedule'), where('userId', '==', u.uid))),
@@ -243,7 +246,7 @@ export default function DashboardPage() {
       }).catch(() => {});
       unsubReqRef.current = unsubReq;
     });
-    return () => { unsubAuth(); if (unsubReqRef.current) unsubReqRef.current(); };
+    return () => { try { unsubAuth(); } catch(e){} if (unsubReqRef.current) unsubReqRef.current(); };
   }, [router]);
 
   useEffect(() => {

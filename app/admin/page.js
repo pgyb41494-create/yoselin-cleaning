@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, orderBy, query, setDoc, writeBatch, getDoc, getDocs, where } from 'firebase/firestore';
-import { auth, db, storage, ADMIN_EMAIL, ADMIN_EMAILS } from '../../lib/firebase';
+import { auth, db, storage, ADMIN_EMAIL, ADMIN_EMAILS, FIREBASE_ENABLED } from '../../lib/firebase';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { notifyBookingConfirmed } from '../../lib/notifications';
 import Chat from '../../components/Chat';
@@ -164,13 +164,15 @@ export default function AdminPage() {
   const [priceSaved, setPriceSaved] = useState(false);
 
   useEffect(() => {
+    if (!FIREBASE_ENABLED) { setLoading(false); router.push('/'); return; }
+    if (!auth) { setLoading(false); router.push('/'); return; }
     const unsub = onAuthStateChanged(auth, (u) => {
       const isAdmin = ADMIN_EMAILS.includes(u?.email?.toLowerCase()) || ADMIN_EMAILS.includes(u?.email);
       if (!u || !isAdmin) { router.push('/'); return; }
       setUser(u);
       setLoading(false);
     });
-    return () => unsub();
+    return () => { try { unsub(); } catch (e) {} };
   }, [router]);
 
   useEffect(() => {
