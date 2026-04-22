@@ -387,6 +387,24 @@ export default function AdminPage() {
     await b.commit();
   };
 
+  /* -- Clear all past (already-expired) availability slots -- */
+  const clearPastSlots = async () => {
+    const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
+    const past = availability.filter(s => {
+      const d = parseDateString(s.date);
+      return d && d < todayMidnight;
+    });
+    if (past.length === 0) { alert('No past slots to clear.'); return; }
+    if (!window.confirm(`Delete ${past.length} past slot${past.length !== 1 ? 's' : ''}?`)) return;
+    const chunks = [];
+    for (let i = 0; i < past.length; i += 490) chunks.push(past.slice(i, i + 490));
+    for (const chunk of chunks) {
+      const b = writeBatch(db);
+      chunk.forEach(s => b.delete(doc(db, 'availability', s.id)));
+      await b.commit();
+    }
+  };
+
   const savePricing = async () => {
     setPriceSaving(true);
     await setDoc(doc(db, 'settings', 'pricing'), editPrices);
@@ -972,30 +990,52 @@ export default function AdminPage() {
             {/* Saved slots */}
             {availability.length > 0 && (
               <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #1f1f1f', overflow: 'hidden', marginTop: '20px' }}>
-                <div style={{ padding: '14px 18px', borderBottom: '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ padding: '14px 18px', borderBottom: '1px solid #1f1f1f', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                   <div style={{ color: '#9ca3af', fontSize: '.75rem', fontWeight: '700', letterSpacing: '.4px', textTransform: 'uppercase' }}>Saved Slots ({availability.length} total)</div>
-                  <button onClick={clearAllAvailability} style={{ padding: '6px 14px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.4)', color: '#ef4444', borderRadius: '8px', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer' }}>Clear All</button>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={clearPastSlots} style={{ padding: '6px 14px', background: 'rgba(107,114,128,.12)', border: '1px solid #333', color: '#9ca3af', borderRadius: '8px', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer' }}>Clear Past</button>
+                    <button onClick={clearAllAvailability} style={{ padding: '6px 14px', background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.4)', color: '#ef4444', borderRadius: '8px', fontSize: '.75rem', fontWeight: '700', cursor: 'pointer' }}>Clear All</button>
+                  </div>
                 </div>
-                <div style={{ padding: '14px 18px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {(() => {
+                    const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
                     const grouped = {};
                     availability.forEach(s => { if (!grouped[s.date]) grouped[s.date]=[]; grouped[s.date].push(s); });
-                    return Object.entries(grouped).sort(([a],[b]) => a.localeCompare(b)).map(([date, slots]) => (
-                      <div key={date} style={{ background: '#151515', borderRadius: '12px', border: '1px solid #222', padding: '10px 14px', minWidth: '160px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '7px', gap: '8px' }}>
-                          <div style={{ fontSize: '.72rem', fontWeight: '700', color: '#a855f7', textTransform: 'uppercase' }}>{date}</div>
-                          <button onClick={() => clearDateSlots(slots)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.8rem', padding: '0', lineHeight: 1, fontWeight: '700' }}>Clear</button>
-                        </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                          {slots.map(s => (
-                            <span key={s.id} style={{ background: '#1a1a1a', color: '#d1d5db', fontSize: '.7rem', fontWeight: '700', padding: '3px 8px', borderRadius: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              {s.time}
-                              <button onClick={() => deleteDoc(doc(db, 'availability', s.id))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.72rem', padding: '0', lineHeight: 1 }}>×</button>
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ));
+                    // Sort chronologically by parsed date
+                    return Object.entries(grouped)
+                      .map(([date, slots]) => ({ date, slots, parsed: parseDateString(date) }))
+                      .sort((a, b) => (a.parsed?.getTime() || 0) - (b.parsed?.getTime() || 0))
+                      .map(({ date, slots, parsed }) => {
+                        const isPast = parsed && parsed < todayMidnight;
+                        const dayName = parsed ? DAY_NAMES[parsed.getDay()] : '';
+                        const monthName = parsed ? MONTH_NAMES[parsed.getMonth()].slice(0, 3) : '';
+                        const displayDate = parsed
+                          ? `${dayName}, ${monthName} ${parsed.getDate()}, ${parsed.getFullYear()}`
+                          : date;
+                        // Sort times within the date
+                        const sortedSlots = [...slots].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+                        return (
+                          <div key={date} style={{ background: '#151515', borderRadius: '12px', border: `1px solid ${isPast ? '#1a1a1a' : '#222'}`, padding: '10px 14px', opacity: isPast ? 0.45 : 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', gap: '8px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ fontSize: '.78rem', fontWeight: '700', color: isPast ? '#6b7280' : '#a855f7' }}>{displayDate}</div>
+                                <span style={{ fontSize: '.62rem', fontWeight: '700', color: isPast ? '#444' : '#555', background: isPast ? '#1a1a1a' : '#1f1f1f', padding: '2px 7px', borderRadius: '99px' }}>{slots.length} slot{slots.length !== 1 ? 's' : ''}</span>
+                                {isPast && <span style={{ fontSize: '.6rem', fontWeight: '700', color: '#ef4444', background: 'rgba(239,68,68,.1)', padding: '2px 6px', borderRadius: '4px' }}>PAST</span>}
+                              </div>
+                              <button onClick={() => clearDateSlots(slots)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.8rem', padding: '0', lineHeight: 1, fontWeight: '700' }}>✕ Clear</button>
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                              {sortedSlots.map(s => (
+                                <span key={s.id} style={{ background: isPast ? '#1a1a1a' : '#222', color: isPast ? '#555' : '#d1d5db', fontSize: '.72rem', fontWeight: '700', padding: '4px 10px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '5px', border: `1px solid ${isPast ? '#222' : '#2a2a2a'}` }}>
+                                  {s.time}
+                                  <button onClick={() => deleteDoc(doc(db, 'availability', s.id))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '.75rem', padding: '0', lineHeight: 1 }}>×</button>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      });
                   })()}
                 </div>
               </div>
