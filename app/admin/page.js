@@ -1451,6 +1451,22 @@ export default function AdminPage() {
               )}
             </div>
 
+            {/* Before Photos */}
+            {(selected.beforePhotos || []).length > 0 && (
+              <div style={{ margin: '14px 24px 0', background: '#1a2030', borderRadius: '14px', border: '1px solid #232a3a', overflow: 'hidden' }}>
+                <div style={{ padding: '10px 16px', borderBottom: '1px solid #232a3a', fontSize: '.75rem', fontWeight: '700', color: '#9ca3af' }}>
+                  📸 Before Photos ({selected.beforePhotos.length})
+                </div>
+                <div style={{ padding: '12px 16px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                  {selected.beforePhotos.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', border: '1px solid #2a3345' }}>
+                      <img src={url} alt={'Before photo ' + (i + 1)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Admin Notes */}
             <div style={{ margin: '14px 24px 0', background: '#1a2030', borderRadius: '14px', border: '1px solid #232a3a', overflow: 'hidden' }}>
               <div style={{ padding: '10px 16px', borderBottom: '1px solid #232a3a', display: 'flex', alignItems: 'center', gap: '7px' }}>

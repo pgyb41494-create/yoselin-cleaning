@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { collection, query, where, onSnapshot, addDoc, getDocs, serverTimestamp, doc, updateDoc, setDoc } from 'firebase/firestore';
-import { auth, db, ADMIN_EMAILS } from '../../lib/firebase';
+import { auth, db, storage, ADMIN_EMAILS } from '../../lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Chat from '../../components/Chat';
 import { useUnreadCount } from '../../lib/useUnreadCount';
 
@@ -187,6 +188,10 @@ export default function DashboardPage() {
   const [cancelBusy,   setCancelBusy]   = useState(false);
   const [cancelDone,   setCancelDone]   = useState(false);
 
+  const [photoFiles,     setPhotoFiles]     = useState([]);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError,     setPhotoError]     = useState('');
+
   const [reschedOpen,   setReschedOpen]   = useState(false);
   const [reschedDates,  setReschedDates]  = useState('');
   const [reschedReason, setReschedReason] = useState('');
@@ -277,6 +282,26 @@ export default function DashboardPage() {
       });
     } catch (e) { console.warn('Could not save reschedule flag:', e); }
     setReschedBusy(false); setReschedDone(true); setReschedOpen(false);
+  };
+
+  const uploadBeforePhotos = async () => {
+    if (!photoFiles.length || !latest) return;
+    const existing = latest.beforePhotos || [];
+    if (existing.length + photoFiles.length > 5) { setPhotoError('Max 5 photos total.'); return; }
+    setPhotoUploading(true); setPhotoError('');
+    try {
+      const urls = [];
+      for (const file of photoFiles) {
+        const path = `bookings/${user.uid}/before/${latest.id}/${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, path);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        urls.push(url);
+      }
+      await updateDoc(doc(db, 'requests', latest.id), { beforePhotos: [...existing, ...urls] });
+      setPhotoFiles([]);
+    } catch { setPhotoError('Upload failed. Please try again.'); }
+    setPhotoUploading(false);
   };
 
   const cancelScheduleEntry = async (entryId) => {
@@ -790,6 +815,48 @@ export default function DashboardPage() {
                   <div style={{ background: 'rgba(107,114,128,.08)', border: '1px solid #2a2a2a', borderRadius: '12px', padding: '12px 16px', fontSize: '.83rem', color: '#9ca3af', textAlign: 'center' }}>
                     Booking cancelled. You can submit a new request any time.
                   </div>
+                )}
+              </div>
+            </div>
+
+            {/* Before Photos card */}
+            <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid #2a2a2a', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '1.1rem' }}>📸</span>
+                <div>
+                  <div style={{ fontWeight: '700', color: 'white', fontSize: '.9rem' }}>Before Photos</div>
+                  <div style={{ fontSize: '.72rem', color: '#6b7280' }}>Upload photos of your space for the cleaner</div>
+                </div>
+              </div>
+              <div style={{ padding: '16px 20px' }}>
+                {(latest.beforePhotos || []).length > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '14px' }}>
+                    {(latest.beforePhotos || []).map((url, i) => (
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', aspectRatio: '1', borderRadius: '10px', overflow: 'hidden', border: '1px solid #2a2a2a' }}>
+                        <img src={url} alt={'Before photo ' + (i + 1)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </a>
+                    ))}
+                  </div>
+                )}
+                {(latest.beforePhotos || []).length >= 5 ? (
+                  <div style={{ fontSize: '.8rem', color: '#6b7280', textAlign: 'center', padding: '8px 0' }}>✓ Max 5 photos uploaded</div>
+                ) : (
+                  <>
+                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '20px', background: '#1f1f1f', border: '2px dashed #333', borderRadius: '12px', cursor: 'pointer', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '1.8rem' }}>📷</span>
+                      <span style={{ fontSize: '.82rem', color: '#9ca3af', fontWeight: '600' }}>
+                        {photoFiles.length > 0 ? photoFiles.length + ' photo' + (photoFiles.length > 1 ? 's' : '') + ' selected' : 'Tap to choose photos'}
+                      </span>
+                      <span style={{ fontSize: '.72rem', color: '#555' }}>
+                        Up to {5 - (latest.beforePhotos || []).length} more · Max 10 MB each
+                      </span>
+                      <input type="file" accept="image/*" multiple onChange={e => { setPhotoFiles(Array.from(e.target.files).slice(0, 5 - (latest.beforePhotos || []).length)); setPhotoError(''); }} style={{ display: 'none' }} />
+                    </label>
+                    {photoError && <div style={{ fontSize: '.8rem', color: '#ef4444', marginBottom: '10px', textAlign: 'center' }}>{photoError}</div>}
+                    <button onClick={uploadBeforePhotos} disabled={photoUploading || !photoFiles.length} className={photoFiles.length ? 'btn btn-primary' : 'btn'} style={{ width: '100%', padding: '12px' }}>
+                      {photoUploading ? 'Uploading...' : 'Upload Photos'}
+                    </button>
+                  </>
                 )}
               </div>
             </div>
