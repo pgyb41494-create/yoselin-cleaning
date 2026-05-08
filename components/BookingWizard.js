@@ -1,6 +1,6 @@
 ﻿'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc, getDoc, runTransaction } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { notifyNewBooking } from '../lib/notifications';
 
@@ -53,8 +53,16 @@ const initRooms = () => ({ bed_small: 0, bed_medium: 0, bed_large: 0, liv_small:
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAY_LABELS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const HOLD_COLLECTION = 'availabilityHolds';
+const HOLD_MINUTES = 15;
+const HOLD_MS = HOLD_MINUTES * 60 * 1000;
 function getDaysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
 function formatDateKey(d) { return MONTH_NAMES[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear(); }
+function slotHoldId(date, time) { return date + '__' + time; }
+function holdIsActive(hold, nowMs = Date.now()) {
+  const expiresAt = hold?.expiresAt?.toDate?.();
+  return !!expiresAt && expiresAt.getTime() > nowMs;
+}
 
 export default function BookingWizard({ user, onDone, adminMode = false }) {
   const [step,         setStep]         = useState(0);
@@ -68,7 +76,13 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   const [senior,       setSenior]       = useState('no');
   const [submitting,   setSubmitting]   = useState(false);
   const [availability, setAvailability] = useState([]);
+  const [reservationHolds, setReservationHolds] = useState([]);
+  const [holdBusy,     setHoldBusy]     = useState(false);
+  const [holdError,    setHoldError]    = useState('');
+  const [clockTick,    setClockTick]    = useState(Date.now());
+  const [heldSlotKey,  setHeldSlotKey]  = useState('');
   const [livePrices,   setLivePrices]   = useState(null);
+  const currentHoldKeyRef = useRef('');
 
   // Calendar state
   const now = new Date();
@@ -77,6 +91,19 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
   const addressInputRef = useRef(null);
   const autocompleteRef = useRef(null);
+
+  const holdToken = useState(() => {
+    const fallbackToken = (user?.uid || 'guest') + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+    try {
+      if (typeof window === 'undefined') return fallbackToken;
+      const storedToken = window.sessionStorage.getItem('bookingHoldToken');
+      if (storedToken) return storedToken;
+      window.sessionStorage.setItem('bookingHoldToken', fallbackToken);
+      return fallbackToken;
+    } catch {
+      return fallbackToken;
+    }
+  })[0];
 
   const [form, setForm] = useState({
     firstName: user?.displayName?.split(' ')[0] || '',
@@ -99,6 +126,18 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       setAvailability(slots);
     });
     return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, HOLD_COLLECTION), snap => {
+      setReservationHolds(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, () => {});
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => setClockTick(Date.now()), 30000);
+    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -126,6 +165,120 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   }, []);
 
   const setF = (k, v) => setForm(x => ({ ...x, [k]: v }));
+
+  const activeHolds = reservationHolds.filter(hold => holdIsActive(hold, clockTick));
+  const isOwnedHold = (hold) => hold?.userId === user?.uid && hold?.holdToken === holdToken;
+  const visibleAvailability = adminMode ? availability : availability.filter(slot => {
+    const key = slotHoldId(slot.date, slot.time);
+    const hold = activeHolds.find(h => slotHoldId(h.date, h.time) === key);
+    return !hold || isOwnedHold(hold);
+  });
+
+  const releaseCurrentHold = useCallback(async () => {
+    const holdKey = currentHoldKeyRef.current;
+    if (!holdKey) return;
+    currentHoldKeyRef.current = '';
+    setHeldSlotKey('');
+    try {
+      await deleteDoc(doc(db, HOLD_COLLECTION, holdKey));
+    } catch {
+      // Expired or already cleared.
+    }
+  }, []);
+
+  const acquireHold = useCallback(async (date, time) => {
+    if (!date || !time) return;
+    if (holdBusy) return;
+    setHoldBusy(true);
+    setHoldError('');
+
+    const nextKey = slotHoldId(date, time);
+    const nextRef = doc(db, HOLD_COLLECTION, nextKey);
+    const previousKey = currentHoldKeyRef.current;
+    const previousRef = previousKey && previousKey !== nextKey ? doc(db, HOLD_COLLECTION, previousKey) : null;
+
+    try {
+      const availabilitySnap = await getDocs(query(collection(db, 'availability'), where('date', '==', date), where('time', '==', time)));
+      if (availabilitySnap.empty) {
+        throw new Error('That time is no longer available.');
+      }
+
+      await runTransaction(db, async (transaction) => {
+        const holdSnap = await transaction.get(nextRef);
+        const holdData = holdSnap.exists() ? holdSnap.data() : null;
+        const holdActive = holdData && holdIsActive(holdData);
+        const holdOwnedByMe = holdActive && holdData.userId === user?.uid && holdData.holdToken === holdToken;
+        if (holdActive && !holdOwnedByMe) {
+          throw new Error('That time was just taken. Please choose another slot.');
+        }
+
+        if (previousRef) {
+          const previousSnap = await transaction.get(previousRef);
+          const previousData = previousSnap.exists() ? previousSnap.data() : null;
+          if (previousData && previousData.userId === user?.uid && previousData.holdToken === holdToken) {
+            transaction.delete(previousRef);
+          }
+        }
+
+        const firstAvailabilityRef = availabilitySnap.docs[0].ref;
+        const firstAvailabilitySnap = await transaction.get(firstAvailabilityRef);
+        if (!firstAvailabilitySnap.exists()) {
+          throw new Error('That time is no longer available.');
+        }
+
+        transaction.set(nextRef, {
+          slotKey: nextKey,
+          date,
+          time,
+          userId: user?.uid || 'guest',
+          userEmail: user?.email || form.email || 'N/A',
+          holdToken,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          expiresAt: new Date(Date.now() + HOLD_MS),
+        }, { merge: true });
+      });
+
+      currentHoldKeyRef.current = nextKey;
+      setHeldSlotKey(nextKey);
+      setF('date', date);
+      setF('time', time);
+      setHoldError('');
+    } catch (error) {
+      currentHoldKeyRef.current = previousKey;
+      setHeldSlotKey(previousKey || '');
+      setF('time', '');
+      setHoldError(error?.message || 'That time could not be reserved. Please try again.');
+    } finally {
+      setHoldBusy(false);
+    }
+  }, [holdBusy, holdToken, user?.email, user?.uid, form.email, setF]);
+
+  useEffect(() => {
+    return () => { void releaseCurrentHold(); };
+  }, [releaseCurrentHold]);
+
+  useEffect(() => {
+    if (adminMode || !heldSlotKey) return;
+    const renewTimer = setInterval(() => {
+      const currentKey = currentHoldKeyRef.current;
+      if (!currentKey) return;
+      const holdRef = doc(db, HOLD_COLLECTION, currentKey);
+      runTransaction(db, async (transaction) => {
+        const snap = await transaction.get(holdRef);
+        if (!snap.exists()) return;
+        const data = snap.data();
+        const active = holdIsActive(data, Date.now());
+        const ownedByMe = active && data.userId === user?.uid && data.holdToken === holdToken;
+        if (!ownedByMe) return;
+        transaction.set(holdRef, {
+          expiresAt: new Date(Date.now() + HOLD_MS),
+          updatedAt: serverTimestamp(),
+        }, { merge: true });
+      }).catch(() => {});
+    }, 4 * 60 * 1000);
+    return () => clearInterval(renewTimer);
+  }, [adminMode, heldSlotKey, holdToken, user?.uid]);
 
   const calcPrice = () => {
     const BP = livePrices?.bathrooms || BPRICES;
@@ -185,12 +338,12 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     return hours + ' hour' + (hours > 1 ? 's' : '');
   };
 
-  const availDates   = [...new Set(availability.map(s => s.date))];
-  const timesForDate = availability.filter(s => s.date === form.date).map(s => s.time);
+  const availDates   = [...new Set(visibleAvailability.map(s => s.date))];
+  const timesForDate = visibleAvailability.filter(s => s.date === form.date).map(s => s.time);
 
   // Build a map of date -> slot count for the calendar
   const slotsPerDate = {};
-  availability.forEach(s => { slotsPerDate[s.date] = (slotsPerDate[s.date] || 0) + 1; });
+  visibleAvailability.forEach(s => { slotsPerDate[s.date] = (slotsPerDate[s.date] || 0) + 1; });
 
   const calFirstDay   = new Date(calYear, calMonth, 1).getDay();
   const calDaysInMonth = getDaysInMonth(calYear, calMonth);
@@ -201,6 +354,32 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
   // Don't let user go to past months
   const canGoPrev = calYear > now.getFullYear() || (calYear === now.getFullYear() && calMonth > now.getMonth());
+
+  useEffect(() => {
+    if (adminMode || !form.date || !form.time) return;
+    const key = slotHoldId(form.date, form.time);
+    const hold = activeHolds.find(h => slotHoldId(h.date, h.time) === key);
+    const isCurrentHold = currentHoldKeyRef.current === key;
+    if (isCurrentHold && !hold) {
+      setHoldError('That reservation expired or was taken. Please choose another time.');
+      setF('time', '');
+      if (currentHoldKeyRef.current === key) currentHoldKeyRef.current = '';
+      setHeldSlotKey('');
+    }
+  }, [adminMode, activeHolds, clockTick, form.date, form.time]);
+
+  useEffect(() => {
+    if (adminMode) return;
+    const ownedHold = activeHolds.find(hold => hold?.userId === user?.uid && hold?.holdToken === holdToken);
+    if (ownedHold) {
+      const key = slotHoldId(ownedHold.date, ownedHold.time);
+      currentHoldKeyRef.current = key;
+      if (heldSlotKey !== key) setHeldSlotKey(key);
+    } else if (!ownedHold && heldSlotKey) {
+      currentHoldKeyRef.current = '';
+      setHeldSlotKey('');
+    }
+  }, [activeHolds, adminMode, heldSlotKey, holdToken, user?.uid]);
 
   const goTo = (s) => {
     if (s >= 1) {
@@ -248,7 +427,50 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       createdAt:      serverTimestamp(),
       createdByAdmin: adminMode,
     };
-    const docRef = await addDoc(collection(db, 'requests'), req);
+    const docRef = doc(collection(db, 'requests'));
+    const slotChosen = form.date && form.time && form.date !== 'N/A' && form.time !== 'N/A';
+    let slotSnap = null;
+
+    try {
+      if (slotChosen) {
+        slotSnap = await getDocs(query(collection(db, 'availability'), where('date', '==', form.date), where('time', '==', form.time)));
+        if (slotSnap.empty && !adminMode) {
+          throw new Error('That time is no longer available.');
+        }
+      }
+
+      const customerHoldFlow = !adminMode && slotChosen && availDates.length > 0;
+      if (customerHoldFlow) {
+        const holdKey = slotHoldId(form.date, form.time);
+        const holdRef = doc(db, HOLD_COLLECTION, holdKey);
+
+        await runTransaction(db, async (transaction) => {
+          const holdSnap = await transaction.get(holdRef);
+          const holdData = holdSnap.exists() ? holdSnap.data() : null;
+          const holdActive = holdData && holdIsActive(holdData);
+          const holdOwnedByMe = holdActive && holdData.userId === user?.uid && holdData.holdToken === holdToken;
+          if (!holdOwnedByMe) {
+            throw new Error('Your reservation expired or was taken. Please choose the time again.');
+          }
+
+          transaction.delete(holdRef);
+          slotSnap.docs.forEach(slotDoc => transaction.delete(slotDoc.ref));
+          transaction.set(docRef, req);
+        });
+      } else {
+        await runTransaction(db, async (transaction) => {
+          if (slotChosen && slotSnap && !slotSnap.empty) {
+            slotSnap.docs.forEach(slotDoc => transaction.delete(slotDoc.ref));
+          }
+          transaction.set(docRef, req);
+        });
+      }
+    } catch (error) {
+      setSubmitting(false);
+      setHoldError(error?.message || 'Could not save your booking. Please try again.');
+      return;
+    }
+
     notifyNewBooking({
       clientName:  req.name,
       clientEmail: req.email,
@@ -261,17 +483,15 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       text: 'Hi ' + form.firstName + "! Thank you for reaching out. I've received your request and will get back to you within 24 hours to confirm your appointment!",
       sender: 'admin', senderName: 'Yoselin', createdAt: serverTimestamp(),
     });
-    if (form.date && form.time && form.date !== 'N/A' && form.time !== 'N/A') {
-      try {
-        const slotSnap = await getDocs(query(collection(db, 'availability'), where('date', '==', form.date), where('time', '==', form.time)));
-        slotSnap.forEach(async (slotDoc) => { await deleteDoc(doc(db, 'availability', slotDoc.id)); });
-      } catch (e) { console.warn('Could not remove slot:', e); }
-    }
     setSubmitting(false);
+    currentHoldKeyRef.current = '';
+    setHeldSlotKey('');
     if (onDone) onDone(docRef.id);
   };
 
   const stepLabels = ['Contact', 'Rooms', 'Preferences', 'Review'];
+  const selectedHold = activeHolds.find(h => slotHoldId(h.date, h.time) === slotHoldId(form.date, form.time));
+  const selectedHoldOwnedByMe = !!selectedHold && isOwnedHold(selectedHold);
 
   const QCtrl = ({ val, onInc, onDec }) => (
     <div className="qctrl">
@@ -376,7 +596,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                           return (
                             <button key={day} type="button" onClick={() => {
                               if (!canClick) return;
-                              setF('date', key); setF('time', '');
+                              if (!adminMode) void releaseCurrentHold();
+                                  setHoldError('');
+                                  setF('date', key); setF('time', '');
                             }} style={{
                               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                               height: '32px', borderRadius: '7px', padding: '0',
@@ -425,20 +647,33 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                         <label style={{ marginBottom: '7px', display: 'block', fontSize: '.78rem' }}>Preferred Time</label>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                           {timesForDate.map(tm => (
-                            <button key={tm} type="button" onClick={() => setF('time', tm)} style={{
+                            <button key={tm} type="button" disabled={!adminMode && holdBusy} onClick={() => { adminMode ? setF('time', tm) : void acquireHold(form.date, tm); }} style={{
                               padding: '8px 14px', borderRadius: '8px',
                               border: form.time === tm ? '1.5px solid #a855f7' : '1px solid #232323',
                               background: form.time === tm ? 'rgba(168,85,247,.15)' : '#131313',
                               color: form.time === tm ? '#d8b4fe' : '#6b7280',
                               fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.76rem',
-                              cursor: 'pointer', transition: 'all .12s',
+                              cursor: !adminMode && holdBusy ? 'wait' : 'pointer', transition: 'all .12s',
                             }}>{tm}</button>
                           ))}
+                        </div>
+                        <div style={{ marginTop: '8px', fontSize: '.72rem', color: '#6b7280' }}>
+                          {adminMode ? 'Admin bookings are saved directly.' : (holdBusy ? 'Reserving this slot...' : 'This time is held for 15 minutes once selected.')}
                         </div>
                       </div>
                     ) : form.date ? (
                       <div style={{ color: '#4b5563', fontSize: '.78rem', padding: '6px 0' }}>No time slots for this date</div>
                     ) : null}
+                    {holdError && (
+                      <div style={{ marginTop: '10px', padding: '10px 12px', borderRadius: '10px', background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.22)', color: '#fca5a5', fontSize: '.78rem', lineHeight: 1.45 }}>
+                        {holdError}
+                      </div>
+                    )}
+                    {selectedHoldOwnedByMe && form.date && form.time && (
+                      <div style={{ marginTop: '10px', padding: '10px 12px', borderRadius: '10px', background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.22)', color: '#6ee7b7', fontSize: '.78rem', lineHeight: 1.45 }}>
+                        Your selected time is reserved while you finish checkout.
+                      </div>
+                    )}
                   </div>
                 ) : (
                   /* Fallback when no availability is set — plain text inputs */

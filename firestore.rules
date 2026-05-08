@@ -2,6 +2,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.email == 'pgyb41494@gmail.com' ||
+        request.auth.token.email == 'cardonayoselin422@gmail.com' ||
+        request.auth.token.email == 'Cardonayoselin422@gmail.com'
+      );
+    }
+
     // Users can read/write their own user document
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
@@ -43,19 +51,49 @@ service cloud.firestore {
     // Availability — admins can write, anyone can read
     match /availability/{slotId} {
       allow read: if true;
-      allow write: if request.auth != null
-        && (request.auth.token.email == 'pgyb41494@gmail.com'
-            || request.auth.token.email == 'cardonayoselin422@gmail.com'
-            || request.auth.token.email == 'Cardonayoselin422@gmail.com');
+      allow write: if isAdmin();
+    }
+
+    // Slot holds — signed-in users can reserve a slot briefly during checkout
+    match /availabilityHolds/{holdId} {
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.slotKey == holdId
+        && request.resource.data.date is string
+        && request.resource.data.time is string
+        && request.resource.data.holdToken is string
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt > request.time;
+
+      allow update: if request.auth != null
+        && (
+          isAdmin() ||
+          (
+            resource.data.userId == request.auth.uid &&
+            request.resource.data.userId == resource.data.userId &&
+            request.resource.data.holdToken == resource.data.holdToken &&
+            request.resource.data.slotKey == resource.data.slotKey &&
+            request.resource.data.date == resource.data.date &&
+            request.resource.data.time == resource.data.time &&
+            request.resource.data.expiresAt is timestamp &&
+            request.resource.data.expiresAt > request.time
+          )
+        );
+
+      allow delete: if request.auth != null
+        && (
+          isAdmin() ||
+          resource.data.userId == request.auth.uid ||
+          resource.data.expiresAt <= request.time
+        );
     }
 
     // Settings (pricing, gallery, etc) — admins can write, anyone can read
     match /settings/{docId} {
       allow read: if true;
-      allow write: if request.auth != null
-        && (request.auth.token.email == 'pgyb41494@gmail.com'
-            || request.auth.token.email == 'cardonayoselin422@gmail.com'
-            || request.auth.token.email == 'Cardonayoselin422@gmail.com');
+      allow write: if isAdmin();
     }
 
     // Reviews — anyone logged in can create, anyone can read
