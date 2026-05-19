@@ -13,43 +13,14 @@
   --border: #e2e8f0;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; background: #07070b; }
+html { scroll-behavior: smooth; background: #1f1f1f; }
 
 body {
   font-family: 'DM Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif;
-  background:
-    radial-gradient(circle at 88% 8%, rgba(255, 90, 160, 0.12), transparent 32%),
-    radial-gradient(circle at 12% 88%, rgba(255, 90, 160, 0.10), transparent 34%),
-    radial-gradient(circle at 50% 50%, rgba(10, 6, 12, 0.95), transparent 58%),
-    linear-gradient(to bottom, #07070b, #030306);
+  background: #1f1f1f;
   color: #e5e7eb;
   min-height: 100vh;
   position: relative;
-}
-
-/* Layer 1 - dot grid */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
-  background-size: 28px 28px;
-  -webkit-mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, black 40%, transparent 100%);
-  mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, black 40%, transparent 100%);
-}
-
-/* Layer 2 - film grain */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.038;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)'/%3E%3C/svg%3E");
-  background-size: 180px 180px;
 }
 
 /* All page content must sit above texture layers */
@@ -309,7 +280,7 @@ tr:hover td { background: var(--soft); }
 --------------------------------------- */
 
 .home-root { min-height: 100vh; background: #ffffff; }
-.hp-root { min-height: 100vh; background: transparent; color: #e5e7eb; }
+.hp-root { min-height: 100vh; background: #1f1f1f; color: #e5e7eb; }
 
 /* Navbar */
 .home-nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.95); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 32px; height: 64px; display: flex; align-items: center; gap: 32px; }
@@ -499,7 +470,7 @@ tr:hover td { background: var(--soft); }
 }
 
 /* --- NEW HP NAV --- */
-.hp-nav { position: sticky; top: 0; z-index: 100; background: rgba(4,4,8,0.9); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); height: 180px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #222; position: sticky; }
+.hp-nav { position: sticky; top: 0; z-index: 100; background: #1f1f1f; min-height: 96px; display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid #2a2a2a; position: sticky; }
 .hp-nav-left { display: flex; align-items: center; flex: 1; min-width: 0; }
 .hp-nav-right { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex: 1; min-width: 0; }
 .hp-nav-brand { position: absolute; left: 50%; transform: translateX(-50%); pointer-events: auto; }
@@ -532,7 +503,7 @@ tr:hover td { background: var(--soft); }
 .hp-section-label { font-size: .78rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--pink-deep); margin-bottom: 16px; text-align: center; text-decoration: underline; text-underline-offset: 5px; }
 
 /* --- SERVICES --- */
-.hp-services { padding: 36px 32px; background: rgba(6,3,10,0.45); }
+.hp-services { padding: 36px 32px; background: transparent; }
 .hp-services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; max-width: 1000px; margin: 0 auto; }
 .hp-service-card { border: 1px solid rgba(255,90,160,0.12); border-radius: 16px; padding: 18px 16px; text-align: center; background: rgba(14,10,18,0.75); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); transition: all .2s; }
 .hp-service-card:hover { border-color: var(--blue); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(26,111,212,.15); }
@@ -542,7 +513,7 @@ tr:hover td { background: var(--soft); }
 .hsc-price { display: inline-block; background: var(--blue-pale); color: var(--blue); font-size: .8rem; font-weight: 700; padding: 5px 14px; border-radius: 99px; }
 
 /* --- GALLERY / REVIEWS --- */
-.hp-gallery { padding: 36px 32px; background: rgba(5,3,9,0.35); }
+.hp-gallery { padding: 36px 32px; background: transparent; }
 .hp-photos-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; max-width: 1000px; margin: 0 auto 20px; }
 .hp-photos-row::-webkit-scrollbar { height: 8px; }
 .hp-photos-row::-webkit-scrollbar-track { background: transparent; }
@@ -561,14 +532,14 @@ tr:hover td { background: var(--soft); }
 .hrc-date { font-size: .72rem; color: #9ca3af; }
 
 /* --- LOCATION --- */
-.hp-location { padding: 36px 32px; background: rgba(4,2,8,0.5); text-align: center; }
+.hp-location { padding: 36px 32px; background: transparent; text-align: center; }
 .hp-location-box { display: inline-flex; align-items: center; gap: 16px; background: rgba(14,10,18,0.75); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid rgba(255,90,160,0.14); border-radius: 14px; padding: 20px 28px; text-align: left; max-width: 420px; width: 100%; }
 .hp-loc-pin { font-size: 1.8rem; flex-shrink: 0; }
 .hp-location-box strong { display: block; color: white; font-size: 1rem; margin-bottom: 4px; }
 .hp-location-box p { color: #6b7280; font-size: .82rem; line-height: 1.5; }
 
 /* --- FOOTER --- */
-.hp-footer { background: rgba(3,2,6,0.95); border-top: 1px solid rgba(255,90,160,0.07); padding: 24px 32px; text-align: center; }
+.hp-footer { background: transparent; border-top: 1px solid rgba(255,255,255,0.08); padding: 24px 32px; text-align: center; }
 .hp-footer-links { display: flex; justify-content: center; gap: 32px; margin-bottom: 12px; }
 .hp-footer-links a { color: #9ca3af; font-size: .84rem; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .hp-footer-links a:hover { color: white; }

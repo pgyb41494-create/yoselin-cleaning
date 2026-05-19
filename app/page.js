@@ -75,7 +75,6 @@ export default function HomePage() {
   }, []);
 
   const [authMode,      setAuthMode]      = useState(null);
-  const [tabOpen,       setTabOpen]       = useState(false);
   const [name,          setName]          = useState('');
   const [email,         setEmail]         = useState('');
   const [password,      setPassword]      = useState('');
@@ -196,17 +195,6 @@ export default function HomePage() {
       {/* NAVBAR */}
       <nav className="hp-nav" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <div style={{display:'flex',alignItems:'center',gap:12}}>
-          <button className="hp-tab-btn" onClick={() => setTabOpen(!tabOpen)} style={{background:'none',border:'none',cursor:'pointer'}}>
-            <span style={{display:'block',width:18,height:2,background:'#fff',margin:'3px 0'}} />
-            <span style={{display:'block',width:18,height:2,background:'#fff',margin:'3px 0'}} />
-            <span style={{display:'block',width:18,height:2,background:'#fff',margin:'3px 0'}} />
-          </button>
-          {tabOpen && (
-            <div className="hp-tab-dropdown">
-              <a href="#pics"    onClick={() => setTabOpen(false)}>Pics</a>
-              <a href="#reviews" onClick={() => setTabOpen(false)}>Reviews</a>
-            </div>
-          )}
           <a href="/" style={{display:'flex',alignItems:'center'}}>
             <img src="/logo.png" alt="Yoselin's Cleaning" style={{ height: '64px', objectFit: 'contain' }} />
           </a>
@@ -263,27 +251,6 @@ export default function HomePage() {
             <p>Offices, studios, and small businesses. Flexible scheduling before or after hours.</p>
             <div className="hsc-price">{'From $250'}</div>
           </div>
-        </div>
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section style={{ padding: '70px 24px 60px', maxWidth: '900px', margin: '0 auto' }}>
-        <div className="hp-section-label">How It Works</div>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '0', position: 'relative', marginTop: '10px', flexWrap: 'wrap' }}>
-          {[
-            { step: '1', title: 'Book Online or Call', desc: 'Choose a service online or call us for a quick estimate.' },
-            { step: '2', title: 'We Arrive On Time', desc: 'On-time, uniformed cleaner arrives with all supplies.' },
-            { step: '3', title: '100% Satisfaction', desc: 'We fix it if you’re not happy — satisfaction guaranteed.' },
-          ].map((s, i) => (
-            <div key={i} style={{ flex: '1 1 250px', maxWidth: '320px', textAlign: 'center', padding: '20px 20px', position: 'relative', zIndex: 1 }}>
-              <div style={{ width: '68px', height: '68px', borderRadius: '50%', margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)' }}>
-                {s.step}
-              </div>
-              <div style={{ fontSize: '.65rem', fontWeight: '800', letterSpacing: '1.5px', textTransform: 'uppercase', color: '#9ca3af', marginBottom: '8px' }}>{'Step'} {s.step}</div>
-              <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.05rem', fontWeight: '700', color: 'white', margin: '0 0 8px' }}>{s.title}</h3>
-              <p style={{ fontSize: '.84rem', color: '#9ca3af', lineHeight: '1.65', margin: 0 }}>{s.desc}</p>
-            </div>
-          ))}
         </div>
       </section>
 
