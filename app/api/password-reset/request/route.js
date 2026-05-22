@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { notifyPasswordReset } from '../../../../lib/notifications';
 import { getAdminAuth } from '../../../../lib/firebaseAdmin';
 
 const RESET_RESPONSE = {
@@ -32,7 +31,6 @@ function getActionCodeSettings(siteOrigin) {
 
   if (projectId) {
     actionCodeSettings.linkDomain = `${projectId}.firebaseapp.com`;
-    actionCodeSettings.dynamicLinkDomain = `${projectId}.page.link`;
   }
 
   return actionCodeSettings;
@@ -72,14 +70,16 @@ export async function POST(request) {
 
   try {
     const adminAuth = getAdminAuth();
-    const projectConfig = await adminAuth.projectConfigManager().getProjectConfig();
-    const actionCodeSettings = getActionCodeSettings(siteOrigin);
+    try {
+      await adminAuth.getUserByEmail(email);
+    } catch (error) {
+      if (error?.code === 'auth/user-not-found') {
+        return NextResponse.json(RESET_RESPONSE);
+      }
+      throw error;
+    }
 
-    console.log('[password-reset] config', JSON.stringify({
-      siteOrigin,
-      projectConfig: projectConfig.toJSON(),
-      actionCodeSettings,
-    }));
+    const actionCodeSettings = getActionCodeSettings(siteOrigin);
 
     const firebaseLink = await adminAuth.generatePasswordResetLink(
       email,
@@ -87,14 +87,11 @@ export async function POST(request) {
     );
 
     const resetLink = buildResetLink(siteOrigin, firebaseLink, email);
-    await notifyPasswordReset({
-      toEmail: email,
-      toName: email.split('@')[0] || 'there',
+    return NextResponse.json({
+      ...RESET_RESPONSE,
       resetLink,
       supportEmail: process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'support',
     });
-
-    return NextResponse.json(RESET_RESPONSE);
   } catch (error) {
     if (error?.code === 'auth/user-not-found') {
       return NextResponse.json(RESET_RESPONSE);

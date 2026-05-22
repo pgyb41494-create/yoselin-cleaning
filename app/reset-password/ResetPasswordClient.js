@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
+import { notifyPasswordReset } from '../../lib/notifications';
 
 function getSearchParam(value) {
   if (Array.isArray(value)) return value[0] || '';
@@ -88,9 +89,18 @@ export default function ResetPasswordClient({ searchParams = {} }) {
         throw new Error(data.error || 'Unable to send the reset email right now.');
       }
 
+      if (data.resetLink) {
+        await notifyPasswordReset({
+          toEmail: trimmedEmail,
+          toName: trimmedEmail.split('@')[0] || 'there',
+          resetLink: data.resetLink,
+          supportEmail: data.supportEmail || 'support',
+        });
+      }
+
       setStatus(data.message || 'If that email exists, check your inbox for a reset link.');
     } catch (requestError) {
-      setError(requestError.message || 'Unable to send the reset email right now.');
+      setError(requestError?.message || 'Unable to send the reset email right now.');
     } finally {
       setRequestBusy(false);
     }
