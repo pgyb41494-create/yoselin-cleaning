@@ -750,7 +750,7 @@ tr:hover td { background: var(--soft); }
 
 /* --- AUTH MODAL --- */
 .am-overlay { position: fixed; inset: 0; background: rgba(2,1,6,0.82); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
-.am-modal { background: rgba(7,4,13,0.97); -webkit-backdrop-filter: blur(28px); backdrop-filter: blur(28px); border: 1px solid rgba(255,90,160,0.18); border-radius: 24px; box-shadow: 0 0 80px rgba(255,90,160,0.07); padding: 36px 30px 28px; width: 100%; max-width: 400px; position: relative; animation: popIn .25s ease; }
+.am-modal { background: rgba(7,4,13,0.97); -webkit-backdrop-filter: blur(28px); backdrop-filter: blur(28px); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.38); padding: 36px 30px 28px; width: 100%; max-width: 400px; position: relative; animation: popIn .25s ease; }
 .am-close { position: absolute; top: 14px; right: 16px; background: rgba(255,255,255,.07); border: none; color: #9ca3af; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: .9rem; display: flex; align-items: center; justify-content: center; transition: background .15s; }
 .am-close:hover { background: rgba(255,255,255,.15); color: white; }
 .am-logo { font-size: 2rem; text-align: center; margin-bottom: 10px; }
