@@ -749,7 +749,7 @@ tr:hover td { background: var(--soft); }
 .arc-done:hover { background: #e5e7eb; }
 
 /* --- AUTH MODAL --- */
-.am-overlay { position: fixed; inset: 0; background: rgba(2,1,6,0.82); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.am-overlay { position: fixed; inset: 0; background: rgba(2,1,6,0.82); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; overscroll-behavior: contain; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
 .am-modal { background: rgba(7,4,13,0.97); -webkit-backdrop-filter: blur(28px); backdrop-filter: blur(28px); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.38); padding: 36px 30px 28px; width: 100%; max-width: 400px; position: relative; animation: popIn .25s ease; }
 .am-close { position: absolute; top: 14px; right: 16px; background: rgba(255,255,255,.07); border: none; color: #9ca3af; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: .9rem; display: flex; align-items: center; justify-content: center; transition: background .15s; }
 .am-close:hover { background: rgba(255,255,255,.15); color: white; }
@@ -763,7 +763,9 @@ tr:hover td { background: var(--soft); }
 .am-field input:focus { border-color: var(--blue); }
 .am-pass-wrap { position: relative; }
 .am-pass-wrap input { padding-right: 44px; }
-.am-eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 1rem; line-height: 1; }
+.am-eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; padding: 0; background: none; border: none; color: #9ca3af; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.am-eye:hover { color: white; }
+.am-eye svg { width: 18px; height: 18px; display: block; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .am-error { color: #f87171; font-size: .8rem; margin-bottom: 12px; text-align: center; }
 .am-submit { width: 100%; padding: 13px; background: var(--blue); color: white; border: none; border-radius: 12px; font-size: .95rem; font-weight: 700; cursor: pointer; transition: opacity .2s; margin-bottom: 10px; }
 .am-submit:hover { opacity: .94; }

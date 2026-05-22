@@ -10,6 +10,26 @@ import {
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc, limit, getDoc } from 'firebase/firestore';
 import { auth, db, ADMIN_EMAIL, ADMIN_EMAILS } from '../lib/firebase';
 
+function PasswordToggleIcon({ visible }) {
+  if (visible) {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M3 3l18 18" />
+      <path d="M10.6 10.6A3 3 0 0 0 12 16a3 3 0 0 0 1.4-.35" />
+      <path d="M6.2 6.2C3.9 7.7 2.5 12 2.5 12s3.5 7 9.5 7c1.9 0 3.5-.4 4.9-1.1" />
+      <path d="M9.9 4.3A10 10 0 0 1 12 4c6 0 9.5 8 9.5 8a19.4 19.4 0 0 1-4.4 5.3" />
+    </svg>
+  );
+}
+
 
 
 const FALLBACK_REVIEWS = [
@@ -87,6 +107,30 @@ export default function HomePage() {
   const [rememberMe,    setRememberMe]    = useState(false);
   const [authError,     setAuthError]     = useState(false);
   const [currentUser,   setCurrentUser]   = useState(null);
+
+  useEffect(() => {
+    if (!authMode) return;
+
+    const bodyStyle = document.body.style;
+    const docStyle = document.documentElement.style;
+    const previousBodyOverflow = bodyStyle.overflow;
+    const previousBodyOverscroll = bodyStyle.overscrollBehavior;
+    const previousBodyPaddingRight = bodyStyle.paddingRight;
+    const previousDocOverflow = docStyle.overflow;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    bodyStyle.overflow = 'hidden';
+    bodyStyle.overscrollBehavior = 'none';
+    docStyle.overflow = 'hidden';
+    if (scrollbarWidth > 0) bodyStyle.paddingRight = `${scrollbarWidth}px`;
+
+    return () => {
+      bodyStyle.overflow = previousBodyOverflow;
+      bodyStyle.overscrollBehavior = previousBodyOverscroll;
+      bodyStyle.paddingRight = previousBodyPaddingRight;
+      docStyle.overflow = previousDocOverflow;
+    };
+  }, [authMode]);
 
   useEffect(() => {
     let timeout;
@@ -434,8 +478,8 @@ export default function HomePage() {
                       placeholder={authMode === 'signup' ? 'At least 6 characters' : 'Your password'}
                       value={password} onChange={e => setPassword(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignup())} />
-                    <button className="am-eye" onClick={() => setShowPass(s => !s)}>
-                    {showPass ? '👁' : '🙈'}
+                    <button type="button" className="am-eye" aria-label={showPass ? 'Hide password' : 'Show password'} onClick={() => setShowPass(s => !s)}>
+                    <PasswordToggleIcon visible={showPass} />
                     </button>
                   </div>
                 </div>
