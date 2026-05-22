@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import {
   GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  updateProfile, sendPasswordResetEmail, sendEmailVerification,
+  updateProfile, sendEmailVerification,
   setPersistence, browserLocalPersistence, browserSessionPersistence,
 } from 'firebase/auth';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc, limit, getDoc } from 'firebase/firestore';
@@ -101,7 +101,6 @@ export default function HomePage() {
   const [showPass,      setShowPass]      = useState(false);
   const [error,         setError]         = useState('');
   const [busy,          setBusy]          = useState(false);
-  const [resetSent,     setResetSent]     = useState(false);
   const [verifyError,   setVerifyError]   = useState('');
   const [verifyResent,  setVerifyResent]  = useState(false);
   const [rememberMe,    setRememberMe]    = useState(false);
@@ -193,16 +192,9 @@ export default function HomePage() {
     }
   };
 
-  const handleReset = async () => {
-    if (!email) { setError('Enter your email above first.'); return; }
-    setError(''); setBusy(true);
-    try { await sendPasswordResetEmail(auth, email); setResetSent(true); setBusy(false); }
-    catch { setError('Could not send reset email.'); setBusy(false); }
-  };
-
   const closeModal = () => {
     if (authMode === 'verify') return;
-    setAuthMode(null); setError(''); setName(''); setEmail(''); setPassword(''); setResetSent(false);
+    setAuthMode(null); setError(''); setName(''); setEmail(''); setPassword('');
   };
 
   const checkVerification = async () => {
@@ -450,71 +442,63 @@ export default function HomePage() {
               {authMode === 'login' ? 'Sign in to your account' : 'Set up your account in seconds'}
             </p>
 
-            {resetSent ? (
-              <div className="am-reset-success">
-                <div style={{fontSize:'2rem',marginBottom:'8px'}}>Email</div>
-                <p>{'Password reset email sent! Check your inbox.'}</p>
-                <button className="am-link-btn" onClick={() => setResetSent(false)}>{'Back to Login'}</button>
+            <>
+              {authMode === 'signup' && (
+                <div className="am-field">
+                  <label>{'Your Name'}</label>
+                  <input type="text" placeholder='First and last name' value={name}
+                    onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSignup()} />
+                </div>
+              )}
+              <div className="am-field">
+                <label>{'Email'}</label>
+                <input type="email" placeholder='your@email.com' value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignup())} />
               </div>
-            ) : (
-              <>
-                {authMode === 'signup' && (
-                  <div className="am-field">
-                    <label>{'Your Name'}</label>
-                    <input type="text" placeholder='First and last name' value={name}
-                      onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSignup()} />
-                  </div>
-                )}
-                <div className="am-field">
-                  <label>{'Email'}</label>
-                  <input type="email" placeholder='your@email.com' value={email}
-                    onChange={e => setEmail(e.target.value)}
+              <div className="am-field">
+                <label>{'Password'}</label>
+                <div className="am-pass-wrap">
+                  <input type={showPass ? 'text' : 'password'}
+                    placeholder={authMode === 'signup' ? 'At least 6 characters' : 'Your password'}
+                    value={password} onChange={e => setPassword(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignup())} />
+                  <button type="button" className="am-eye" aria-label={showPass ? 'Hide password' : 'Show password'} onClick={() => setShowPass(s => !s)}>
+                  <PasswordToggleIcon visible={showPass} />
+                  </button>
                 </div>
-                <div className="am-field">
-                  <label>{'Password'}</label>
-                  <div className="am-pass-wrap">
-                    <input type={showPass ? 'text' : 'password'}
-                      placeholder={authMode === 'signup' ? 'At least 6 characters' : 'Your password'}
-                      value={password} onChange={e => setPassword(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignup())} />
-                    <button type="button" className="am-eye" aria-label={showPass ? 'Hide password' : 'Show password'} onClick={() => setShowPass(s => !s)}>
-                    <PasswordToggleIcon visible={showPass} />
-                    </button>
-                  </div>
-                </div>
-                {error && <p className="am-error">{error}</p>}
-                {authMode === 'login' && (
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', cursor: 'pointer', userSelect: 'none' }}>
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={e => setRememberMe(e.target.checked)}
-                      style={{ width: '16px', height: '16px', accentColor: 'var(--blue)', cursor: 'pointer', flexShrink: 0 }}
-                    />
-                    <span style={{ fontSize: '.82rem', color: '#9ca3af', fontWeight: '600' }}>Stay logged in</span>
-                  </label>
+              </div>
+              {error && <p className="am-error">{error}</p>}
+              {authMode === 'login' && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', cursor: 'pointer', userSelect: 'none' }}>
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={e => setRememberMe(e.target.checked)}
+                    style={{ width: '16px', height: '16px', accentColor: 'var(--blue)', cursor: 'pointer', flexShrink: 0 }}
+                  />
+                  <span style={{ fontSize: '.82rem', color: '#9ca3af', fontWeight: '600' }}>Stay logged in</span>
+                </label>
+              )}
+              <button className="am-submit" onClick={authMode === 'login' ? handleLogin : handleSignup} disabled={busy}>
+                {busy ? '...' : authMode === 'login' ? 'Log In' : 'Create Account'}
+              </button>
+              {authMode === 'login' && (
+                <button className="am-link-btn" onClick={() => router.push('/reset-password')} disabled={busy}>{'Forgot password?'}</button>
+              )}
+              <div className="am-divider"><span>{'or'}</span></div>
+              <button className="am-google" onClick={handleGoogleSignIn} disabled={busy}>
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="" />
+                {'Continue with Google'}
+              </button>
+              <p className="am-switch">
+                {authMode === 'login' ? (
+                  <>{'No account?'} <button onClick={() => { setAuthMode('signup'); setError(''); }}>{'Sign up'}</button></>
+                ) : (
+                  <>{'Already have an account?'} <button onClick={() => { setAuthMode('login'); setError(''); }}>{'Log in'}</button></>
                 )}
-                <button className="am-submit" onClick={authMode === 'login' ? handleLogin : handleSignup} disabled={busy}>
-                  {busy ? '...' : authMode === 'login' ? 'Log In' : 'Create Account'}
-                </button>
-                {authMode === 'login' && (
-                  <button className="am-link-btn" onClick={handleReset} disabled={busy}>{'Forgot password?'}</button>
-                )}
-                <div className="am-divider"><span>{'or'}</span></div>
-                <button className="am-google" onClick={handleGoogleSignIn} disabled={busy}>
-                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="" />
-                  {'Continue with Google'}
-                </button>
-                <p className="am-switch">
-                  {authMode === 'login' ? (
-                    <>{'No account?'} <button onClick={() => { setAuthMode('signup'); setError(''); }}>{'Sign up'}</button></>
-                  ) : (
-                    <>{'Already have an account?'} <button onClick={() => { setAuthMode('login'); setError(''); }}>{'Log in'}</button></>
-                  )}
-                </p>
-              </>
-            )}
+              </p>
+            </>
           </div>
         </div>
       )}
