@@ -505,7 +505,7 @@ tr:hover td { background: var(--soft); }
 /* --- SERVICES --- */
 .hp-services { padding: 36px 32px; background: transparent; }
 .hp-services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; max-width: 1000px; margin: 0 auto; }
-.hp-service-card { border: 1px solid rgba(255,90,160,0.12); border-radius: 16px; padding: 18px 16px; text-align: center; background: rgba(14,10,18,0.75); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); transition: all .2s; }
+.hp-service-card { border: 1px solid rgba(255,90,160,0.12); border-radius: 0; padding: 22px 18px; text-align: center; background: rgba(14,10,18,0.75); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); transition: all .2s; aspect-ratio: 1 / 1; display: flex; flex-direction: column; justify-content: center; }
 .hp-service-card:hover { border-color: var(--blue); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(26,111,212,.15); }
 .hsc-icon { font-size: 1.8rem; margin-bottom: 8px; }
 .hp-service-card h3 { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: white; }
@@ -533,10 +533,10 @@ tr:hover td { background: var(--soft); }
 
 /* --- LOCATION --- */
 .hp-location { padding: 36px 32px; background: transparent; text-align: center; }
-.hp-location-box { display: inline-flex; align-items: center; gap: 16px; background: rgba(14,10,18,0.75); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid rgba(255,90,160,0.14); border-radius: 14px; padding: 20px 28px; text-align: left; max-width: 420px; width: 100%; }
+.hp-location-box { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(14,10,18,0.75); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid rgba(255,90,160,0.14); border-radius: 0; padding: 26px; text-align: center; max-width: 420px; width: 100%; aspect-ratio: 1 / 1; }
 .hp-loc-pin { font-size: 1.8rem; flex-shrink: 0; }
 .hp-location-box strong { display: block; color: white; font-size: 1rem; margin-bottom: 4px; }
-.hp-location-box p { color: #6b7280; font-size: .82rem; line-height: 1.5; }
+.hp-location-box p { color: #6b7280; font-size: .82rem; line-height: 1.5; margin: 0; }
 
 /* --- FOOTER --- */
 .hp-footer { background: transparent; border-top: 1px solid rgba(255,255,255,0.08); padding: 24px 32px; text-align: center; }
@@ -777,7 +777,7 @@ tr:hover td { background: var(--soft); }
 
 /* --- PASSWORD RESET PAGE --- */
 .rp-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: #1f1f1f; }
-.rp-card { width: 100%; max-width: 520px; background: rgba(10,10,14,0.96); border: 1px solid rgba(255,255,255,0.08); border-radius: 28px; padding: 36px 32px; box-shadow: 0 24px 70px rgba(0,0,0,.35); }
+.rp-card { width: 100%; max-width: 520px; background: rgba(10,10,14,0.96); border: 1px solid rgba(255,255,255,0.08); border-radius: 0; padding: 36px 32px; box-shadow: 0 24px 70px rgba(0,0,0,.35); aspect-ratio: 1 / 1; display: flex; flex-direction: column; justify-content: center; }
 .rp-brand { display: flex; justify-content: center; margin-bottom: 18px; }
 .rp-brand img { height: 92px; width: auto; object-fit: contain; }
 .rp-title { font-family: 'Playfair Display', serif; font-size: clamp(1.6rem, 4vw, 2.1rem); font-weight: 900; color: white; text-align: center; margin-bottom: 8px; }
@@ -1142,7 +1142,7 @@ tr:hover td { background: #222; }
 
   /* Password reset page */
   .rp-page { padding: 12px; }
-  .rp-card { padding: 26px 18px; border-radius: 22px; }
+  .rp-card { padding: 26px 18px; border-radius: 0; }
   .rp-brand img { height: 76px; }
   .rp-actions { flex-direction: column; }
   .rp-btn { width: 100%; }
