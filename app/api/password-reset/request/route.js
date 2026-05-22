@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { notifyPasswordReset } from '../../../../../lib/notifications';
-import { getAdminAuth } from '../../../../../lib/firebaseAdmin';
+import { notifyPasswordReset } from '../../../../lib/notifications';
+import { getAdminAuth } from '../../../../lib/firebaseAdmin';
 
 const RESET_RESPONSE = {
   ok: true,
