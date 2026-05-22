@@ -11,6 +11,33 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function getSiteOrigin(request) {
+  try {
+    return new URL(request.url).origin;
+  } catch {
+    return process.env.NEXT_PUBLIC_SITE_URL || 'https://yoselinscleaning.com';
+  }
+}
+
+function getFirebaseProjectId() {
+  return process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '';
+}
+
+function getActionCodeSettings(siteOrigin) {
+  const projectId = getFirebaseProjectId();
+  const actionCodeSettings = {
+    url: `${siteOrigin}/reset-password`,
+    handleCodeInApp: true,
+  };
+
+  if (projectId) {
+    actionCodeSettings.linkDomain = `${projectId}.firebaseapp.com`;
+    actionCodeSettings.dynamicLinkDomain = `${projectId}.page.link`;
+  }
+
+  return actionCodeSettings;
+}
+
 function buildResetLink(origin, firebaseLink, email) {
   const firebaseUrl = new URL(firebaseLink);
   const oobCode = firebaseUrl.searchParams.get('oobCode');
@@ -41,16 +68,25 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
   }
 
-  const origin = new URL(request.url).origin;
+  const siteOrigin = getSiteOrigin(request);
 
   try {
     const adminAuth = getAdminAuth();
-    const firebaseLink = await adminAuth.generatePasswordResetLink(email, {
-      url: `${origin}/reset-password`,
-      handleCodeInApp: true,
-    });
+    const projectConfig = await adminAuth.projectConfigManager().getProjectConfig();
+    const actionCodeSettings = getActionCodeSettings(siteOrigin);
 
-    const resetLink = buildResetLink(origin, firebaseLink, email);
+    console.log('[password-reset] config', JSON.stringify({
+      siteOrigin,
+      projectConfig: projectConfig.toJSON(),
+      actionCodeSettings,
+    }));
+
+    const firebaseLink = await adminAuth.generatePasswordResetLink(
+      email,
+      actionCodeSettings,
+    );
+
+    const resetLink = buildResetLink(siteOrigin, firebaseLink, email);
     await notifyPasswordReset({
       toEmail: email,
       toName: email.split('@')[0] || 'there',
@@ -65,6 +101,6 @@ export async function POST(request) {
     }
 
     console.error('[password-reset] request failed:', error);
-    return NextResponse.json({ error: 'Unable to send the reset email right now.' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Unable to send the reset email right now.' }, { status: 500 });
   }
 }
