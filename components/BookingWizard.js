@@ -189,7 +189,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   }, []);
 
   const acquireHold = useCallback(async (date, time) => {
-    if (!date || !time) return;
+    if (!date || !time || !user?.uid) return;
     if (holdBusy) return;
     setHoldBusy(true);
     setHoldError('');
@@ -210,36 +210,48 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
         const holdSnap = await transaction.get(nextRef);
         const holdData = holdSnap.exists() ? holdSnap.data() : null;
         const holdActive = holdData && holdIsActive(holdData);
-        const holdOwnedByMe = holdActive && holdData.userId === user?.uid && holdData.holdToken === holdToken;
+        const holdOwnedByMe = holdActive && holdData.userId === user.uid && holdData.holdToken === holdToken;
+
         if (holdActive && !holdOwnedByMe) {
           throw new Error('That time was just taken. Please choose another slot.');
         }
 
-        if (previousRef) {
-          const previousSnap = await transaction.get(previousRef);
-          const previousData = previousSnap.exists() ? previousSnap.data() : null;
-          if (previousData && previousData.userId === user?.uid && previousData.holdToken === holdToken) {
-            transaction.delete(previousRef);
+        if (holdActive && holdOwnedByMe) {
+          transaction.update(nextRef, {
+            expiresAt: new Date(Date.now() + HOLD_MS),
+            updatedAt: serverTimestamp(),
+          });
+        } else {
+          if (holdSnap.exists()) {
+            transaction.delete(nextRef);
           }
-        }
 
-        const firstAvailabilityRef = availabilitySnap.docs[0].ref;
-        const firstAvailabilitySnap = await transaction.get(firstAvailabilityRef);
-        if (!firstAvailabilitySnap.exists()) {
-          throw new Error('That time is no longer available.');
-        }
+          if (previousRef) {
+            const previousSnap = await transaction.get(previousRef);
+            const previousData = previousSnap.exists() ? previousSnap.data() : null;
+            if (previousData && previousData.userId === user.uid && previousData.holdToken === holdToken) {
+              transaction.delete(previousRef);
+            }
+          }
 
-        transaction.set(nextRef, {
-          slotKey: nextKey,
-          date,
-          time,
-          userId: user?.uid || 'guest',
-          userEmail: user?.email || form.email || 'N/A',
-          holdToken,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          expiresAt: new Date(Date.now() + HOLD_MS),
-        }, { merge: true });
+          const firstAvailabilityRef = availabilitySnap.docs[0].ref;
+          const firstAvailabilitySnap = await transaction.get(firstAvailabilityRef);
+          if (!firstAvailabilitySnap.exists()) {
+            throw new Error('That time is no longer available.');
+          }
+
+          transaction.set(nextRef, {
+            slotKey: nextKey,
+            date,
+            time,
+            userId: user.uid,
+            userEmail: user.email || form.email || 'N/A',
+            holdToken,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            expiresAt: new Date(Date.now() + HOLD_MS),
+          });
+        }
       });
 
       currentHoldKeyRef.current = nextKey;
@@ -251,12 +263,15 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       pendingHoldKeyRef.current = previousKey || '';
       currentHoldKeyRef.current = previousKey;
       setHeldSlotKey(previousKey || '');
-      setF('time', '');
-      setHoldError(error?.message || 'That time could not be reserved. Please try again.');
+      const message = error?.message || 'That time could not be reserved. Please try again.';
+      if (message.includes('just taken')) {
+        setF('time', '');
+      }
+      setHoldError(message);
     } finally {
       setHoldBusy(false);
     }
-  }, [holdBusy, holdToken, user?.email, user?.uid, form.email, setF]);
+  }, [holdBusy, holdToken, user?.email, user?.uid, form.email]);
 
   useEffect(() => {
     return () => { void releaseCurrentHold(); };
@@ -360,20 +375,6 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   const canGoPrev = calYear > now.getFullYear() || (calYear === now.getFullYear() && calMonth > now.getMonth());
 
   useEffect(() => {
-    if (adminMode || !form.date || !form.time) return;
-    const key = slotHoldId(form.date, form.time);
-    if (pendingHoldKeyRef.current === key) return;
-    const hold = activeHolds.find(h => slotHoldId(h.date, h.time) === key);
-    const isCurrentHold = currentHoldKeyRef.current === key;
-    if (isCurrentHold && !hold) {
-      setHoldError('That reservation expired or was taken. Please choose another time.');
-      setF('time', '');
-      if (currentHoldKeyRef.current === key) currentHoldKeyRef.current = '';
-      setHeldSlotKey('');
-    }
-  }, [adminMode, activeHolds, clockTick, form.date, form.time]);
-
-  useEffect(() => {
     if (adminMode) return;
     const ownedHold = activeHolds.find(hold => hold?.userId === user?.uid && hold?.holdToken === holdToken);
     if (ownedHold) {
@@ -381,17 +382,21 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       currentHoldKeyRef.current = key;
       pendingHoldKeyRef.current = '';
       if (heldSlotKey !== key) setHeldSlotKey(key);
-    } else if (!ownedHold && heldSlotKey && pendingHoldKeyRef.current !== heldSlotKey) {
-      currentHoldKeyRef.current = '';
-      setHeldSlotKey('');
     }
   }, [activeHolds, adminMode, heldSlotKey, holdToken, user?.uid]);
+
+  const selectTime = (time) => {
+    setHoldError('');
+    setF('time', time);
+    if (!adminMode) void acquireHold(form.date, time);
+  };
 
   const goTo = (s) => {
     if (s >= 1) {
       if (!form.firstName.trim()) { alert('Please enter your first name.'); return; }
       if (!form.phone.trim())     { alert('Please enter your phone number.'); return; }
       if (!form.date)             { alert('Please choose a preferred date.'); return; }
+      if (availDates.length > 0 && !form.time) { alert('Please choose a preferred time.'); return; }
     }
     if (s >= 2) {
       const hasRoom = Object.values(rooms).some(v => v > 0) || Object.values(baths).some(v => v > 0);
@@ -404,6 +409,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   const handleSubmit = async () => {
     if (!form.firstName.trim()) { alert('Please enter a name.'); return; }
     if (!form.phone.trim())     { alert('Please enter a phone number.'); return; }
+    if (availDates.length > 0 && !form.time) { alert('Please choose a preferred time.'); return; }
     setSubmitting(true);
     const bathDesc = Object.keys(baths).filter(k => baths[k] > 0).map(k => baths[k] + ' ' + BNAMES[k]).join(', ') || 'None';
     const roomDesc = Object.keys(rooms).filter(k => rooms[k] > 0).map(k => rooms[k] + ' ' + RNAMES[k]).join(', ') || 'None';
@@ -452,15 +458,24 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
         await runTransaction(db, async (transaction) => {
           const holdSnap = await transaction.get(holdRef);
-          const holdData = holdSnap.exists() ? holdSnap.data() : null;
-          const holdActive = holdData && holdIsActive(holdData);
-          const holdOwnedByMe = holdActive && holdData.userId === user?.uid && holdData.holdToken === holdToken;
-          if (!holdOwnedByMe) {
-            throw new Error('Your reservation expired or was taken. Please choose the time again.');
+          if (holdSnap.exists()) {
+            const holdData = holdSnap.data();
+            if (holdIsActive(holdData)) {
+              const holdOwnedByMe = holdData.userId === user?.uid && holdData.holdToken === holdToken;
+              if (!holdOwnedByMe) {
+                throw new Error('That time was just taken by someone else. Please go back and choose another time.');
+              }
+            }
+            transaction.delete(holdRef);
           }
 
-          transaction.delete(holdRef);
-          slotSnap.docs.forEach(slotDoc => transaction.delete(slotDoc.ref));
+          for (const slotDoc of slotSnap.docs) {
+            const slotCheck = await transaction.get(slotDoc.ref);
+            if (!slotCheck.exists()) {
+              throw new Error('That time is no longer available.');
+            }
+            transaction.delete(slotDoc.ref);
+          }
           transaction.set(docRef, req);
         });
       } else {
@@ -654,7 +669,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                         <label style={{ marginBottom: '7px', display: 'block', fontSize: '.78rem' }}>Preferred Time</label>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                           {timesForDate.map(tm => (
-                            <button key={tm} type="button" disabled={!adminMode && holdBusy} onClick={() => { adminMode ? setF('time', tm) : void acquireHold(form.date, tm); }} style={{
+                            <button key={tm} type="button" onClick={() => selectTime(tm)} style={{
                               padding: '8px 14px', borderRadius: '8px',
                               border: form.time === tm ? '1.5px solid #a855f7' : '1px solid #232323',
                               background: form.time === tm ? 'rgba(168,85,247,.15)' : '#131313',
@@ -665,7 +680,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                           ))}
                         </div>
                         <div style={{ marginTop: '8px', fontSize: '.72rem', color: '#6b7280' }}>
-                          {adminMode ? 'Admin bookings are saved directly.' : (holdBusy ? 'Reserving this slot...' : 'This time is held for 15 minutes once selected.')}
+                          {adminMode ? 'Admin bookings are saved directly.' : (holdBusy ? 'Saving your time selection...' : 'Select the time that works best for you.')}
                         </div>
                       </div>
                     ) : form.date ? (
@@ -678,7 +693,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                     )}
                     {selectedHoldOwnedByMe && form.date && form.time && (
                       <div style={{ marginTop: '10px', padding: '10px 12px', borderRadius: '10px', background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.22)', color: '#6ee7b7', fontSize: '.78rem', lineHeight: 1.45 }}>
-                        Your selected time is reserved while you finish checkout.
+                        Your selected time is saved while you finish your quote.
                       </div>
                     )}
                   </div>
