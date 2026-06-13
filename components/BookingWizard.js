@@ -83,6 +83,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   const [heldSlotKey,  setHeldSlotKey]  = useState('');
   const [livePrices,   setLivePrices]   = useState(null);
   const currentHoldKeyRef = useRef('');
+  const pendingHoldKeyRef = useRef('');
 
   // Calendar state
   const now = new Date();
@@ -178,6 +179,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     const holdKey = currentHoldKeyRef.current;
     if (!holdKey) return;
     currentHoldKeyRef.current = '';
+    pendingHoldKeyRef.current = '';
     setHeldSlotKey('');
     try {
       await deleteDoc(doc(db, HOLD_COLLECTION, holdKey));
@@ -196,6 +198,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     const nextRef = doc(db, HOLD_COLLECTION, nextKey);
     const previousKey = currentHoldKeyRef.current;
     const previousRef = previousKey && previousKey !== nextKey ? doc(db, HOLD_COLLECTION, previousKey) : null;
+    pendingHoldKeyRef.current = nextKey;
 
     try {
       const availabilitySnap = await getDocs(query(collection(db, 'availability'), where('date', '==', date), where('time', '==', time)));
@@ -245,6 +248,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       setF('time', time);
       setHoldError('');
     } catch (error) {
+      pendingHoldKeyRef.current = previousKey || '';
       currentHoldKeyRef.current = previousKey;
       setHeldSlotKey(previousKey || '');
       setF('time', '');
@@ -358,6 +362,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   useEffect(() => {
     if (adminMode || !form.date || !form.time) return;
     const key = slotHoldId(form.date, form.time);
+    if (pendingHoldKeyRef.current === key) return;
     const hold = activeHolds.find(h => slotHoldId(h.date, h.time) === key);
     const isCurrentHold = currentHoldKeyRef.current === key;
     if (isCurrentHold && !hold) {
@@ -374,8 +379,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     if (ownedHold) {
       const key = slotHoldId(ownedHold.date, ownedHold.time);
       currentHoldKeyRef.current = key;
+      pendingHoldKeyRef.current = '';
       if (heldSlotKey !== key) setHeldSlotKey(key);
-    } else if (!ownedHold && heldSlotKey) {
+    } else if (!ownedHold && heldSlotKey && pendingHoldKeyRef.current !== heldSlotKey) {
       currentHoldKeyRef.current = '';
       setHeldSlotKey('');
     }
@@ -485,6 +491,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     });
     setSubmitting(false);
     currentHoldKeyRef.current = '';
+    pendingHoldKeyRef.current = '';
     setHeldSlotKey('');
     if (onDone) onDone(docRef.id);
   };
