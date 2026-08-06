@@ -15,6 +15,7 @@ import {
   signInWithGoogle,
   needsEmailVerification,
   getSignInMethods,
+  consumeGoogleRedirectError,
   MIN_PASSWORD_LENGTH,
 } from '../lib/authHelpers';
 
@@ -86,6 +87,12 @@ export default function AuthModal({ mode, onClose, onModeChange, redirectTo = '/
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
+  }, [mode]);
+
+  useEffect(() => {
+    if (!mode || mode === 'verify') return;
+    const pendingErr = consumeGoogleRedirectError();
+    if (pendingErr) setError(pendingErr);
   }, [mode]);
 
   useEffect(() => {

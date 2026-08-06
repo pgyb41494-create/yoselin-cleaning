@@ -17,7 +17,8 @@ export default function AuthRedirectHandler() {
 
     (async () => {
       const result = await completeGoogleRedirect();
-      if (!result || result.error) return;
+      if (result?.error) return;
+      if (!result) return;
       if (isAdminEmail(result.email)) {
         router.replace('/admin');
         return;
