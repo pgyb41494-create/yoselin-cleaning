@@ -12,10 +12,12 @@ Ready-to-post video ads with calm piano, soft fades, and a female voiceover.
 ## Suggested caption
 
 > Spotless homes. Trusted local care.  
-> Get your free quote in minutes → yoselinscleaning.com  
-> House cleaning · Move-in/out · Landscaping · and more · Fairfield, OH
+> Serving greater Cincinnati, OH and nearby areas.  
+> Get your free quote → yoselinscleaning.com  
+> House cleaning · Move-in/out · Landscaping · and more
 
 ## Credits
 
 - Voice: Microsoft Edge neural TTS (Ava)
 - Music: *Gymnopédie No. 1* (public domain / Kevin MacLeod arrangement via incompetech.com) — royalty-free
+- Audio: stereo AAC @ 48 kHz for phone/headphone compatibility
