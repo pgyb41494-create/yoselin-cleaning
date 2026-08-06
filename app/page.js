@@ -134,7 +134,7 @@ export default function HomePage() {
               ))}
             </div>
             <p className="section__sub" style={{ marginTop: 16 }}>
-              Also offering painting, pressure washing, remodeling, junk removal, organizing &amp; more.
+              Also offering painting, pressure washing, remodeling, junk removal &amp; more.
             </p>
             <div className="section__cta">
               <button type="button" className="btn btn-primary" onClick={goQuote}>
