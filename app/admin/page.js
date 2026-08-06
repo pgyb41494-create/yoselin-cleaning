@@ -573,7 +573,7 @@ export default function AdminPage() {
     <PortalShell badge="Admin">
       <div className="portal-toolbar">
         <div className="portal-toolbar__left">
-          <button type="button" className="portal-pill portal-pill--active" onClick={() => setTab('requests')}>Admin Dashboard</button>
+          <button type="button" className="portal-pill portal-pill--active" onClick={() => setTab('requests')}>Admin</button>
           <button type="button" className="portal-pill" onClick={() => router.push('/')}>Home</button>
         </div>
         <div className="portal-toolbar__right">
@@ -584,23 +584,25 @@ export default function AdminPage() {
       </div>
 
       {/* Tab Bar */}
-      <div className="portal-tabs" style={{ padding: '0 16px' }}>
+      <div className="portal-tabs admin-tabs" role="tablist">
         {TABS.map(({ key, label }) => (
-          <button key={key} onClick={() => { setTab(key); setCreateDone(false); }} style={{
-            padding: '14px 20px', background: 'none', border: 'none',
-            borderBottom: tab === key ? '3px solid var(--blue)' : '3px solid transparent',
-            fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.85rem',
-            color: tab === key ? 'var(--blue)' : '#6b7280', cursor: 'pointer', whiteSpace: 'nowrap',
-          }}>
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            className={'portal-tab' + (tab === key ? ' portal-tab--active' : '')}
+            onClick={() => { setTab(key); setCreateDone(false); }}
+          >
             {label}
             {key === 'requests' && newCount > 0 && (
-              <span style={{ marginLeft: '7px', background: '#db2777', color: 'white', fontSize: '.65rem', fontWeight: '700', padding: '2px 7px', borderRadius: '99px' }}>{newCount}</span>
+              <span className="portal-tab__badge">{newCount}</span>
             )}
           </button>
         ))}
       </div>
 
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '28px 16px 80px' }}>
+      <div className="admin-page">
 
         {/* -- REQUESTS TAB -- */}
         {tab === 'requests' && (() => {
@@ -617,6 +619,7 @@ export default function AdminPage() {
             }
             return true;
           });
+          const phoneDigits = (p) => String(p || '').replace(/\D/g, '');
           return (
             <>
               <div className="stats-grid">
@@ -626,128 +629,135 @@ export default function AdminPage() {
                   ['CONFIRMED', requests.filter(r => r.status === 'confirmed').length, 'Upcoming'],
                   ['REVENUE',   '$' + requests.filter(r => r.status === 'done').reduce((s, r) => s + (r.estimate || 0), 0), 'From completed'],
                 ].map(([label, val, sub]) => (
-                  <div key={label} className="stat-card" style={{ background: 'white', border: '1px solid var(--border)' }}>
-                    <div className="stat-label" style={{ color: '#9ca3af' }}>{label}</div>
-                    <div className="stat-val"   style={{ color: 'white'   }}>{val}</div>
-                    {sub && <div className="stat-sub" style={{ color: '#9ca3af' }}>{sub}</div>}
-                  </div>
+                  <button
+                    key={label}
+                    type="button"
+                    className="stat-card admin-stat-card"
+                    onClick={() => {
+                      if (label === 'NEW') setReqFilter('new');
+                      else if (label === 'CONFIRMED') setReqFilter('confirmed');
+                      else if (label === 'TOTAL') setReqFilter('all');
+                    }}
+                  >
+                    <div className="stat-label">{label}</div>
+                    <div className="stat-val">{val}</div>
+                    {sub && <div className="stat-sub">{sub}</div>}
+                  </button>
                 ))}
               </div>
 
               {todayJobs.length > 0 && (
-                <div style={{ background: 'rgba(59,130,246,.08)', border: '1px solid rgba(59,130,246,.25)', borderRadius: '14px', padding: '14px 18px', marginBottom: '18px' }}>
-                  <div style={{ fontSize: '.72rem', fontWeight: '700', color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '10px' }}>Today's Jobs</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                <div className="admin-today">
+                  <div className="admin-today__label">Today&apos;s Jobs ({todayJobs.length})</div>
+                  <div className="admin-today__list">
                     {todayJobs.map(r => (
-                      <div key={r.id} onClick={() => setSelected(r)} style={{ background: 'white', borderRadius: '10px', padding: '10px 14px', cursor: 'pointer', border: '1px solid #1f2f4f', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <button key={r.id} type="button" className="admin-today__item" onClick={() => setSelected(r)}>
                         <div>
-                          <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '.85rem' }}>{r.name}</div>
-                          <div style={{ fontSize: '.75rem', color: '#9ca3af', marginTop: '2px' }}>{r.time || 'No time'} ? {r.address?.split(',')[0] || 'No address'}</div>
+                          <div className="admin-today__name">{r.name}</div>
+                          <div className="admin-today__meta">{r.time || 'No time'} · {r.address?.split(',')[0] || 'No address'}</div>
                         </div>
-                        <strong style={{ color: 'var(--blue)', fontFamily: 'var(--font-display)' }}>${r.estimate}</strong>
-                      </div>
+                        <strong className="admin-today__price">${r.estimate}</strong>
+                      </button>
                     ))}
                   </div>
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
-                <input value={reqSearch} onChange={e => setReqSearch(e.target.value)} placeholder="Search by name, email, phone?"
-                  style={{ flex: 1, minWidth: '180px', padding: '9px 14px', background: 'white', border: '1px solid var(--border)', borderRadius: '10px', color: 'white', fontFamily: "'DM Sans',sans-serif", fontSize: '.84rem', outline: 'none' }} />
-                <div style={{ display: 'flex', gap: '4px', background: 'white', border: '1px solid var(--border)', borderRadius: '10px', padding: '4px' }}>
+              <div className="admin-toolbar">
+                <input
+                  className="admin-search"
+                  value={reqSearch}
+                  onChange={e => setReqSearch(e.target.value)}
+                  placeholder="Search name, email, phone…"
+                  inputMode="search"
+                />
+                <div className="admin-filters" role="tablist" aria-label="Filter requests">
                   {[['all', 'All'], ['new', 'New'], ['confirmed', 'Confirmed'], ['done', 'Done'], ['cancelled', 'Cancelled']].map(([val, label]) => (
-                    <button key={val} onClick={() => setReqFilter(val)} style={{
-                      padding: '6px 13px', borderRadius: '7px', border: 'none', cursor: 'pointer',
-                      background: reqFilter === val ? 'var(--blue)' : 'transparent',
-                      color: reqFilter === val ? 'white' : '#6b7280',
-                      fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.78rem',
-                    }}>
-                      {label}{val !== 'all' && <span style={{ marginLeft: '5px', opacity: .7 }}>({requests.filter(r => r.status === val).length})</span>}
+                    <button
+                      key={val}
+                      type="button"
+                      className={'admin-filter' + (reqFilter === val ? ' admin-filter--active' : '')}
+                      onClick={() => setReqFilter(val)}
+                    >
+                      {label}
+                      {val !== 'all' && (
+                        <span className="admin-filter__count">{requests.filter(r => r.status === val).length}</span>
+                      )}
                     </button>
                   ))}
                 </div>
                 {requests.filter(r => r.status === 'done').length > 0 && (
-                  <button onClick={async () => {
-                    const done = requests.filter(r => r.status === 'done');
-                    if (!window.confirm('Delete all ' + done.length + ' completed requests?')) return;
-                    for (const r of done) await deleteDoc(doc(db, 'requests', r.id));
-                  }} className="btn btn-danger-outline">
+                  <button
+                    type="button"
+                    className="btn btn-danger-outline admin-clear-done"
+                    onClick={async () => {
+                      const done = requests.filter(r => r.status === 'done');
+                      if (!window.confirm('Delete all ' + done.length + ' completed requests?')) return;
+                      for (const r of done) await deleteDoc(doc(db, 'requests', r.id));
+                    }}
+                  >
                     Clear Done
                   </button>
                 )}
               </div>
 
-              <div style={{ background: 'white', borderRadius: '16px', border: '1px solid var(--border)', overflow: 'hidden', overflowX: 'auto' }}>
+              <div className="admin-req-list">
                 {filtered.length === 0 ? (
-                  <div className="empty-state" style={{ color: '#9ca3af' }}>{requests.length === 0 ? 'No requests yet.' : 'No results.'}</div>
+                  <div className="empty-state">{requests.length === 0 ? 'No requests yet.' : 'No results.'}</div>
                 ) : (
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr>
-                        {['Client', 'Date', 'Estimate', 'Status', 'Actions'].map(h => (
-                          <th key={h} style={{ background: 'white', color: '#9ca3af', padding: '12px 15px', textAlign: 'left', fontSize: '.75rem', fontWeight: '700' }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.map(r => (
-                        <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                          <td style={{ padding: '12px 15px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '2px' }}>
-                              <strong style={{ color: 'white', fontSize: '.88rem' }}>{r.name}</strong>
-                              {r.createdByAdmin && <span style={{ fontSize: '.6rem', color: 'var(--blue)', fontWeight: '700', background: 'rgba(96,165,250,.15)', padding: '1px 5px', borderRadius: '4px' }}>ADMIN</span>}
-                              {(unreadMap[r.id] || 0) > 0 && <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef4444', display: 'inline-block', flexShrink: 0 }} title="Unread messages" />}
+                  filtered.map(r => {
+                    const d = r.date && r.date !== 'N/A' && r.date !== 'TBD' ? parseDateString(r.date) : null;
+                    const digits = phoneDigits(r.phone);
+                    const unread = unreadMap[r.id] || 0;
+                    return (
+                      <article key={r.id} className={'admin-req-card' + (r.status === 'new' ? ' admin-req-card--new' : '')}>
+                        <button type="button" className="admin-req-card__main" onClick={() => setSelected(r)}>
+                          <div className="admin-req-card__top">
+                            <div className="admin-req-card__identity">
+                              <strong className="admin-req-card__name">
+                                {r.name || 'Client'}
+                                {unread > 0 && <span className="admin-req-card__dot" title="Unread messages" />}
+                              </strong>
+                              {r.createdByAdmin && <span className="admin-req-card__tag">ADMIN</span>}
+                              <span className={'badge badge-' + r.status}>
+                                {r.status === 'new' ? 'New' : r.status === 'confirmed' ? 'Confirmed' : r.status === 'cancelled' ? 'Cancelled' : 'Done'}
+                              </span>
                             </div>
-                            <div style={{ fontSize: '.75rem', color: '#6b7280' }}>{r.phone || r.email}</div>
-                            {r.adminNotes && <div style={{ fontSize: '.72rem', color: 'var(--blue)', marginTop: '2px' }}>Note: {r.adminNotes.slice(0, 45)}{r.adminNotes.length > 45 ? '?' : ''}</div>}
-                          </td>
-                          <td style={{ padding: '12px 15px', whiteSpace: 'nowrap' }}>
-                            {(() => {
-                              const d = r.date && r.date !== 'N/A' && r.date !== 'TBD' ? parseDateString(r.date) : null;
-                              if (d) {
-                                const dn = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
-                                const mn = MONTH_NAMES[d.getMonth()].slice(0,3);
-                                return (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <div style={{ width: '38px', height: '42px', borderRadius: '8px', background: 'var(--blue-pale)', border: '1px solid rgba(13,148,136,.18)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                      <div style={{ fontSize: '.42rem', fontWeight: '800', color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '.5px', lineHeight: 1 }}>{mn}</div>
-                                      <div style={{ fontSize: '1rem', fontWeight: '900', color: 'var(--text)', lineHeight: 1.1 }}>{d.getDate()}</div>
-                                    </div>
-                                    <div>
-                                      <div style={{ fontSize: '.82rem', fontWeight: '700', color: 'var(--text)' }}>{dn}, {mn} {d.getDate()}</div>
-                                      {r.time && r.time !== 'N/A' && <div style={{ fontSize: '.72rem', color: 'var(--blue)', fontWeight: '600', marginTop: '1px' }}>{r.time}</div>}
-                                    </div>
-                                  </div>
-                                );
-                              }
-                              return (
-                                <div>
-                                  <div style={{ fontSize: '.83rem', color: 'var(--text)' }}>{r.date || '—'}</div>
-                                  {r.time && r.time !== 'N/A' && <div style={{ fontSize: '.72rem', color: '#6b7280' }}>{r.time}</div>}
-                                </div>
-                              );
-                            })()}
-                          </td>
-                          <td style={{ padding: '12px 15px' }}>
-                            <strong style={{ color: 'var(--blue)', fontFamily: 'var(--font-display)', fontSize: '1rem' }}>${r.estimate}</strong>
-                          </td>
-                          <td style={{ padding: '12px 15px' }}>
-                            <span className={'badge badge-' + r.status}>{r.status === 'new' ? 'New' : r.status === 'confirmed' ? 'Confirmed' : 'Done'}</span>
-                          </td>
-                          <td style={{ padding: '12px 15px' }}>
-                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-                              <button className="view-btn" onClick={() => setSelected(r)}>Details</button>
-                              <button onClick={() => setChatReq(r)} className={'btn ' + ((unreadMap[r.id] || 0) > 0 ? 'btn-danger' : 'btn-outline-blue')}>
-                                Chat{(unreadMap[r.id] || 0) > 0 ? ` (${unreadMap[r.id]})` : ''}
-                              </button>
-                              {r.status === 'new'       && <button onClick={() => confirmReq(r)} className="btn btn-success">Confirm</button>}
-                              {r.status === 'confirmed' && <button onClick={() => markDone(r)}   className="btn btn-pink">Done</button>}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                            <strong className="admin-req-card__price">${r.estimate}</strong>
+                          </div>
+                          <div className="admin-req-card__meta">
+                            {d ? (
+                              <span>{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]}, {MONTH_NAMES[d.getMonth()].slice(0,3)} {d.getDate()}{r.time && r.time !== 'N/A' ? ` · ${r.time}` : ''}</span>
+                            ) : (
+                              <span>{r.date || '—'}{r.time && r.time !== 'N/A' ? ` · ${r.time}` : ''}</span>
+                            )}
+                            {(r.phone || r.email) && <span className="admin-req-card__contact">{r.phone || r.email}</span>}
+                          </div>
+                          {r.adminNotes && (
+                            <div className="admin-req-card__note">Note: {r.adminNotes.slice(0, 60)}{r.adminNotes.length > 60 ? '…' : ''}</div>
+                          )}
+                        </button>
+                        <div className="admin-req-card__actions">
+                          {digits && (
+                            <>
+                              <a className="btn btn-outline-blue admin-req-action" href={`tel:${digits}`}>Call</a>
+                              <a className="btn btn-outline-blue admin-req-action" href={`sms:${digits}`}>Text</a>
+                            </>
+                          )}
+                          <button type="button" className={'btn admin-req-action ' + (unread > 0 ? 'btn-danger' : 'btn-outline-blue')} onClick={() => setChatReq(r)}>
+                            Chat{unread > 0 ? ` (${unread})` : ''}
+                          </button>
+                          <button type="button" className="view-btn admin-req-action" onClick={() => setSelected(r)}>Details</button>
+                          {r.status === 'new' && (
+                            <button type="button" className="btn btn-success admin-req-action" onClick={() => confirmReq(r)}>Confirm</button>
+                          )}
+                          {r.status === 'confirmed' && (
+                            <button type="button" className="btn btn-pink admin-req-action" onClick={() => markDone(r)}>Done</button>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })
                 )}
               </div>
             </>
@@ -756,81 +766,89 @@ export default function AdminPage() {
 
         {/* -- CALENDAR TAB -- */}
         {tab === 'calendar' && (
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: '900', color: 'var(--text)' }}>{MONTH_NAMES[calMonth]} {calYear}</div>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <button onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y-1); } else setCalMonth(m => m-1); }} style={{ padding: '8px 14px', background: 'white', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '.85rem' }}>Prev</button>
-                <button onClick={() => { setCalMonth(now.getMonth()); setCalYear(now.getFullYear()); }} style={{ padding: '8px 14px', background: 'white', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '.85rem' }}>Today</button>
-                <button onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y+1); } else setCalMonth(m => m+1); }} style={{ padding: '8px 14px', background: 'white', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '.85rem' }}>Next</button>
+          <div className="admin-calendar">
+            <div className="admin-calendar__head">
+              <div className="admin-calendar__title">{MONTH_NAMES[calMonth]} {calYear}</div>
+              <div className="admin-calendar__nav">
+                <button type="button" onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y-1); } else setCalMonth(m => m-1); }}>Prev</button>
+                <button type="button" onClick={() => { setCalMonth(now.getMonth()); setCalYear(now.getFullYear()); }}>Today</button>
+                <button type="button" onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y+1); } else setCalMonth(m => m+1); }}>Next</button>
               </div>
             </div>
-            <div style={{ background: 'white', borderRadius: '18px', border: '1px solid var(--border)', overflow: 'hidden' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid var(--border)' }}>
-                {DAY_NAMES.map(d => <div key={d} style={{ padding: '10px 8px', textAlign: 'center', fontSize: '.72rem', fontWeight: '700', color: '#6b7280', letterSpacing: '.5px', textTransform: 'uppercase' }}>{d}</div>)}
+            <div className="admin-calendar__grid-wrap">
+              <div className="admin-calendar__dow">
+                {DAY_NAMES.map(d => <div key={d}>{d.slice(0, 1)}</div>)}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
-                {Array.from({ length: calFirstDay }).map((_, i) => <div key={'e'+i} style={{ minHeight: '90px', borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'white' }} />)}
+              <div className="admin-calendar__days">
+                {Array.from({ length: calFirstDay }).map((_, i) => <div key={'e'+i} className="admin-calendar__cell admin-calendar__cell--empty" />)}
                 {Array.from({ length: calDaysInMonth }).map((_, i) => {
                   const day = i + 1;
                   const dayReqs  = getRequestsForDay(day);
                   const daySched = getScheduleForDay(day);
                   const totalDots = dayReqs.length + daySched.length;
                   const isToday  = now.getFullYear() === calYear && now.getMonth() === calMonth && now.getDate() === day;
-                  const isLastCol = (calFirstDay + i) % 7 === 6;
                   return (
-                    <div key={day} style={{ minHeight: '90px', padding: '8px 6px', borderRight: isLastCol ? 'none' : '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: calSelected === day ? 'rgba(13,148,136,.06)' : 'transparent', cursor: totalDots > 0 ? 'pointer' : 'default' }}
-                      onClick={() => setCalSelected(calSelected === day ? null : day)}>
-                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '5px', fontSize: '.82rem', fontWeight: '700', background: isToday ? 'var(--blue)' : 'transparent', color: isToday ? 'white' : '#9ca3af' }}>{day}</div>
+                    <div
+                      key={day}
+                      className={'admin-calendar__cell' + (calSelected === day ? ' admin-calendar__cell--selected' : '') + (totalDots > 0 ? ' admin-calendar__cell--has' : '')}
+                      onClick={() => setCalSelected(calSelected === day ? null : day)}
+                    >
+                      <div className={'admin-calendar__daynum' + (isToday ? ' admin-calendar__daynum--today' : '')}>{day}</div>
                       {dayReqs.slice(0, 2).map(r => (
-                        <div key={r.id} onClick={e => { e.stopPropagation(); setSelected(r); }} style={{ background: (statusColor[r.status]||'#555')+'22', border: '1px solid '+(statusColor[r.status]||'#555')+'55', color: statusColor[r.status]||'#9ca3af', fontSize: '.65rem', fontWeight: '700', padding: '2px 6px', borderRadius: '5px', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}>
-                          {r.name.split(' ')[0]} - ${r.estimate}
-                        </div>
+                        <button
+                          key={r.id}
+                          type="button"
+                          className="admin-calendar__chip"
+                          style={{ '--chip': statusColor[r.status] || '#555' }}
+                          onClick={e => { e.stopPropagation(); setSelected(r); }}
+                        >
+                          {r.name.split(' ')[0]} ${r.estimate}
+                        </button>
                       ))}
                       {daySched.slice(0, 1).map(e => (
-                        <div key={e.id} style={{ background: 'rgba(13,148,136,.15)', border: '1px solid rgba(13,148,136,.35)', color: '#c084fc', fontSize: '.63rem', fontWeight: '700', padding: '2px 6px', borderRadius: '5px', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div key={e.id} className="admin-calendar__chip admin-calendar__chip--recur">
                           ↻ {e.clientName?.split(' ')[0] || 'Recurring'}
                         </div>
                       ))}
-                      {totalDots > 3 && <div style={{ fontSize: '.62rem', color: '#6b7280', fontWeight: '700', marginTop: '2px' }}>+{totalDots-3} more</div>}
+                      {totalDots > 3 && <div className="admin-calendar__more">+{totalDots - 3}</div>}
                     </div>
                   );
                 })}
               </div>
             </div>
             {calSelected && (getRequestsForDay(calSelected).length > 0 || getScheduleForDay(calSelected).length > 0) && (
-              <div style={{ background: 'white', borderRadius: '16px', border: '1px solid var(--border)', marginTop: '20px', overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ fontWeight: '700', color: 'var(--text)' }}>{MONTH_NAMES[calMonth]} {calSelected}</div>
-                  <button onClick={() => setCalSelected(null)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.1rem' }}>×</button>
+              <div className="admin-day-panel">
+                <div className="admin-day-panel__head">
+                  <div>{MONTH_NAMES[calMonth]} {calSelected}</div>
+                  <button type="button" onClick={() => setCalSelected(null)} aria-label="Close">×</button>
                 </div>
                 {getRequestsForDay(calSelected).map(r => (
-                  <div key={r.id} style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                  <div key={r.id} className="admin-day-panel__row">
                     <div>
-                      <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '.9rem', marginBottom: '2px' }}>{r.name}</div>
-                      <div style={{ fontSize: '.78rem', color: '#9ca3af' }}>{r.time || 'No time set'} - {r.address}</div>
+                      <div className="admin-day-panel__name">{r.name}</div>
+                      <div className="admin-day-panel__meta">{r.time || 'No time set'} — {r.address}</div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: '900', color: 'var(--blue)', fontSize: '1.1rem' }}>${r.estimate}</span>
+                    <div className="admin-day-panel__side">
+                      <span className="admin-day-panel__price">${r.estimate}</span>
                       <span className={'badge badge-'+r.status}>{r.status === 'new' ? 'New' : r.status === 'confirmed' ? 'Confirmed' : 'Done'}</span>
-                      <button className="view-btn" onClick={() => setSelected(r)}>View</button>
+                      <button type="button" className="view-btn" onClick={() => setSelected(r)}>View</button>
                     </div>
                   </div>
                 ))}
-                              {getScheduleForDay(calSelected).map(e => (
-                  <div key={e.id} style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', background: 'rgba(13,148,136,.04)' }}>
+                {getScheduleForDay(calSelected).map(e => (
+                  <div key={e.id} className="admin-day-panel__row admin-day-panel__row--recur">
                     <div>
-                      <div style={{ fontWeight: '700', color: '#c084fc', fontSize: '.9rem', marginBottom: '2px' }}>&#x21BB; {e.clientName || 'Recurring'}</div>
-                      <div style={{ fontSize: '.78rem', color: '#9ca3af' }}>{e.time || 'TBD'} - {e.address || 'N/A'}</div>
+                      <div className="admin-day-panel__name admin-day-panel__name--recur">↻ {e.clientName || 'Recurring'}</div>
+                      <div className="admin-day-panel__meta">{e.time || 'TBD'} — {e.address || 'N/A'}</div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: '900', color: '#c084fc', fontSize: '1rem' }}>${e.estimate}</span>
-                      <span style={{ fontSize: '.65rem', fontWeight: '700', color: 'var(--blue)', background: 'rgba(13,148,136,.15)', padding: '2px 8px', borderRadius: '99px' }}>{e.frequency}</span>
-                      <span style={{ fontSize: '.65rem', fontWeight: '700', color: e.status === 'done' ? '#10b981' : 'var(--blue)', background: e.status === 'done' ? 'rgba(16,185,129,.12)' : 'rgba(96,165,250,.12)', padding: '2px 8px', borderRadius: '99px' }}>{e.status === 'done' ? 'Done' : 'Upcoming'}</span>
+                    <div className="admin-day-panel__side">
+                      <span className="admin-day-panel__price admin-day-panel__price--recur">${e.estimate}</span>
+                      <span className="admin-day-panel__chip">{e.frequency}</span>
+                      <span className="admin-day-panel__chip">{e.status === 'done' ? 'Done' : 'Upcoming'}</span>
                     </div>
                   </div>
                 ))}
-</div>
+              </div>
             )}
           </div>
         )}
@@ -843,7 +861,7 @@ export default function AdminPage() {
               <div style={{ fontSize: '.8rem', color: '#6b7280', marginTop: '3px' }}>Pick dates, choose times, hit Apply ? all done instantly</div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(270px, 1fr) minmax(320px, 2fr)', gap: '18px', alignItems: 'start' }}>
+            <div className="admin-avail-layout">
 
               {/* -- Multi-select Calendar -- */}
               <div style={{ background: 'white', borderRadius: '20px', border: '1px solid var(--border)', padding: '18px' }}>
@@ -1207,8 +1225,8 @@ export default function AdminPage() {
           <>
             {createDone ? (
               <div style={{ background: 'white', borderRadius: '18px', border: '1px solid var(--border)', padding: '48px 24px', textAlign: 'center', maxWidth: '480px', margin: '0 auto' }}>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: '700', marginBottom: '8px', color: 'white' }}>Quote Created!</h2>
-                <p style={{ color: '#9ca3af', fontSize: '.87rem', marginBottom: '24px' }}>The new request has been added to your requests list.</p>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: '700', marginBottom: '8px', color: 'var(--text)' }}>Quote Created!</h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '.87rem', marginBottom: '24px' }}>The new request has been added to your requests list.</p>
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
                   <button className="act-btn act-confirm" onClick={() => { setTab('requests'); setCreateDone(false); }} style={{ flex: 'none', padding: '12px 24px' }}>View Requests</button>
                   <button className="act-btn act-chat"    onClick={() => setCreateDone(false)}                       style={{ flex: 'none', padding: '12px 24px' }}>Create Another</button>
@@ -1216,8 +1234,8 @@ export default function AdminPage() {
               </div>
             ) : (
               <>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: '700', marginBottom: '4px', color: 'white' }}>Create a Quote</div>
-                <p style={{ fontSize: '.85rem', color: '#9ca3af', marginBottom: '20px' }}>Fill out the booking form on behalf of a client.</p>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: '700', marginBottom: '4px', color: 'var(--text)' }}>Create a Quote</div>
+                <p style={{ fontSize: '.85rem', color: 'var(--text-muted)', marginBottom: '20px' }}>Fill out the booking form on behalf of a client.</p>
                 <div style={{ background: 'white', borderRadius: '18px', border: '1px solid var(--border)', overflow: 'hidden' }}>
                   <div style={{ background: 'var(--blue)', padding: '18px 24px' }}>
                     <div style={{ fontFamily: 'var(--font-display)', color: 'white', fontSize: '1.1rem', fontWeight: '700' }}>New Client Quote</div>
@@ -1241,8 +1259,17 @@ export default function AdminPage() {
             <div style={{ padding: '24px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
                 <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: '800', color: 'var(--text)', margin: 0, lineHeight: 1.2 }}>{selected.name}</h2>
-                <div style={{ marginTop: '8px' }}>
+                <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
                   <span className={'badge badge-' + selected.status} style={{ fontSize: '.72rem' }}>{selected.status === 'new' ? 'New' : selected.status === 'confirmed' ? 'Confirmed' : selected.status === 'cancelled' ? 'Cancelled' : 'Done'}</span>
+                  {selected.phone && String(selected.phone).replace(/\D/g, '') && (
+                    <>
+                      <a className="btn btn-outline-blue" style={{ padding: '6px 12px', fontSize: '.78rem' }} href={`tel:${String(selected.phone).replace(/\D/g, '')}`}>Call</a>
+                      <a className="btn btn-outline-blue" style={{ padding: '6px 12px', fontSize: '.78rem' }} href={`sms:${String(selected.phone).replace(/\D/g, '')}`}>Text</a>
+                    </>
+                  )}
+                  {selected.email && (
+                    <a className="btn btn-outline-blue" style={{ padding: '6px 12px', fontSize: '.78rem' }} href={`mailto:${selected.email}`}>Email</a>
+                  )}
                 </div>
               </div>
               <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: '1.4rem', cursor: 'pointer', padding: '4px', lineHeight: 1 }}>&times;</button>
