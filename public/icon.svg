@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Yoselin's Cleaning">
+  <rect width="64" height="64" rx="14" fill="#fce7f3"/>
+  <!-- house -->
+  <path d="M14 34 L32 16 L50 34" fill="none" stroke="#ec4899" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M18 32 V48 H46 V32" fill="none" stroke="#ec4899" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- chimney -->
+  <path d="M40 22 V14 H46" fill="none" stroke="#ec4899" stroke-width="3" stroke-linecap="round"/>
+  <!-- door -->
+  <rect x="28" y="38" width="8" height="10" rx="1.5" fill="#ec4899"/>
+  <!-- mop -->
+  <path d="M48 46 L42 28" fill="none" stroke="#db2777" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M38 26 Q42 22 46 26 Q44 30 40 30 Q36 28 38 26Z" fill="#ec4899"/>
+  <!-- sparkles -->
+  <path d="M52 18 L53.2 21.2 L56.5 22.5 L53.2 23.8 L52 27 L50.8 23.8 L47.5 22.5 L50.8 21.2 Z" fill="#ec4899"/>
+  <path d="M12 20 L12.7 22 L14.8 22.7 L12.7 23.4 L12 25.5 L11.3 23.4 L9.2 22.7 L11.3 22 Z" fill="#f472b6"/>
+</svg>

@@ -22,11 +22,11 @@ function parseDateDash(str) {
 }
 
 function getLoyaltyTier(count) {
-  if (count >= 8) return { label: 'VIP Client',       icon: '\uD83C\uDFC6', color: '#7c3aed', bg: 'rgba(124,58,237,.15)', next: null,        nextAt: null };
-  if (count >= 5) return { label: 'Gold Client',      icon: '\uD83E\uDD47', color: '#f59e0b', bg: 'rgba(245,158,11,.15)', next: 'VIP',       nextAt: 8 };
-  if (count >= 3) return { label: 'Regular Client',   icon: '\uD83E\uDD48', color: '#9ca3af', bg: 'rgba(156,163,175,.15)',next: 'Gold',      nextAt: 5 };
-  if (count >= 1) return { label: 'Returning Client', icon: '\u2728', color: '#10b981', bg: 'rgba(16,185,129,.15)', next: 'Regular',   nextAt: 3 };
-  return                  { label: 'New Client',       icon: '\uD83C\uDF31', color: 'var(--blue)', bg: 'rgba(96,165,250,.15)', next: 'Returning', nextAt: 1 };
+  if (count >= 8) return { label: 'VIP Client',       mark: 'VIP', color: '#db2777', bg: 'rgba(236,72,153,.12)', next: null,        nextAt: null };
+  if (count >= 5) return { label: 'Gold Client',      mark: '★',   color: '#d97706', bg: 'rgba(245,158,11,.12)', next: 'VIP',       nextAt: 8 };
+  if (count >= 3) return { label: 'Regular Client',   mark: '●',   color: '#71717a', bg: 'rgba(113,113,122,.12)',next: 'Gold',      nextAt: 5 };
+  if (count >= 1) return { label: 'Returning Client', mark: '◆',   color: '#be185d', bg: 'rgba(236,72,153,.1)',  next: 'Regular',   nextAt: 3 };
+  return                  { label: 'New Client',       mark: '○',   color: 'var(--pink-deep)', bg: 'rgba(236,72,153,.08)', next: 'Returning', nextAt: 1 };
 }
 
 function getCountdown(dateStr) {
@@ -468,7 +468,7 @@ export default function DashboardPage() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '7px', background: loyalty.bg, border: '1px solid ' + loyalty.color + '44', borderRadius: '99px', padding: '6px 13px' }}>
-              <span>{loyalty.icon}</span>
+              <span style={{ fontSize: '.75rem', fontWeight: 800, letterSpacing: '.02em' }}>{loyalty.mark}</span>
               <span style={{ fontSize: '.73rem', fontWeight: '700', color: loyalty.color }}>{loyalty.label}</span>
               {allDone > 0 && <span style={{ fontSize: '.68rem', color: loyalty.color, opacity: .7 }}>{allDone} job{allDone !== 1 ? 's' : ''}</span>}
             </div>
@@ -674,7 +674,7 @@ export default function DashboardPage() {
                 <div>
                   <div style={{ fontSize: '.68rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>Loyalty Status</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                    <span style={{ fontSize: '1.3rem' }}>{loyalty.icon}</span>
+                    <span style={{ fontSize: '1rem', fontWeight: 800, letterSpacing: '.04em' }}>{loyalty.mark}</span>
                     <span style={{ fontFamily: 'var(--font-display)', fontWeight: '700', color: loyalty.color, fontSize: '.95rem' }}>{loyalty.label}</span>
                   </div>
                 </div>

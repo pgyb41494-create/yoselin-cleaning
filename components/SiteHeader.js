@@ -46,7 +46,7 @@ export default function SiteHeader({ onLoginClick, transparent = false }) {
     <header className={`site-header${transparent ? ' site-header--transparent' : ''}`}>
       <div className="site-header__inner">
         <Link href="/" className="site-brand">
-          <img src="/icon.png" alt="" className="site-brand__icon" width={36} height={36} />
+          <img src="/favicon.svg" alt="" className="site-brand__icon" width={36} height={36} />
           <span className="site-brand__text">
             Yoselin&apos;s <em>Cleaning</em>
           </span>

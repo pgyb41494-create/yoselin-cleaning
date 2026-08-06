@@ -5,7 +5,7 @@ export default function SiteFooter() {
     <footer className="site-footer" id="contact">
       <div className="site-footer__inner">
         <div className="site-footer__brand">
-          <img src="/icon.png" alt="" width={40} height={40} />
+          <img src="/favicon.svg" alt="" width={40} height={40} />
           <div>
             <strong>Yoselin&apos;s Cleaning</strong>
             <p>Fairfield, Ohio &amp; surrounding areas</p>

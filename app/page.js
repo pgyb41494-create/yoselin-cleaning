@@ -10,14 +10,15 @@ import { SERVICE_TYPES } from '../lib/services';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import AuthModal from '../components/AuthModal';
+import ServiceIcon from '../components/ServiceIcon';
 
 const FALLBACK_REVIEWS = THUMBTACK_REVIEWS;
 
 const HOMEPAGE_SERVICES = SERVICE_TYPES.slice(0, 6).map((s) => ({
+  id: s.id,
   title: s.name,
   desc: s.desc,
   price: `From $${s.from}`,
-  icon: s.icon,
 }));
 
 const STEPS = [
@@ -125,7 +126,7 @@ export default function HomePage() {
             <div className="cards cards--wide">
               {HOMEPAGE_SERVICES.map((s) => (
                 <article key={s.title} className="card card--service">
-                  <span className="card__icon">{s.icon}</span>
+                  <span className="card__icon"><ServiceIcon id={s.id} size={26} /></span>
                   <h3>{s.title}</h3>
                   <p>{s.desc}</p>
                   <span className="card__price">{s.price}</span>
@@ -180,8 +181,8 @@ export default function HomePage() {
         </section>
 
         {/* Gallery teaser */}
-        <section className="section">
-          <div className="container container--narrow cta-banner">
+        <section className="section section--gallery-cta">
+          <div className="container cta-banner">
             <h2>See our work</h2>
             <p>Before-and-after photos from real cleanings across Fairfield and nearby cities.</p>
             <button type="button" className="btn btn-outline" onClick={() => router.push('/gallery')}>
@@ -192,7 +193,7 @@ export default function HomePage() {
 
         {/* Final CTA */}
         <section className="section section--accent">
-          <div className="container container--narrow cta-banner cta-banner--light">
+          <div className="container cta-banner cta-banner--light">
             <h2>Ready for a cleaner home?</h2>
             <p>Get your free estimate in minutes. No commitment required.</p>
             <button type="button" className="btn btn-white btn-lg" onClick={goQuote}>

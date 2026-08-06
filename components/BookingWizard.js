@@ -4,6 +4,7 @@ import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs,
 import { db } from '../lib/firebase';
 import { notifyNewBooking } from '../lib/notifications';
 import { SERVICE_TYPES, CLEANING_LEVELS, PROJECT_SCOPES, isCleaningService, getServiceById } from '../lib/services';
+import ServiceIcon from './ServiceIcon';
 
 const BPRICES = { half: 15, small: 50, medium: 65, large: 80 };
 const RPRICES = { bed_small: 25, bed_medium: 30, bed_large: 35, liv_small: 20, liv_medium: 25, liv_large: 35, office: 10, kit_small: 45, kit_medium: 55, kit_large: 70, laundry: 10, basement: 75 };
@@ -630,7 +631,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                     if (svc.id === 'move_clean') setCleaningLevel('move');
                   }}
                 >
-                  <span className="service-tile__icon">{svc.icon}</span>
+                  <span className="service-tile__icon"><ServiceIcon id={svc.id} size={28} /></span>
                   <span className="service-tile__name">{svc.name}</span>
                   <span className="service-tile__desc">{svc.desc}</span>
                   <span className="service-tile__from">From ${svc.from}</span>
@@ -1029,7 +1030,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
             <div className="review-summary">
               <div className="review-summary__row">
                 <span>Service</span>
-                <strong>{selectedService.icon} {selectedService.name}</strong>
+                <strong className="review-summary__service">
+                  <ServiceIcon id={selectedService.id} size={18} /> {selectedService.name}
+                </strong>
               </div>
               {!cleaningFlow && projectDetails && (
                 <div className="review-summary__row review-summary__row--stack">
