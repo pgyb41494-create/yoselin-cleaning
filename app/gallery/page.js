@@ -253,16 +253,15 @@ export default function GalleryPage() {
       )}
 
       {categories.length > 1 && (
-        <div style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '0 20px', display: 'flex', gap: '4px', overflowX: 'auto' }}>
+        <div className="gallery-cats" style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '0 16px' }}>
           {categories.map(function(cat) {
             return (
-              <button key={cat} onClick={() => setFilter(cat)} style={{
-                padding: '13px 18px', background: 'none', border: 'none',
-                borderBottom: filter === cat ? '3px solid var(--blue)' : '3px solid transparent',
-                color: filter === cat ? 'var(--blue)' : '#6b7280',
-                fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.82rem',
-                cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'capitalize',
-              }}>
+              <button
+                key={cat}
+                type="button"
+                className={'gallery-cat-btn' + (filter === cat ? ' gallery-cat-btn--active' : '')}
+                onClick={() => setFilter(cat)}
+              >
                 {cat === 'all' ? 'All' : cat === 'before' ? 'Before' : cat === 'after' ? 'After' : cat}
               </button>
             );

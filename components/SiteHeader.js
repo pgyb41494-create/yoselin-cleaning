@@ -31,6 +31,12 @@ export default function SiteHeader({ onLoginClick, transparent = false }) {
     setMenuOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    document.body.classList.add('menu-open');
+    return () => document.body.classList.remove('menu-open');
+  }, [menuOpen]);
+
   const isAdmin = user && (ADMIN_EMAILS.includes(user.email?.toLowerCase()) || ADMIN_EMAILS.includes(user.email));
   const portalHref = isAdmin ? '/admin' : '/dashboard';
   const portalLabel = isAdmin ? 'Admin' : 'My Account';
@@ -43,7 +49,7 @@ export default function SiteHeader({ onLoginClick, transparent = false }) {
   };
 
   return (
-    <header className={`site-header${transparent ? ' site-header--transparent' : ''}`}>
+    <header className={`site-header${transparent ? ' site-header--transparent' : ''}${menuOpen ? ' site-header--menu-open' : ''}`}>
       <div className="site-header__inner">
         <Link href="/" className="site-brand">
           <img src="/favicon.svg" alt="" className="site-brand__icon" width={36} height={36} />

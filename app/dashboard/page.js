@@ -74,15 +74,15 @@ function HistoryTab({ requests }) {
         <div style={{ fontSize: '.82rem', color: '#6b7280' }}>{requests.length} bookings total</div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+      <div className="history-stats">
         {[
           { label: 'Total',     val: String(requests.length), color: 'var(--blue)' },
           { label: 'Completed', val: String(doneCount),       color: '#10b981' },
           { label: 'Spent',     val: '$' + totalSpent,        color: '#f472b6' },
         ].map(item => (
-          <div key={item.label} style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '14px', padding: '14px', textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: '900', color: item.color }}>{item.val}</div>
-            <div style={{ fontSize: '.7rem', color: '#6b7280', fontWeight: '600', marginTop: '3px' }}>{item.label}</div>
+          <div key={item.label} className="history-stat">
+            <div className="history-stat__val" style={{ color: item.color }}>{item.val}</div>
+            <div className="history-stat__label">{item.label}</div>
           </div>
         ))}
       </div>

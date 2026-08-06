@@ -719,7 +719,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
         {step === 1 && (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+            <div className="wizard-step-head">
               <div>
                 <div className="page-title">{adminMode ? 'Client Information' : 'Contact & schedule'}</div>
                 <div className="page-sub">How to reach you and when you&apos;d like us there</div>
@@ -764,9 +764,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                     <div className="cal-widget">
                       {/* Month nav */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <button type="button" onClick={prevMonth} disabled={!canGoPrev} style={{ background: 'none', border: 'none', color: canGoPrev ? '#9ca3af' : '#2a2a2a', cursor: canGoPrev ? 'pointer' : 'default', fontSize: '1.1rem', padding: '2px 8px', lineHeight: 1 }}>&#x2039;</button>
-                        <div style={{ fontSize: '.8rem', fontWeight: '700', color: 'var(--text)', letterSpacing: '.3px' }}>{MONTH_NAMES[calMonth].slice(0,3)} {calYear}</div>
-                        <button type="button" onClick={nextMonth} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.1rem', padding: '2px 8px', lineHeight: 1 }}>&#x203A;</button>
+                        <button type="button" className="cal-nav-btn" onClick={prevMonth} disabled={!canGoPrev} aria-label="Previous month">&#x2039;</button>
+                        <div className="cal-month">{MONTH_NAMES[calMonth].slice(0,3)} {calYear}</div>
+                        <button type="button" className="cal-nav-btn" onClick={nextMonth} aria-label="Next month">&#x203A;</button>
                       </div>
                       {/* Day headers */}
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '3px' }}>
@@ -835,7 +835,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                     {form.date && timesForDate.length > 0 ? (
                       <div>
                         <label style={{ marginBottom: '7px', display: 'block', fontSize: '.78rem' }}>Preferred Time</label>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        <div className="time-slots">
                           {timesForDate.map(tm => (
                             <button key={tm} type="button" onClick={() => selectTime(tm)} className={'time-slot-btn' + (form.time === tm ? ' time-slot-btn--active' : '')}>{tm}</button>
                           ))}
