@@ -11,6 +11,9 @@ function getSearchParam(value) {
   return value || '';
 }
 
+import SiteHeader from '../../components/SiteHeader';
+import SiteFooter from '../../components/SiteFooter';
+
 export default function ResetPasswordClient({ searchParams = {} }) {
   const router = useRouter();
   const oobCode = getSearchParam(searchParams.oobCode);
@@ -144,7 +147,9 @@ export default function ResetPasswordClient({ searchParams = {} }) {
   const showRequestFlow = !resetComplete && codeState !== 'valid';
 
   return (
-    <main className="rp-page">
+    <>
+      <SiteHeader />
+      <main className="rp-page">
       <section className="rp-card">
         <div className="rp-brand">
           <img src="/logo.png" alt="Yoselin's Cleaning" />
@@ -251,6 +256,8 @@ export default function ResetPasswordClient({ searchParams = {} }) {
           Return home
         </a>
       </section>
-    </main>
+      </main>
+      <SiteFooter />
+    </>
   );
 }

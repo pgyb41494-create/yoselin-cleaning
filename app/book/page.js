@@ -3,7 +3,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { auth, db, ADMIN_EMAIL, ADMIN_EMAILS } from '../../lib/firebase';
+import { auth, ADMIN_EMAILS } from '../../lib/firebase';
+import SiteHeader from '../../components/SiteHeader';
+import SiteFooter from '../../components/SiteFooter';
 import BookingWizard from '../../components/BookingWizard';
 
 export default function BookPage() {
@@ -15,11 +17,14 @@ export default function BookPage() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (!u) { router.push('/'); return; }
-      if (ADMIN_EMAILS.includes(u.email?.toLowerCase()) || ADMIN_EMAILS.includes(u.email)) { router.push('/admin'); return; }
+      if (ADMIN_EMAILS.includes(u.email?.toLowerCase()) || ADMIN_EMAILS.includes(u.email)) {
+        router.push('/admin');
+        return;
+      }
       const q = query(collection(db, 'requests'), where('userId', '==', u.uid));
       const snap = await getDocs(q);
       if (!snap.empty) {
-        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
         const latest = docs[0];
         if (latest.status !== 'done' && latest.status !== 'cancelled') {
@@ -33,40 +38,45 @@ export default function BookPage() {
     return () => unsub();
   }, [router]);
 
-  if (loading) return <div className="spinner-page"><div className="spinner"></div></div>;
-
-  if (submitted) return (
-    <div className="sov show">
-      <div className="sbox">
-        <div style={{ fontSize: '2.8rem' }}>&#x2728;</div>
-        <h2>Request Sent!</h2>
-        <p>&#x1F44F; <strong>Yoselin will contact you within 24 hours</strong> to confirm your appointment.</p>
-        <br />
-        <p style={{ fontSize: '.82rem', background: '#f3f4f6', borderRadius: '10px', padding: '12px' }}>
-          Track your request and chat with Yoselin from your dashboard.
-        </p>
-        <button className="sclose" onClick={() => router.push('/dashboard')}>Go to My Dashboard</button>
+  if (loading) {
+    return (
+      <div className="spinner-page">
+        <div className="spinner" />
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (submitted) {
+    return (
+      <div className="success-screen">
+        <div className="success-card">
+          <div className="success-card__icon">✓</div>
+          <h2>Quote submitted!</h2>
+          <p>
+            Yoselin will contact you within <strong>24 hours</strong> to confirm your appointment.
+          </p>
+          <p className="success-card__hint">
+            Track your request and chat with Yoselin from your account.
+          </p>
+          <button type="button" className="btn btn-primary btn-block" onClick={() => router.push('/dashboard')}>
+            Go to my account
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div className="sparkle-bar">&#x2728;&#x2728;&#x2728;</div>
-      <div className="guest-header">
-        <div style={{ position: 'absolute', top: '15px', right: '16px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {user?.photoURL && <img src={user.photoURL} className="nav-avatar" alt="" />}
-          <button className="signout-btn" onClick={() => { signOut(auth); router.push('/'); }}>Sign Out</button>
+    <>
+      <SiteHeader />
+      <main className="book-page">
+        <div className="container book-page__head">
+          <h1>Get your free quote</h1>
+          <p>Fill out the form below — it only takes a few minutes.</p>
         </div>
-        <h1>Yoselin&#39;s<br /><span>Cleaning Service</span></h1>
-        <p>Professional - Reliable - Sparkling Clean</p>
-        <div className="header-badges">
-          <span className="hbadge pink">&#x2705; Licensed and Insured</span>
-          <span className="hbadge blue">&#x2B50; 5-Star Rated</span>
-          <span className="hbadge">&#x1F381; Free Estimates</span>
-        </div>
-      </div>
-      <BookingWizard user={user} onDone={() => setSubmitted(true)} />
-    </div>
+        <BookingWizard user={user} onDone={() => setSubmitted(true)} />
+      </main>
+      <SiteFooter />
+    </>
   );
 }

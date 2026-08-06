@@ -55,8 +55,8 @@ function injectAnimations() {
     .typing-dot:nth-child(2) { animation-delay: 0.18s; }
     .typing-dot:nth-child(3) { animation-delay: 0.36s; }
     .chat-input-glow:focus {
-      border-color: #1a6fd4 !important;
-      box-shadow: 0 0 0 3px rgba(26,111,212,.15) !important;
+      border-color: var(--blue) !important;
+      box-shadow: 0 0 0 3px var(--blue-pale) !important;
       outline: none;
     }
   `;
@@ -76,9 +76,9 @@ function Toast({ toast, onDismiss }) {
       onClick={() => { setHiding(true); setTimeout(onDismiss, 400); }}
       style={{
         position: 'fixed', top: '72px', right: '16px', zIndex: 9999,
-        background: '#1a1a1a', border: '1.5px solid #2a2a2a',
+        background: 'white', border: '1px solid var(--border)',
         borderRadius: '16px', padding: '12px 16px', maxWidth: '300px',
-        boxShadow: '0 8px 32px rgba(0,0,0,.55)',
+        boxShadow: '0 8px 32px rgba(0,0,0,.15)',
         cursor: 'pointer', userSelect: 'none',
         animation: hiding ? 'toastSlideOut 0.4s ease forwards' : 'toastSlideIn 0.35s cubic-bezier(.22,.68,0,1.15) forwards',
         display: 'flex', alignItems: 'flex-start', gap: '10px',
@@ -93,16 +93,16 @@ function Toast({ toast, onDismiss }) {
         {toast.senderName?.[0]?.toUpperCase() || 'Y'}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: '700', color: 'white', fontSize: '.82rem', marginBottom: '3px' }}>{toast.senderName}</div>
+        <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '.82rem', marginBottom: '3px' }}>{toast.senderName}</div>
         <div style={{
-          fontSize: '.78rem', color: '#9ca3af', lineHeight: 1.4,
+          fontSize: '.78rem', color: 'var(--text-muted)', lineHeight: 1.4,
           overflow: 'hidden', textOverflow: 'ellipsis',
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
         }}>{toast.text}</div>
       </div>
       <button
         onClick={e => { e.stopPropagation(); setHiding(true); setTimeout(onDismiss, 400); }}
-        style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', fontSize: '.85rem', padding: '0', lineHeight: 1, flexShrink: 0 }}
+        style={{ background: 'none', border: 'none', color: 'var(--gray-light)', cursor: 'pointer', fontSize: '.85rem', padding: '0', lineHeight: 1, flexShrink: 0 }}
       >✕</button>
     </div>
   );
@@ -113,9 +113,9 @@ function TypingIndicator({ name }) {
   const display = name || 'Typing...';
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-      <div style={{ fontSize: '.68rem', color: '#9ca3af', fontWeight: 700, marginBottom: '3px' }}>{display}</div>
+      <div style={{ fontSize: '.68rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '3px' }}>{display}</div>
       <div style={{
-        background: '#1f1f2e', border: '1px solid #2a2a2a',
+        background: 'var(--soft)', border: '1px solid var(--border)',
         borderRadius: '18px', borderBottomLeftRadius: '5px',
         padding: '11px 16px', display: 'flex', alignItems: 'center', gap: '5px',
         animation: 'msgSlideInLeft 0.25s ease both',
@@ -283,9 +283,9 @@ export default function Chat({
                 maxWidth: '78%', padding: '11px 15px', borderRadius: '18px',
                 borderBottomRightRadius: isMe ? '5px' : '18px',
                 borderBottomLeftRadius: isMe ? '18px' : '5px',
-                background: isMe ? 'var(--blue)' : '#1f1f2e',
-                color: 'white',
-                border: isMe ? 'none' : '1px solid #2a2a2a',
+                background: isMe ? 'var(--blue)' : 'var(--soft)',
+                color: isMe ? 'white' : 'var(--text)',
+                border: isMe ? 'none' : '1px solid var(--border)',
                 fontSize: '.87rem', lineHeight: 1.45, wordBreak: 'break-word',
               }}
             >
@@ -310,7 +310,7 @@ export default function Chat({
           <div
             style={{
               height: '400px', overflowY: 'auto', padding: '16px',
-              background: '#0d0d0d', borderRadius: '14px', marginBottom: '12px',
+              background: 'var(--bg)', borderRadius: '14px', marginBottom: '12px', border: '1px solid var(--border)',
               display: 'flex', flexDirection: 'column', gap: '10px',
             }}
           >
@@ -320,7 +320,7 @@ export default function Chat({
           </div>
 
           {/* Input — inlined directly, NOT as a sub-component, to prevent keyboard dismissal */}
-          <div style={{ display: 'flex', gap: '10px', background: '#111', borderRadius: '12px', border: '1.5px solid #2a2a2a', padding: '10px 14px' }}>
+          <div style={{ display: 'flex', gap: '10px', background: 'white', borderRadius: '12px', border: '1.5px solid var(--border)', padding: '10px 14px' }}>
             <input
               ref={inputRef}
               className="chat-input chat-input-glow"
@@ -329,7 +329,7 @@ export default function Chat({
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
               placeholder={'Type a message...'}
               autoComplete="off"
-              style={{ flex: 1, background: 'transparent', border: 'none', color: 'white', fontSize: '.88rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }}
+              style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--text)', fontSize: '.88rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }}
             />
             <button
               className={'chat-send' + (sendAnim ? ' chat-send-anim' : '')}
@@ -360,16 +360,16 @@ export default function Chat({
         <div
           className="chat-panel-anim"
           style={{
-            background: '#111', borderRadius: '24px 24px 0 0',
+            background: 'white', borderRadius: '24px 24px 0 0',
             width: '100%', maxWidth: '600px', height: '80vh',
             display: 'flex', flexDirection: 'column',
-            border: '1px solid #222', overflow: 'hidden',
+            border: '1px solid var(--border)', overflow: 'hidden',
           }}
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
           <div style={{
-            background: '#0d0d0d', borderBottom: '1px solid #1f1f1f',
+            background: 'var(--soft)', borderBottom: '1px solid var(--border)',
             padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             flexShrink: 0,
           }}>
@@ -383,10 +383,10 @@ export default function Chat({
                 {senderRole === 'admin' ? (clientName?.[0]?.toUpperCase() || 'C') : 'O'}
               </div>
               <div>
-                <div style={{ fontWeight: 700, color: 'white', fontSize: '.95rem' }}>
+                <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: '.95rem' }}>
                   {senderRole === 'admin' ? `Chat with ${clientName || 'Client'}` : "Yoselin's Cleaning"}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '.72rem', color: '#9ca3af', marginTop: '1px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '.72rem', color: 'var(--text-muted)', marginTop: '1px' }}>
                   <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
                   Online
                 </div>
@@ -396,8 +396,8 @@ export default function Chat({
             <button
               onClick={() => { if (onClose) onClose(); }}
               style={{
-                background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)',
-                color: 'white', width: '34px', height: '34px', borderRadius: '50%',
+                background: 'var(--soft)', border: '1px solid var(--border)',
+                color: 'var(--text-muted)', width: '34px', height: '34px', borderRadius: '50%',
                 cursor: 'pointer', fontSize: '1rem', display: 'flex',
                 alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 zIndex: 10,
@@ -408,7 +408,7 @@ export default function Chat({
           {/* Messages */}
           <div style={{
             flex: 1, overflowY: 'auto', padding: '16px',
-            background: '#0a0a0a', display: 'flex', flexDirection: 'column', gap: '10px',
+            background: 'var(--bg)', display: 'flex', flexDirection: 'column', gap: '10px',
           }}>
             {renderMessages()}
             {isTyping && <TypingIndicator name={typingName} />}
@@ -417,8 +417,8 @@ export default function Chat({
 
           {/* Input — inlined directly, NOT as a sub-component */}
           <div style={{
-            display: 'flex', gap: '10px', background: '#111',
-            borderTop: '1px solid #1f1f1f', padding: '14px 16px', flexShrink: 0,
+            display: 'flex', gap: '10px', background: 'white',
+            borderTop: '1px solid var(--border)', padding: '14px 16px', flexShrink: 0,
           }}>
             <input
               ref={inputRef}
@@ -429,9 +429,9 @@ export default function Chat({
               placeholder={'Type a message...'}
               autoComplete="off"
               style={{
-                flex: 1, background: '#1f1f1f', border: '1.5px solid #2a2a2a',
+                flex: 1, background: 'white', border: '1.5px solid var(--border)',
                 borderRadius: '12px', padding: '11px 14px',
-                color: 'white', fontSize: '.88rem', fontFamily: "'DM Sans', sans-serif",
+                color: 'var(--text)', fontSize: '.88rem', fontFamily: "'DM Sans', sans-serif",
                 outline: 'none', transition: 'border-color .2s, box-shadow .2s',
               }}
             />

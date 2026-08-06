@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc, getDoc, runTransaction } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { notifyNewBooking } from '../lib/notifications';
+import { SERVICE_TYPES, CLEANING_LEVELS, PROJECT_SCOPES, isCleaningService, getServiceById } from '../lib/services';
 
 const BPRICES = { half: 15, small: 50, medium: 65, large: 80 };
 const RPRICES = { bed_small: 25, bed_medium: 30, bed_large: 35, liv_small: 20, liv_medium: 25, liv_large: 35, office: 10, kit_small: 45, kit_medium: 55, kit_large: 70, laundry: 10, basement: 75 };
@@ -66,6 +67,13 @@ function holdIsActive(hold, nowMs = Date.now()) {
 
 export default function BookingWizard({ user, onDone, adminMode = false }) {
   const [step,         setStep]         = useState(0);
+  const [serviceType,  setServiceType]  = useState('house_cleaning');
+  const [simpleBeds,   setSimpleBeds]   = useState(2);
+  const [simpleBaths,  setSimpleBaths]  = useState(1);
+  const [cleaningLevel,setCleaningLevel]= useState('standard');
+  const [projectScope, setProjectScope] = useState('medium');
+  const [projectDetails,setProjectDetails]= useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [baths,        setBaths]        = useState(initBaths());
   const [rooms,        setRooms]        = useState(initRooms());
   const [extras,       setExtras]       = useState({});
@@ -300,17 +308,45 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   }, [adminMode, heldSlotKey, holdToken, user?.uid]);
 
   const calcPrice = () => {
+    const service = getServiceById(serviceType);
+
+    if (!isCleaningService(serviceType)) {
+      const scopeMult = { small: 1, medium: 1.6, large: 2.8 }[projectScope] || 1.6;
+      const est = Math.round((service.from || 150) * scopeMult);
+      return {
+        final: est,
+        sub: est,
+        hasDiscount: false,
+        lines: [`${service.name} — ${PROJECT_SCOPES.find(s => s.id === projectScope)?.label || 'Medium'} scope`],
+        extraNames: [],
+        isCustomQuote: true,
+      };
+    }
+
     const BP = livePrices?.bathrooms || BPRICES;
     const RP = livePrices?.rooms || RPRICES;
     const EP = livePrices?.extras || {};
-    let base = 0;
+    const bedPrice = RP.bed_medium ?? 30;
+    const bathPrice = BP.medium ?? 65;
+    let base = simpleBeds * bedPrice + simpleBaths * bathPrice;
+    const levelMult = { standard: 1, deep: 1.35, move: 1.55 }[cleaningLevel] || 1;
+    if (serviceType === 'move_clean') base *= 1.55;
+    else base *= levelMult;
+
     const lines = [];
-    Object.keys(baths).forEach(t => {
-      if (baths[t] > 0) { base += baths[t] * (BP[t] ?? BPRICES[t]); lines.push(BNAMES[t] + ' x' + baths[t]); }
-    });
-    Object.keys(rooms).forEach(r => {
-      if (rooms[r] > 0) { base += rooms[r] * (RP[r] ?? RPRICES[r]); lines.push(RNAMES[r] + ' x' + rooms[r]); }
-    });
+    if (simpleBeds > 0) lines.push(`${simpleBeds} bedroom${simpleBeds > 1 ? 's' : ''}`);
+    if (simpleBaths > 0) lines.push(`${simpleBaths} bathroom${simpleBaths > 1 ? 's' : ''}`);
+    lines.push(CLEANING_LEVELS.find(l => l.id === cleaningLevel)?.label || 'Standard');
+
+    if (showAdvanced) {
+      Object.keys(baths).forEach(t => {
+        if (baths[t] > 0) { base += baths[t] * (BP[t] ?? BPRICES[t]); lines.push(BNAMES[t] + ' x' + baths[t]); }
+      });
+      Object.keys(rooms).forEach(r => {
+        if (rooms[r] > 0) { base += rooms[r] * (RP[r] ?? RPRICES[r]); lines.push(RNAMES[r] + ' x' + rooms[r]); }
+      });
+    }
+
     let extTotal = 0;
     const extraNames = [];
     EXTRAS.forEach(e => {
@@ -333,7 +369,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     if (senior    === 'yes') discAmt += sub * srPct;
     const hasDiscount = discAmt > 0;
     const final = Math.max(0, Math.round(sub - discAmt));
-    return { final, sub: Math.round(sub), hasDiscount, lines, extraNames };
+    return { final, sub: Math.round(sub), hasDiscount, lines, extraNames, isCustomQuote: false };
   };
 
   const price = calcPrice();
@@ -392,15 +428,25 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   };
 
   const goTo = (s) => {
-    if (s >= 1) {
+    if (s >= 1 && !serviceType) { alert('Please choose a service.'); return; }
+    if (s >= 2) {
       if (!form.firstName.trim()) { alert('Please enter your first name.'); return; }
       if (!form.phone.trim())     { alert('Please enter your phone number.'); return; }
       if (!form.date)             { alert('Please choose a preferred date.'); return; }
       if (availDates.length > 0 && !form.time) { alert('Please choose a preferred time.'); return; }
     }
-    if (s >= 2) {
-      const hasRoom = Object.values(rooms).some(v => v > 0) || Object.values(baths).some(v => v > 0);
-      if (!hasRoom) { alert('Please select at least one room or bathroom before continuing.'); return; }
+    if (s >= 3) {
+      if (isCleaningService(serviceType)) {
+        if (simpleBeds < 1 && simpleBaths < 1 && !showAdvanced) {
+          alert('Please add at least one bedroom or bathroom.'); return;
+        }
+        if (showAdvanced) {
+          const hasRoom = Object.values(rooms).some(v => v > 0) || Object.values(baths).some(v => v > 0);
+          if (!hasRoom) { alert('Please select at least one room or bathroom.'); return; }
+        }
+      } else if (!projectDetails.trim()) {
+        alert('Please describe your project so we can quote accurately.'); return;
+      }
     }
     setStep(s);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -410,9 +456,21 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     if (!form.firstName.trim()) { alert('Please enter a name.'); return; }
     if (!form.phone.trim())     { alert('Please enter a phone number.'); return; }
     if (availDates.length > 0 && !form.time) { alert('Please choose a preferred time.'); return; }
+    if (!isCleaningService(serviceType) && !projectDetails.trim()) {
+      alert('Please describe your project.'); return;
+    }
     setSubmitting(true);
-    const bathDesc = Object.keys(baths).filter(k => baths[k] > 0).map(k => baths[k] + ' ' + BNAMES[k]).join(', ') || 'None';
-    const roomDesc = Object.keys(rooms).filter(k => rooms[k] > 0).map(k => rooms[k] + ' ' + RNAMES[k]).join(', ') || 'None';
+    const service = getServiceById(serviceType);
+    const bathDesc = isCleaningService(serviceType)
+      ? (showAdvanced
+        ? Object.keys(baths).filter(k => baths[k] > 0).map(k => baths[k] + ' ' + BNAMES[k]).join(', ') || 'None'
+        : `${simpleBaths} bathroom${simpleBaths !== 1 ? 's' : ''}`)
+      : 'N/A';
+    const roomDesc = isCleaningService(serviceType)
+      ? (showAdvanced
+        ? Object.keys(rooms).filter(k => rooms[k] > 0).map(k => rooms[k] + ' ' + RNAMES[k]).join(', ') || 'None'
+        : `${simpleBeds} bedroom${simpleBeds !== 1 ? 's' : ''}`)
+      : projectDetails.trim() || 'N/A';
     const req = {
       userId:         user?.uid    || 'admin-created',
       userEmail:      user?.email  || form.email,
@@ -422,6 +480,10 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       address:        form.address || 'N/A',
       date:           form.date    || 'N/A',
       time:           form.time    || 'N/A',
+      serviceType,
+      serviceName:    service.name,
+      projectScope:   isCleaningService(serviceType) ? cleaningLevel : projectScope,
+      projectDetails: isCleaningService(serviceType) ? (form.otherReqs || 'None') : projectDetails.trim(),
       bathrooms:      bathDesc,
       rooms:          roomDesc,
       addons:         price.extraNames.join(', ') || 'None',
@@ -511,7 +573,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     if (onDone) onDone(docRef.id);
   };
 
-  const stepLabels = ['Contact', 'Rooms', 'Preferences', 'Review'];
+  const stepLabels = ['Service', 'Contact', 'Details', 'Review'];
+  const selectedService = getServiceById(serviceType);
+  const cleaningFlow = isCleaningService(serviceType);
   const selectedHold = activeHolds.find(h => slotHoldId(h.date, h.time) === slotHoldId(form.date, form.time));
   const selectedHoldOwnedByMe = !!selectedHold && isOwnedHold(selectedHold);
 
@@ -550,13 +614,41 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
         {step === 0 && (
           <div>
+            <div className="page-title">What do you need?</div>
+            <div className="page-sub">Pick a service — we&apos;ll tailor your quote from there</div>
+            <div className="service-grid">
+              {SERVICE_TYPES.map((svc) => (
+                <button
+                  key={svc.id}
+                  type="button"
+                  className={'service-tile' + (serviceType === svc.id ? ' service-tile--active' : '')}
+                  onClick={() => {
+                    setServiceType(svc.id);
+                    if (svc.id === 'move_clean') setCleaningLevel('move');
+                  }}
+                >
+                  <span className="service-tile__icon">{svc.icon}</span>
+                  <span className="service-tile__name">{svc.name}</span>
+                  <span className="service-tile__desc">{svc.desc}</span>
+                  <span className="service-tile__from">From ${svc.from}</span>
+                </button>
+              ))}
+            </div>
+            <div className="nav-btns">
+              <button type="button" className="btn-next" onClick={() => goTo(1)}>Next: Contact info</button>
+            </div>
+          </div>
+        )}
+
+        {step === 1 && (
+          <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
               <div>
-                <div className="page-title">{adminMode ? 'Client Information' : 'Your Information'}</div>
-                <div className="page-sub">Tell us who you are and how to reach you</div>
+                <div className="page-title">{adminMode ? 'Client Information' : 'Contact & schedule'}</div>
+                <div className="page-sub">How to reach you and when you&apos;d like us there</div>
               </div>
-              <div style={{ background: 'var(--black)', border: '1px solid var(--border)', padding: '10px 12px', borderRadius: 12, fontWeight: 800, color: 'white' }}>
-                {startingFrom > 0 ? `Starting at $${startingFrom}` : 'Starting prices available'}
+              <div className="quote-badge">
+                {selectedService.name} · {price.isCustomQuote ? `est. $${price.final}+` : (price.final > 0 ? `$${price.final} est.` : 'Free estimate')}
               </div>
             </div>
             <div className="wcard">
@@ -591,11 +683,11 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                 {availDates.length > 0 ? (
                   <div style={{ marginTop: '4px' }}>
                     <label style={{ marginBottom: '8px', display: 'block' }}>Preferred Date <span style={{ color: '#ef4444' }}>*</span></label>
-                    <div style={{ background: '#131313', borderRadius: '14px', border: '1px solid #232323', padding: '12px 12px 10px', marginBottom: '12px' }}>
+                    <div className="cal-widget">
                       {/* Month nav */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                         <button type="button" onClick={prevMonth} disabled={!canGoPrev} style={{ background: 'none', border: 'none', color: canGoPrev ? '#9ca3af' : '#2a2a2a', cursor: canGoPrev ? 'pointer' : 'default', fontSize: '1.1rem', padding: '2px 8px', lineHeight: 1 }}>&#x2039;</button>
-                        <div style={{ fontSize: '.8rem', fontWeight: '700', color: 'white', letterSpacing: '.3px' }}>{MONTH_NAMES[calMonth].slice(0,3)} {calYear}</div>
+                        <div style={{ fontSize: '.8rem', fontWeight: '700', color: 'var(--text)', letterSpacing: '.3px' }}>{MONTH_NAMES[calMonth].slice(0,3)} {calYear}</div>
                         <button type="button" onClick={nextMonth} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.1rem', padding: '2px 8px', lineHeight: 1 }}>&#x203A;</button>
                       </div>
                       {/* Day headers */}
@@ -621,16 +713,14 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                               if (!adminMode) void releaseCurrentHold();
                                   setHoldError('');
                                   setF('date', key); setF('time', '');
-                            }} style={{
-                              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                              height: '32px', borderRadius: '7px', padding: '0',
-                              border: isSelected ? '1.5px solid #a855f7' : isToday ? '1px solid #3a3a3a' : '1px solid transparent',
-                              background: isSelected ? 'var(--pink-deep)' : canClick ? 'rgba(167,139,250,.07)' : 'transparent',
-                              color: isPast ? '#282828' : isSelected ? 'white' : hasSlots ? '#d1d5db' : '#333',
-                              cursor: canClick ? 'pointer' : 'default',
-                              fontWeight: isSelected ? '800' : '500', fontSize: '.78rem',
-                              transition: 'all .12s', gap: '1px',
-                            }}>
+                            }} className={
+                              'cal-day-btn' +
+                              (isSelected ? ' cal-day-btn--selected' : '') +
+                              (isPast ? ' cal-day-btn--past' : '') +
+                              (isToday && !isSelected ? ' cal-day-btn--today' : '') +
+                              (canClick && !isSelected ? ' cal-day-btn--available' : '') +
+                              (!canClick && !isPast && !isSelected ? ' cal-day-btn--empty' : '')
+                            }>
                               <span style={{ lineHeight: 1 }}>{day}</span>
                               {hasSlots && !isPast && (
                                 <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: isSelected ? 'rgba(255,255,255,.7)' : slotCount <= 2 ? '#f59e0b' : '#10b981', flexShrink: 0 }} />
@@ -656,9 +746,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                         )}
                       </div>
                       {form.date && (
-                        <div style={{ marginTop: '8px', padding: '6px 10px', background: 'rgba(168,85,247,.1)', border: '1px solid rgba(168,85,247,.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ marginTop: '8px', padding: '6px 10px', background: 'rgba(13,148,136,.1)', border: '1px solid rgba(13,148,136,.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontSize: '.7rem' }}>&#x1F4C5;</span>
-                          <span style={{ fontSize: '.75rem', fontWeight: '700', color: '#c4b5fd' }}>{form.date}</span>
+                          <span style={{ fontSize: '.75rem', fontWeight: '700', color: 'var(--blue)' }}>{form.date}</span>
                         </div>
                       )}
                     </div>
@@ -669,14 +759,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                         <label style={{ marginBottom: '7px', display: 'block', fontSize: '.78rem' }}>Preferred Time</label>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                           {timesForDate.map(tm => (
-                            <button key={tm} type="button" onClick={() => selectTime(tm)} style={{
-                              padding: '8px 14px', borderRadius: '8px',
-                              border: form.time === tm ? '1.5px solid #a855f7' : '1px solid #232323',
-                              background: form.time === tm ? 'rgba(168,85,247,.15)' : '#131313',
-                              color: form.time === tm ? '#d8b4fe' : '#6b7280',
-                              fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.76rem',
-                              cursor: !adminMode && holdBusy ? 'wait' : 'pointer', transition: 'all .12s',
-                            }}>{tm}</button>
+                            <button key={tm} type="button" onClick={() => selectTime(tm)} className={'time-slot-btn' + (form.time === tm ? ' time-slot-btn--active' : '')}>{tm}</button>
                           ))}
                         </div>
                         <div style={{ marginTop: '8px', fontSize: '.72rem', color: '#6b7280' }}>
@@ -721,16 +804,16 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
 
             <div onClick={() => setWalkthrough(w => !w)} style={{
               marginTop: '16px', borderRadius: '16px',
-              border: walkthrough ? '2px solid #1a6fd4' : '2px dashed #3a3a3a',
-              background: walkthrough ? 'rgba(26,111,212,.06)' : '#141414',
+              border: walkthrough ? '2px solid var(--blue)' : '2px dashed var(--border)',
+              background: walkthrough ? 'var(--blue-pale)' : 'var(--soft)',
               padding: '20px 22px', cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: '18px',
             }}>
-              <div style={{ width: '52px', height: '52px', borderRadius: '14px', flexShrink: 0, background: walkthrough ? 'var(--blue)' : '#222', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem', transition: 'all .2s' }}>W</div>
+              <div style={{ width: '52px', height: '52px', borderRadius: '14px', flexShrink: 0, background: walkthrough ? 'var(--blue)' : 'white', border: walkthrough ? 'none' : '1px solid var(--border)', color: walkthrough ? 'white' : 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem', transition: 'all .2s' }}>W</div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: '800', fontSize: '.98rem', color: walkthrough ? 'white' : '#9ca3af', marginBottom: '4px', transition: 'color .2s' }}>
+                <div style={{ fontWeight: '800', fontSize: '.98rem', color: walkthrough ? 'var(--blue)' : 'var(--text)', marginBottom: '4px', transition: 'color .2s' }}>
                   Request a Free Walk-Through
                 </div>
-                <div style={{ fontSize: '.8rem', color: walkthrough ? '#a5c8ff' : '#555', lineHeight: 1.5, transition: 'color .2s' }}>
+                <div style={{ fontSize: '.8rem', color: 'var(--text-muted)', lineHeight: 1.5, transition: 'color .2s' }}>
                   {"We'll visit your space first to give you an exact price \u2014 no surprises."}
                 </div>
                 {walkthrough && (
@@ -745,146 +828,213 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
             </div>
 
             <div className="nav-btns">
-              <button className="btn-next" onClick={() => goTo(1)}>Next: Rooms</button>
-            </div>
-          </div>
-        )}
-
-        {step === 1 && (
-          <div>
-            <div className="page-title">Rooms</div>
-            <div className="page-sub">Select at least one room or bathroom to continue</div>
-
-            <div className="wcard">
-              <div className="card-header">
-                <div className="card-icon">B</div>
-                <div><div className="card-title">Bedrooms and Living</div></div>
-              </div>
-              <div className="card-body">
-                <div className="bath-box">
-                  {BEDROOMS.map(({ key, name, desc }) => (
-                    <RoomRow key={key} name={name} desc={desc} val={rooms[key]}
-                      onInc={() => setRooms(r => ({ ...r, [key]: r[key] + 1 }))}
-                      onDec={() => setRooms(r => ({ ...r, [key]: Math.max(0, r[key] - 1) }))} />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="wcard">
-              <div className="card-header">
-                <div className="card-icon">Ba</div>
-                <div><div className="card-title">Bathrooms</div></div>
-              </div>
-              <div className="card-body">
-                <div className="bath-box">
-                  {BATHROOMS.map(({ key, name, desc }) => (
-                    <RoomRow key={key} name={name} desc={desc} val={baths[key]}
-                      onInc={() => setBaths(b => ({ ...b, [key]: b[key] + 1 }))}
-                      onDec={() => setBaths(b => ({ ...b, [key]: Math.max(0, b[key] - 1) }))} />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="wcard">
-              <div className="card-header">
-                <div className="card-icon">K</div>
-                <div><div className="card-title">Kitchen and Utility</div></div>
-              </div>
-              <div className="card-body">
-                <div className="bath-box">
-                  {KITCHEN.map(({ key, name, desc }) => (
-                    <RoomRow key={key} name={name} desc={desc} val={rooms[key]}
-                      onInc={() => setRooms(r => ({ ...r, [key]: r[key] + 1 }))}
-                      onDec={() => setRooms(r => ({ ...r, [key]: Math.max(0, r[key] - 1) }))} />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="nav-btns">
-              <button className="btn-back" onClick={() => goTo(0)}>Back</button>
-              <button className="btn-next" onClick={() => goTo(2)}>Next: Add-Ons</button>
+              <button type="button" className="btn-back" onClick={() => goTo(0)}>Back</button>
+              <button type="button" className="btn-next" onClick={() => goTo(2)}>Next: Job details</button>
             </div>
           </div>
         )}
 
         {step === 2 && (
           <div>
-            <div className="page-title">Preferences</div>
-            <div className="page-sub">Extras, frequency, and a few quick questions</div>
-
-            <div className="wcard">
-              <div className="card-header">
-                <div className="card-icon">F</div>
-                <div><div className="card-title">How often?</div></div>
-              </div>
-              <div className="card-body">
-                <div className="fpills">
-                  {FREQS.map(fq => (
-                    <div key={fq.val} className={'fpill ' + (freq === fq.val ? 'active' : '')} onClick={() => setFreq(fq.val)}>
-                      {fq.label}
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <div className="page-title">Job details</div>
+            <div className="page-sub">
+              {cleaningFlow ? 'Tell us about the space — keep it simple' : 'Describe your project'}
             </div>
 
-            <div className="wcard">
-              <div className="card-header">
-                <div className="card-icon">+</div>
-                <div><div className="card-title">Add-On Services</div><div className="card-sub">All optional</div></div>
-              </div>
-              <div className="card-body">
-                <div className="extras-grid">
-                  {EXTRAS.map(e => (
-                    <div key={e.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <div className={'eitem ' + (extras[e.id] ? 'selected' : '')} onClick={() => setExtras(x => ({ ...x, [e.id]: !x[e.id] }))}>
-                        <input type="checkbox" readOnly checked={!!extras[e.id]} style={{ width: '17px', height: '17px', accentColor: 'var(--pink-deep)', flexShrink: 0, marginTop: '2px' }} />
-                        <div className="ename">{e.name}</div>
-                      </div>
-                      {e.hasQty && extras[e.id] && (
-                        <div style={{ background: '#1a1a2e', border: '1.5px solid var(--blue)', borderRadius: '10px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <span style={{ fontSize: '.78rem', color: '#d1d5db', fontWeight: '700', flex: 1 }}>How many windows?</span>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <button type="button" className="qbtn" onClick={ev => { ev.stopPropagation(); setWindowQty(q => Math.max(1, q - 1)); }}>-</button>
-                            <span className="qdis">{windowQty}</span>
-                            <button type="button" className="qbtn" onClick={ev => { ev.stopPropagation(); setWindowQty(q => q + 1); }}>+</button>
-                          </div>
+            {cleaningFlow ? (
+              <>
+                <div className="wcard">
+                  <div className="card-body">
+                    <div className="simple-counters">
+                      <div className="simple-counter">
+                        <div>
+                          <div className="bname">Bedrooms</div>
+                          <div className="bdesc">Including living areas</div>
                         </div>
-                      )}
+                        <QCtrl val={simpleBeds} onInc={() => setSimpleBeds(n => n + 1)} onDec={() => setSimpleBeds(n => Math.max(0, n - 1))} />
+                      </div>
+                      <div className="simple-counter">
+                        <div>
+                          <div className="bname">Bathrooms</div>
+                          <div className="bdesc">Half baths count too</div>
+                        </div>
+                        <QCtrl val={simpleBaths} onInc={() => setSimpleBaths(n => n + 1)} onDec={() => setSimpleBaths(n => Math.max(0, n - 1))} />
+                      </div>
                     </div>
-                  ))}
+                    <div className="divider" />
+                    <label className="fg-label">Cleaning type</label>
+                    <div className="level-pills">
+                      {CLEANING_LEVELS.map((lv) => (
+                        <button
+                          key={lv.id}
+                          type="button"
+                          className={'level-pill' + (cleaningLevel === lv.id ? ' level-pill--active' : '')}
+                          onClick={() => setCleaningLevel(lv.id)}
+                        >
+                          <strong>{lv.label}</strong>
+                          <span>{lv.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <div className="divider"></div>
-                <div className="row2">
+
+                <div className="wcard">
+                  <div className="card-header">
+                    <div className="card-icon">F</div>
+                    <div><div className="card-title">How often?</div></div>
+                  </div>
+                  <div className="card-body">
+                    <div className="fpills">
+                      {FREQS.map(fq => (
+                        <div key={fq.val} className={'fpill ' + (freq === fq.val ? 'active' : '')} onClick={() => setFreq(fq.val)}>
+                          {fq.label}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="wcard">
+                  <div className="card-header">
+                    <div className="card-icon">+</div>
+                    <div><div className="card-title">Add-ons</div><div className="card-sub">Optional extras</div></div>
+                  </div>
+                  <div className="card-body">
+                    <div className="extras-grid">
+                      {EXTRAS.map(e => (
+                        <div key={e.id} className={'eitem ' + (extras[e.id] ? 'selected' : '')} onClick={() => setExtras(x => ({ ...x, [e.id]: !x[e.id] }))}>
+                          <input type="checkbox" readOnly checked={!!extras[e.id]} />
+                          <div className="ename">{e.name}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="row2" style={{ marginTop: 14 }}>
+                      <div className="fg">
+                        <label>Any pets?</label>
+                        <select value={form.pets} onChange={e => setF('pets', e.target.value)}>
+                          <option value="no">No</option>
+                          <option value="yes">Yes</option>
+                        </select>
+                      </div>
+                      <div className="fg">
+                        <label>Special requests <span className="opt">(optional)</span></label>
+                        <input type="text" value={form.otherReqs} onChange={e => setF('otherReqs', e.target.value)} placeholder="e.g. Focus on kitchen..." />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <button type="button" className="link-btn" onClick={() => setShowAdvanced(v => !v)}>
+                  {showAdvanced ? 'Hide detailed room list' : 'Need detailed room-by-room pricing?'}
+                </button>
+
+                {showAdvanced && (
+                  <>
+                    <div className="wcard">
+                      <div className="card-header"><div className="card-icon">B</div><div><div className="card-title">Detailed rooms</div></div></div>
+                      <div className="card-body">
+                        <div className="bath-box">
+                          {[...BEDROOMS, ...KITCHEN].map(({ key, name, desc }) => (
+                            <RoomRow key={key} name={name} desc={desc} val={rooms[key]}
+                              onInc={() => setRooms(r => ({ ...r, [key]: r[key] + 1 }))}
+                              onDec={() => setRooms(r => ({ ...r, [key]: Math.max(0, r[key] - 1) }))} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="wcard">
+                      <div className="card-header"><div className="card-icon">Ba</div><div><div className="card-title">Detailed bathrooms</div></div></div>
+                      <div className="card-body">
+                        <div className="bath-box">
+                          {BATHROOMS.map(({ key, name, desc }) => (
+                            <RoomRow key={key} name={name} desc={desc} val={baths[key]}
+                              onInc={() => setBaths(b => ({ ...b, [key]: b[key] + 1 }))}
+                              onDec={() => setBaths(b => ({ ...b, [key]: Math.max(0, b[key] - 1) }))} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </>
+            ) : (
+              <div className="wcard">
+                <div className="card-body">
                   <div className="fg">
-                    <label>Any Pets?</label>
-                    <select value={form.pets} onChange={e => setF('pets', e.target.value)}>
-                      <option value="no">No</option>
-                      <option value="yes">Yes</option>
-                    </select>
+                    <label>Project size</label>
+                    <div className="level-pills">
+                      {PROJECT_SCOPES.map((sc) => (
+                        <button
+                          key={sc.id}
+                          type="button"
+                          className={'level-pill' + (projectScope === sc.id ? ' level-pill--active' : '')}
+                          onClick={() => setProjectScope(sc.id)}
+                        >
+                          <strong>{sc.label}</strong>
+                          <span>{sc.desc}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   <div className="fg">
-                    <label>Other Requests <span className="opt">(optional)</span></label>
-                    <input type="text" value={form.otherReqs} onChange={e => setF('otherReqs', e.target.value)} placeholder="e.g. Deep clean behind appliances..." />
+                    <label>Describe your project <span style={{ color: '#ef4444' }}>*</span></label>
+                    <textarea
+                      value={projectDetails}
+                      onChange={e => setProjectDetails(e.target.value)}
+                      placeholder={'e.g. Pressure wash driveway and back patio, or paint 2 bedrooms and hallway...'}
+                      rows={5}
+                    />
+                  </div>
+                  <div className="fg">
+                    <label>Anything else? <span className="opt">(optional)</span></label>
+                    <input type="text" value={form.otherReqs} onChange={e => setF('otherReqs', e.target.value)} placeholder="Access notes, materials, timeline..." />
+                  </div>
+                  <p className="custom-quote-note">Final price confirmed after Yoselin reviews your project — this is a starting estimate only.</p>
+                </div>
+              </div>
+            )}
+
+            <div className="pbar">
+              <div className="pbar-top">
+                <div>
+                  <div className="plabel">YOUR ESTIMATE</div>
+                  <div className="pamount">${price.final}{price.isCustomQuote ? '+' : ''}</div>
+                  <div className="prange">
+                    {price.isCustomQuote
+                      ? 'Custom quote — Yoselin will confirm final price'
+                      : price.final > 0
+                        ? 'Est. range: $' + Math.round(price.final * .95) + ' – $' + Math.round(price.final * 1.1)
+                        : 'Add details to calculate'}
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="nav-btns">
-              <button className="btn-back" onClick={() => goTo(1)}>Back</button>
-              <button className="btn-next" onClick={() => goTo(3)}>Next: Review</button>
+              <button type="button" className="btn-back" onClick={() => goTo(1)}>Back</button>
+              <button type="button" className="btn-next" onClick={() => goTo(3)}>Next: Review</button>
             </div>
           </div>
         )}
 
         {step === 3 && (
           <div>
-            <div className="page-title">Review and Submit</div>
-            <div className="page-sub">Add any notes and submit your request</div>
+            <div className="page-title">Review & submit</div>
+            <div className="page-sub">Double-check everything, then send your request</div>
+
+            <div className="review-summary">
+              <div className="review-summary__row">
+                <span>Service</span>
+                <strong>{selectedService.icon} {selectedService.name}</strong>
+              </div>
+              {!cleaningFlow && projectDetails && (
+                <div className="review-summary__row review-summary__row--stack">
+                  <span>Project</span>
+                  <strong>{projectDetails}</strong>
+                </div>
+              )}
+            </div>
 
             {/* Date & Time Summary Card */}
             {(form.date || form.time) && (() => {
@@ -894,33 +1044,31 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               const dayNum = parsed && !isNaN(parsed) ? parsed.getDate() : '';
               const year = parsed && !isNaN(parsed) ? parsed.getFullYear() : '';
               return (
-                <div style={{ background: '#111', border: '1.5px solid #2a2a2a', borderRadius: '18px', overflow: 'hidden', marginBottom: '18px' }}>
-                    <div style={{ padding: '12px 18px', background: 'rgba(167,139,250,.06)', borderBottom: '1px solid #2a2a2a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '.68rem', fontWeight: '800', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '1px' }}>Preferred Date & Time</span>
-                  </div>
-                  <div style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '18px' }}>
+                <div className="review-date-card">
+                    <div className="review-date-card__head">Preferred Date & Time</div>
+                  <div className="review-date-card__body">
                     {parsed && !isNaN(parsed) ? (
-                      <div style={{ width: '76px', flexShrink: 0, borderRadius: '14px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(168,85,247,.25)', border: '1px solid rgba(168,85,247,.3)' }}>
-                        <div style={{ background: 'var(--pink-deep)', padding: '5px 0 3px', textAlign: 'center' }}>
+                      <div style={{ width: '76px', flexShrink: 0, borderRadius: '14px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(13,148,136,.25)', border: '1px solid rgba(13,148,136,.3)' }}>
+                        <div style={{ background: 'var(--blue)', padding: '5px 0 3px', textAlign: 'center' }}>
                           <div style={{ fontSize: '.6rem', fontWeight: '800', color: 'rgba(255,255,255,.9)', textTransform: 'uppercase', letterSpacing: '1.5px', lineHeight: 1 }}>{monthName.slice(0,3)}</div>
                         </div>
-                        <div style={{ background: '#1a1a2e', padding: '8px 0 6px', textAlign: 'center' }}>
-                          <div style={{ fontSize: '1.8rem', fontWeight: '900', color: 'white', lineHeight: 1 }}>{dayNum}</div>
+                        <div style={{ background: 'white', padding: '8px 0 6px', textAlign: 'center' }}>
+                          <div style={{ fontSize: '1.8rem', fontWeight: '900', color: 'var(--text)', lineHeight: 1 }}>{dayNum}</div>
                           <div style={{ fontSize: '.58rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.6px', marginTop: '2px' }}>{dayName.slice(0,3)}</div>
                         </div>
                       </div>
                     ) : (
-                      <div style={{ width: '76px', height: '76px', borderRadius: '14px', background: '#1a1a2e', border: '1px solid #2a2a2a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.6rem' }}>\uD83D\uDCC5</div>
+                      <div style={{ width: '76px', height: '76px', borderRadius: '14px', background: 'white', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.6rem' }}>\uD83D\uDCC5</div>
                     )}
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '1.05rem', fontWeight: '800', color: 'white', lineHeight: 1.3, marginBottom: '2px' }}>
+                      <div className="review-date-card__title">
                         {parsed && !isNaN(parsed) ? `${dayName}, ${monthName} ${dayNum}` : form.date}
                       </div>
                       {year && <div style={{ fontSize: '.78rem', fontWeight: '600', color: '#6b7280', marginBottom: '6px' }}>{year}</div>}
                       {form.time && form.time !== 'N/A' && (
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(168,85,247,.12)', border: '1px solid rgba(168,85,247,.2)', borderRadius: '10px', padding: '6px 14px' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(13,148,136,.12)', border: '1px solid rgba(13,148,136,.2)', borderRadius: '10px', padding: '6px 14px' }}>
                           <span style={{ fontSize: '.74rem' }}>\uD83D\uDD52</span>
-                          <span style={{ fontSize: '.84rem', fontWeight: '700', color: '#d8b4fe' }}>{form.time}</span>
+                          <span style={{ fontSize: '.84rem', fontWeight: '700', color: 'var(--blue)' }}>{form.time}</span>
                         </div>
                       )}
                       {(!form.time || form.time === 'N/A') && (
@@ -984,9 +1132,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                         <button key={v} type="button" onClick={() => setFirstTime(v)} style={{
                           flex: 1, padding: '11px 0', borderRadius: '10px', cursor: 'pointer',
                           fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.92rem',
-                          border: firstTime === v ? (v === 'yes' ? '2px solid #10b981' : '2px solid #555') : '2px solid #2a2a2a',
-                          background: firstTime === v ? (v === 'yes' ? 'rgba(16,185,129,.18)' : '#252525') : '#1a1a1a',
-                          color: firstTime === v ? (v === 'yes' ? '#10b981' : '#d1d5db') : '#4b5563',
+                          border: firstTime === v ? (v === 'yes' ? '2px solid #10b981' : '2px solid var(--text-muted)') : '1.5px solid var(--border)',
+                          background: firstTime === v ? (v === 'yes' ? 'rgba(16,185,129,.12)' : 'var(--soft)') : 'white',
+                          color: firstTime === v ? (v === 'yes' ? '#059669' : 'var(--text)') : 'var(--text-muted)',
                           transition: 'all .15s',
                         }}>{v === 'yes' ? 'Yes' : 'No'}</button>
                       ))}
@@ -999,9 +1147,9 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                         <button key={v} type="button" onClick={() => setSenior(v)} style={{
                           flex: 1, padding: '11px 0', borderRadius: '10px', cursor: 'pointer',
                           fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.92rem',
-                          border: senior === v ? (v === 'yes' ? '2px solid #10b981' : '2px solid #555') : '2px solid #2a2a2a',
-                          background: senior === v ? (v === 'yes' ? 'rgba(16,185,129,.18)' : '#252525') : '#1a1a1a',
-                          color: senior === v ? (v === 'yes' ? '#10b981' : '#d1d5db') : '#4b5563',
+                          border: senior === v ? (v === 'yes' ? '2px solid #10b981' : '2px solid var(--text-muted)') : '1.5px solid var(--border)',
+                          background: senior === v ? (v === 'yes' ? 'rgba(16,185,129,.12)' : 'var(--soft)') : 'white',
+                          color: senior === v ? (v === 'yes' ? '#059669' : 'var(--text)') : 'var(--text-muted)',
                           transition: 'all .15s',
                         }}>{v === 'yes' ? 'Yes' : 'No'}</button>
                       ))}

@@ -6,6 +6,7 @@ import { collection, query, where, onSnapshot, addDoc, getDocs, serverTimestamp,
 import { auth, db, storage, ADMIN_EMAILS } from '../../lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Chat from '../../components/Chat';
+import PortalShell from '../../components/PortalShell';
 import { useUnreadCount } from '../../lib/useUnreadCount';
 
 
@@ -23,7 +24,7 @@ function getLoyaltyTier(count) {
   if (count >= 5) return { label: 'Gold Client',      icon: '\uD83E\uDD47', color: '#f59e0b', bg: 'rgba(245,158,11,.15)', next: 'VIP',       nextAt: 8 };
   if (count >= 3) return { label: 'Regular Client',   icon: '\uD83E\uDD48', color: '#9ca3af', bg: 'rgba(156,163,175,.15)',next: 'Gold',      nextAt: 5 };
   if (count >= 1) return { label: 'Returning Client', icon: '\u2728', color: '#10b981', bg: 'rgba(16,185,129,.15)', next: 'Regular',   nextAt: 3 };
-  return                  { label: 'New Client',       icon: '\uD83C\uDF31', color: '#60a5fa', bg: 'rgba(96,165,250,.15)', next: 'Returning', nextAt: 1 };
+  return                  { label: 'New Client',       icon: '\uD83C\uDF31', color: 'var(--blue)', bg: 'rgba(96,165,250,.15)', next: 'Returning', nextAt: 1 };
 }
 
 function getCountdown(dateStr) {
@@ -44,7 +45,7 @@ function getCountdown(dateStr) {
 
 function hStatusColor(s) {
   if (s === 'confirmed') return '#10b981';
-  if (s === 'done')      return '#60a5fa';
+  if (s === 'done')      return 'var(--blue)';
   if (s === 'cancelled') return '#ef4444';
   return '#f59e0b';
 }
@@ -65,7 +66,7 @@ function HistoryTab({ requests }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div>
-        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white', marginBottom: '4px' }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: '700', color: 'var(--text)', marginBottom: '4px' }}>
           📋 Booking History
         </div>
         <div style={{ fontSize: '.82rem', color: '#6b7280' }}>{requests.length} bookings total</div>
@@ -73,12 +74,12 @@ function HistoryTab({ requests }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
         {[
-          { label: 'Total',     val: String(requests.length), color: '#60a5fa' },
+          { label: 'Total',     val: String(requests.length), color: 'var(--blue)' },
           { label: 'Completed', val: String(doneCount),       color: '#10b981' },
           { label: 'Spent',     val: '$' + totalSpent,        color: '#f472b6' },
         ].map(item => (
-          <div key={item.label} style={{ background: 'rgba(14,10,18,.75)', border: '1px solid #2a2a2a', borderRadius: '14px', padding: '14px', textAlign: 'center' }}>
-            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: '900', color: item.color }}>{item.val}</div>
+          <div key={item.label} style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '14px', padding: '14px', textAlign: 'center' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: '900', color: item.color }}>{item.val}</div>
             <div style={{ fontSize: '.7rem', color: '#6b7280', fontWeight: '600', marginTop: '3px' }}>{item.label}</div>
           </div>
         ))}
@@ -108,13 +109,13 @@ function HistoryTab({ requests }) {
             {!isOpen && (
               <div style={{ padding: '13px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
                 <div>
-                  <div style={{ fontSize: '.85rem', fontWeight: '700', color: 'white', marginBottom: '2px' }}>
+                  <div style={{ fontSize: '.85rem', fontWeight: '700', color: 'var(--text)', marginBottom: '2px' }}>
                     {req.date || 'TBD'}{req.time && req.time !== 'N/A' ? ' \u00b7 ' + req.time : ''}
                   </div>
                   <div style={{ fontSize: '.76rem', color: '#6b7280' }}>{req.address?.split(',')[0] || 'Address TBD'}</div>
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', fontWeight: '900', color: 'var(--pink-deep)' }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: '900', color: 'var(--pink-deep)' }}>
                     {'$' + req.estimate}
                   </div>
                   <div style={{ fontSize: '.68rem', color: '#6b7280' }}>Estimate</div>
@@ -397,31 +398,26 @@ export default function DashboardPage() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: 'transparent' }}>
-
-      {/* NAV */}
-      <nav style={{ background: '#151515', borderBottom: '1px solid #1f1f1f', padding: '0 16px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
-          <button onClick={() => setActiveTab('home')} style={{ padding: '7px 14px', borderRadius: '99px', border: '2px solid rgba(96,165,250,.4)', background: 'rgba(96,165,250,.12)', color: '#93c5fd', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.75rem', cursor: 'pointer' }}>Dashboard</button>
-          <button onClick={() => router.push('/')} style={{ padding: '7px 14px', borderRadius: '99px', border: '2px solid rgba(255,255,255,.12)', background: 'transparent', color: '#9ca3af', fontFamily: "'DM Sans',sans-serif", fontWeight: '700', fontSize: '.75rem', cursor: 'pointer' }}>Home</button>
+    <PortalShell>
+      <div className="portal-toolbar">
+        <div className="portal-toolbar__left">
+          <button type="button" className="portal-pill portal-pill--active" onClick={() => setActiveTab('home')}>Dashboard</button>
+          <button type="button" className="portal-pill" onClick={() => router.push('/')}>Home</button>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        <div className="portal-toolbar__right">
           {user?.photoURL
             ? <img src={user.photoURL} className="nav-avatar" alt="" />
-            : <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--blue)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '.8rem', flexShrink: 0 }}>{firstName[0]?.toUpperCase()}</div>
+            : <div className="portal-avatar">{firstName[0]?.toUpperCase()}</div>
           }
-          <button className="signout-btn" onClick={() => { signOut(auth); router.push('/'); }}>Sign Out</button>
+          <button className="signout-btn" type="button" onClick={() => { signOut(auth); router.push('/'); }}>Sign Out</button>
         </div>
-      </nav>
+      </div>
 
-      {/* HERO */}
-      <div style={{ background: 'rgba(21,16,40,0.95)', padding: '24px 24px 20px' }}>
-        <div style={{ maxWidth: '760px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
+      <div className="portal-hero">
+        <div className="portal-hero__inner">
           <div>
-            <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', fontWeight: '900', color: 'white', marginBottom: '4px' }}>
-              Hey, {firstName}!
-            </h1>
-            <p style={{ color: '#6b7280', fontSize: '.85rem' }}>
+            <h1>Hey, {firstName}!</h1>
+            <p>
               {isDone      ? 'Your cleaning is complete — thank you!' :
                isCancelled ? 'Your booking was cancelled.' :
                isConfirmed ? 'Your appointment is confirmed!' :
@@ -436,44 +432,28 @@ export default function DashboardPage() {
               {allDone > 0 && <span style={{ fontSize: '.68rem', color: loyalty.color, opacity: .7 }}>{allDone} job{allDone !== 1 ? 's' : ''}</span>}
             </div>
             {latest && (
-              <div style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '12px', padding: '10px 14px' }}>
-                <div style={{ fontSize: '.68rem', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '2px' }}>Your Booking</div>
+              <div className="portal-card" style={{ padding: '10px 14px' }}>
+                <div style={{ fontSize: '.68rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '2px' }}>Your Booking</div>
                 <div style={{ fontSize: '.85rem', fontWeight: '700', color: statusColor }}>{statusLabel}</div>
-                <div style={{ fontSize: '.75rem', color: '#9ca3af' }}>{'$' + latest.estimate} estimate</div>
+                <div style={{ fontSize: '.75rem', color: 'var(--text-muted)' }}>{'$' + latest.estimate} estimate</div>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* TABS */}
-      <div style={{ background: '#141414', borderBottom: '1.5px solid #2a2a2a', display: 'flex', padding: '0 8px', overflowX: 'auto' }}>
+      <div className="portal-tabs">
         {TABS.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-            flex: 1, minWidth: '80px', padding: '13px 8px 11px',
-            background: 'none', border: 'none',
-            borderBottom: safeTab === tab.id ? '3px solid #60a5fa' : '3px solid transparent',
-            fontSize: '.82rem', fontWeight: '700',
-            color: safeTab === tab.id ? '#60a5fa' : '#6b7280',
-            cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap',
-            position: 'relative',
-          }}>
+          <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={'portal-tab' + (safeTab === tab.id ? ' portal-tab--active' : '')}>
             {tab.label}
             {tab.badge > 0 && (
-              <span style={{
-                position: 'absolute', top: '8px', right: '6px',
-                background: '#ef4444', color: 'white',
-                fontSize: '.55rem', fontWeight: '800',
-                minWidth: '15px', height: '15px', borderRadius: '99px',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                padding: '0 4px', lineHeight: 1,
-              }}>{tab.badge > 9 ? '9+' : tab.badge}</span>
+              <span className="portal-tab__badge">{tab.badge > 9 ? '9+' : tab.badge}</span>
             )}
           </button>
         ))}
       </div>
 
-      <div style={{ maxWidth: '760px', margin: '0 auto', padding: '20px 16px 80px' }}>
+      <div className="portal-body">
 
         {/* ── HOME TAB ── */}
         {safeTab === 'home' && (
@@ -488,14 +468,14 @@ export default function DashboardPage() {
                 <div style={{ width: '54px', height: '54px', borderRadius: '50%', flexShrink: 0, background: countdown.urgent ? 'rgba(16,185,129,.18)' : 'rgba(26,111,212,.18)', border: '2px solid ' + (countdown.urgent ? '#10b981' : '#1a6fd4'), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                   {countdown.days <= 1
                     ? <span style={{ fontSize: '1.5rem' }}>&#x1F525;</span>
-                    : <><span style={{ fontFamily: 'Playfair Display, serif', fontWeight: '900', fontSize: '1.4rem', color: 'white', lineHeight: 1 }}>{countdown.days}</span><span style={{ fontSize: '.55rem', color: '#9ca3af', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px' }}>days</span></>
+                    : <><span style={{ fontFamily: 'var(--font-display)', fontWeight: '900', fontSize: '1.4rem', color: 'white', lineHeight: 1 }}>{countdown.days}</span><span style={{ fontSize: '.55rem', color: '#9ca3af', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px' }}>days</span></>
                   }
                 </div>
                 <div>
                   <div style={{ fontSize: '.7rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '2px' }}>
                     {countdown.urgent ? 'Coming Up!' : 'Upcoming Cleaning'}
                   </div>
-                  <div style={{ fontSize: '1rem', fontWeight: '800', color: 'white', marginBottom: '2px' }}>
+                  <div style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text)', marginBottom: '2px' }}>
                     {countdown.days === 0 ? 'Your cleaning is TODAY!' : countdown.days === 1 ? 'Your cleaning is TOMORROW!' : 'Cleaning in ' + countdown.days + ' days'}
                   </div>
                   <div style={{ fontSize: '.8rem', color: '#9ca3af' }}>
@@ -506,39 +486,39 @@ export default function DashboardPage() {
             )}
 
             {!latest ? (
-              <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '18px', padding: '40px 24px', textAlign: 'center' }}>
+              <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '18px', padding: '40px 24px', textAlign: 'center' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}></div>
-                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white', marginBottom: '8px' }}>Get Your Free Quote</h2>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: '700', color: 'var(--text)', marginBottom: '8px' }}>Get Your Free Quote</h2>
                 <p style={{ color: '#9ca3af', fontSize: '.85rem', marginBottom: '24px', lineHeight: '1.6' }}>Fill out a quick form and get a custom estimate. No commitment needed.</p>
                 {btn('Get a Quote', () => router.push('/book'))}
               </div>
             ) : isDone ? (
-              <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '18px', padding: '36px 24px', textAlign: 'center' }}>
+              <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '18px', padding: '36px 24px', textAlign: 'center' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>✓</div>
-                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white', marginBottom: '8px' }}>Job Complete!</h2>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: '700', color: 'var(--text)', marginBottom: '8px' }}>Job Complete!</h2>
                 <p style={{ color: '#9ca3af', fontSize: '.85rem', marginBottom: '24px', lineHeight: '1.6' }}>Your cleaning has been marked complete. Hope everything is sparkling!</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
                   {btn('Book Again', () => router.push('/book'))}
-                  <button onClick={() => router.push('/')} style={{ padding: '11px 28px', background: 'transparent', color: '#9ca3af', border: '1.5px solid #2a2a2a', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>Back to Home Page</button>
+                  <button onClick={() => router.push('/')} style={{ padding: '11px 28px', background: 'transparent', color: '#9ca3af', border: '1px solid var(--border)', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>Back to Home Page</button>
                 </div>
               </div>
             ) : isCancelled ? (
-              <div style={{ background: '#181818', border: '1.5px solid rgba(239,68,68,.25)', borderRadius: '18px', padding: '36px 24px', textAlign: 'center' }}>
+              <div style={{ background: 'white', border: '1.5px solid rgba(239,68,68,.25)', borderRadius: '18px', padding: '36px 24px', textAlign: 'center' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>✕</div>
-                <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.3rem', fontWeight: '700', color: 'white', marginBottom: '8px' }}>Booking Cancelled</h2>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: '700', color: 'var(--text)', marginBottom: '8px' }}>Booking Cancelled</h2>
                 <p style={{ color: '#9ca3af', fontSize: '.85rem', marginBottom: '24px', lineHeight: '1.6' }}>Your booking was cancelled. Ready to schedule a new cleaning? We'd love to have you back!</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
                   {btn('Book a New Quote', () => router.push('/book'), { background: 'var(--blue)' })}
-                  <button onClick={() => router.push('/')} style={{ padding: '11px 28px', background: 'transparent', color: '#9ca3af', border: '1.5px solid #2a2a2a', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>Back to Home Page</button>
+                  <button onClick={() => router.push('/')} style={{ padding: '11px 28px', background: 'transparent', color: '#9ca3af', border: '1px solid var(--border)', borderRadius: '12px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700', fontSize: '.88rem', cursor: 'pointer' }}>Back to Home Page</button>
                 </div>
               </div>
             ) : (
-              <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '18px 20px' }}>
+              <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '16px', padding: '18px 20px' }}>
                 <div style={{ fontSize: '.7rem', color: '#6b7280', fontWeight: '700', letterSpacing: '.5px', textTransform: 'uppercase', marginBottom: '12px' }}>Booking #{latest.id.slice(-6).toUpperCase()}</div>
                 <div style={{ background: 'rgba(96,165,250,.04)', borderRadius: '14px', border: '1px solid rgba(96,165,250,.12)', overflow: 'hidden', marginBottom: '14px' }}>
                   <div style={{ padding: '9px 14px', background: 'rgba(96,165,250,.06)', borderBottom: '1px solid rgba(96,165,250,.1)', display: 'flex', alignItems: 'center', gap: '7px' }}>
                     <span style={{ fontSize: '.72rem' }}>Date</span>
-                    <span style={{ fontSize: '.62rem', fontWeight: '800', color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '1px' }}>Preferred Date &amp; Time</span>
+                    <span style={{ fontSize: '.62rem', fontWeight: '800', color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '1px' }}>Preferred Date &amp; Time</span>
                   </div>
                   <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
                     {(() => {
@@ -549,21 +529,21 @@ export default function DashboardPage() {
                             <div style={{ background: 'var(--blue)', padding: '4px 0 3px', textAlign: 'center' }}>
                               <div style={{ fontSize: '.52rem', fontWeight: '800', color: 'rgba(255,255,255,.9)', textTransform: 'uppercase', letterSpacing: '1.2px', lineHeight: 1 }}>{MONTH_NAMES_DASH[pd.getMonth()].slice(0,3)}</div>
                             </div>
-                            <div style={{ background: '#1a1a2e', padding: '7px 0 5px', textAlign: 'center' }}>
-                              <div style={{ fontSize: '1.55rem', fontWeight: '900', color: 'white', lineHeight: 1 }}>{pd.getDate()}</div>
+                            <div style={{ background: 'white', padding: '7px 0 5px', textAlign: 'center' }}>
+                              <div style={{ fontSize: '1.55rem', fontWeight: '900', color: 'var(--text)', lineHeight: 1 }}>{pd.getDate()}</div>
                               <div style={{ fontSize: '.48rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.5px', marginTop: '2px' }}>{DAY_NAMES_DASH[pd.getDay()].slice(0,3)}</div>
                             </div>
                           </div>
                         );
                       }
-                      return <div style={{ width: '62px', height: '62px', borderRadius: '12px', background: '#1a1a2e', border: '1px solid #2a2a2a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.4rem' }}>Date</div>;
+                      return <div style={{ width: '62px', height: '62px', borderRadius: '12px', background: 'white', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.4rem' }}>Date</div>;
                     })()}
                     <div style={{ flex: 1 }}>
                       {(() => {
                         const pd = parseDateDash(latest.date);
                         return pd
-                          ? <div style={{ fontSize: '.95rem', fontWeight: '800', color: 'white', marginBottom: '2px' }}>{DAY_NAMES_DASH[pd.getDay()]}, {MONTH_NAMES_DASH[pd.getMonth()]} {pd.getDate()}</div>
-                          : <div style={{ fontSize: '.95rem', fontWeight: '700', color: '#d1d5db', marginBottom: '2px' }}>{latest.date || 'TBD'}</div>;
+                          ? <div style={{ fontSize: '.95rem', fontWeight: '800', color: 'var(--text)', marginBottom: '2px' }}>{DAY_NAMES_DASH[pd.getDay()]}, {MONTH_NAMES_DASH[pd.getMonth()]} {pd.getDate()}</div>
+                          : <div style={{ fontSize: '.95rem', fontWeight: '700', color: 'var(--text)', marginBottom: '2px' }}>{latest.date || 'TBD'}</div>;
                       })()}
                       {(() => {
                         const pd = parseDateDash(latest.date);
@@ -572,7 +552,7 @@ export default function DashboardPage() {
                       {latest.time && latest.time !== 'N/A' && latest.time !== 'TBD' && (
                           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(96,165,250,.08)', border: '1px solid rgba(96,165,250,.18)', borderRadius: '10px', padding: '5px 12px' }}>
                           <span style={{ fontSize: '.68rem' }}>Time</span>
-                          <span style={{ fontSize: '.8rem', fontWeight: '700', color: '#93c5fd' }}>{latest.time}</span>
+                          <span style={{ fontSize: '.8rem', fontWeight: '700', color: 'var(--blue-light)' }}>{latest.time}</span>
                         </div>
                       )}
                       {(!latest.time || latest.time === 'N/A' || latest.time === 'TBD') && (
@@ -583,7 +563,7 @@ export default function DashboardPage() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.8rem', fontWeight: '900', color: 'var(--pink-deep)' }}>{'$' + latest.estimate}</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: '900', color: 'var(--pink-deep)' }}>{'$' + latest.estimate}</div>
                     <div style={{ fontSize: '.68rem', color: '#6b7280' }}>Estimate</div>
                   </div>
                 </div>
@@ -591,7 +571,7 @@ export default function DashboardPage() {
             )}
 
             {latest && !isDone && (
-              <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '18px 20px' }}>
+              <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '16px', padding: '18px 20px' }}>
                 <div style={{ fontSize: '.72rem', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '14px' }}>Booking Progress</div>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   {[{ label: 'Submitted', done: true }, { label: 'In Review', done: isConfirmed }, { label: 'Confirmed', done: isConfirmed }, { label: 'Complete', done: false }].map((s, i, arr) => (
@@ -600,7 +580,7 @@ export default function DashboardPage() {
                         <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: s.done ? '#db2777' : '#2a2a2a', border: '2px solid ' + (s.done ? '#db2777' : '#3a3a3a'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.72rem', color: s.done ? 'white' : '#555', fontWeight: '700' }}>
                           {s.done ? '\u2713' : i + 1}
                         </div>
-                        <span style={{ fontSize: '.6rem', color: s.done ? '#d1d5db' : '#555', fontWeight: '600', textAlign: 'center', width: '52px' }}>{s.label}</span>
+                        <span style={{ fontSize: '.6rem', color: s.done ? 'var(--text)' : 'var(--text-muted)', fontWeight: '600', textAlign: 'center', width: '52px' }}>{s.label}</span>
                       </div>
                       {i < arr.length - 1 && <div style={{ flex: 1, height: '2px', background: s.done && arr[i + 1].done ? '#db2777' : '#2a2a2a', margin: '0 2px', marginBottom: '18px' }} />}
                     </div>
@@ -610,13 +590,13 @@ export default function DashboardPage() {
             )}
 
             {isDone && !alreadyReview && (
-              <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', borderBottom: '1px solid #2a2a2a', fontWeight: '700', color: 'white', fontSize: '.92rem' }}>Leave a Review</div>
+              <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
+                <div style={{ padding: '14px 20px', borderBottom: '1px solid #2a2a2a', fontWeight: '700', color: 'var(--text)', fontSize: '.92rem' }}>Leave a Review</div>
                 <div style={{ padding: '18px 20px' }}>
                   {reviewDone ? (
                     <div style={{ textAlign: 'center', padding: '16px 0' }}>
                       <div style={{ fontSize: '2.4rem', marginBottom: '10px' }}>&#x2764;&#xFE0F;</div>
-                      <div style={{ fontFamily: 'Playfair Display, serif', fontWeight: '700', color: 'white', fontSize: '1.05rem', marginBottom: '5px' }}>Thank you for your review!</div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', color: 'var(--text)', fontSize: '1.05rem', marginBottom: '5px' }}>Thank you for your review!</div>
                       <div style={{ color: '#9ca3af', fontSize: '.83rem' }}>It will appear on our homepage.</div>
                     </div>
                   ) : (
@@ -631,7 +611,7 @@ export default function DashboardPage() {
                         <span style={{ color: '#9ca3af', fontSize: '.82rem', marginLeft: '6px' }}>{reviewStars} stars</span>
                       </div>
                       <textarea value={reviewText} onChange={e => setReviewText(e.target.value)} placeholder="Tell others about your experience..." rows={3}
-                        style={{ width: '100%', padding: '12px 14px', background: '#1f1f1f', border: '1.5px solid #2a2a2a', borderRadius: '12px', color: 'white', fontSize: '.87rem', fontFamily: "'DM Sans', sans-serif", outline: 'none', resize: 'vertical', marginBottom: '12px' }} />
+                        style={{ width: '100%', padding: '12px 14px', background: 'white', border: '1px solid var(--border)', borderRadius: '12px', color: 'var(--text)', fontSize: '.87rem', fontFamily: "'DM Sans', sans-serif", outline: 'none', resize: 'vertical', marginBottom: '12px' }} />
                       <button onClick={submitReview} disabled={reviewBusy || !reviewText.trim()} className={reviewText.trim() ? 'btn btn-primary' : 'btn'} style={{ width: '100%', padding: '13px', borderRadius: '12px', fontSize: '.92rem' }}>
                         {reviewBusy ? 'Submitting...' : 'Submit Review'}
                       </button>
@@ -648,28 +628,28 @@ export default function DashboardPage() {
               </div>
             )}
 
-            <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '18px 20px' }}>
+            <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '16px', padding: '18px 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <div>
                   <div style={{ fontSize: '.68rem', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>Loyalty Status</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
                     <span style={{ fontSize: '1.3rem' }}>{loyalty.icon}</span>
-                    <span style={{ fontFamily: 'Playfair Display, serif', fontWeight: '700', color: loyalty.color, fontSize: '.95rem' }}>{loyalty.label}</span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: '700', color: loyalty.color, fontSize: '.95rem' }}>{loyalty.label}</span>
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.8rem', fontWeight: '900', color: 'white', lineHeight: 1 }}>{allDone}</div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: '900', color: 'var(--text)', lineHeight: 1 }}>{allDone}</div>
                   <div style={{ fontSize: '.68rem', color: '#6b7280', marginTop: '2px' }}>jobs done</div>
                 </div>
               </div>
               {loyalty.next ? (
                 <>
-                  <div style={{ height: '6px', background: '#2a2a2a', borderRadius: '99px', overflow: 'hidden', marginBottom: '6px' }}>
+                  <div style={{ height: '6px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden', marginBottom: '6px' }}>
                     <div style={{ height: '100%', width: Math.min(100, (allDone / loyalty.nextAt) * 100) + '%', background: loyalty.color, borderRadius: '99px', transition: 'width .5s' }} />
                   </div>
                   <div style={{ fontSize: '.7rem', color: '#6b7280', display: 'flex', justifyContent: 'space-between' }}>
                     <span>{allDone} / {loyalty.nextAt} jobs</span>
-                    <span>{loyalty.nextAt - allDone} more to reach <strong style={{ color: 'white' }}>{loyalty.next}</strong></span>
+                    <span>{loyalty.nextAt - allDone} more to reach <strong style={{ color: 'var(--text)' }}>{loyalty.next}</strong></span>
                   </div>
                 </>
               ) : (
@@ -678,39 +658,39 @@ export default function DashboardPage() {
             </div>
 
             {upcomingSchedule.length > 0 && (
-              <div onClick={() => setActiveTab('schedule')} style={{ background: '#181818', border: '1.5px solid rgba(168,85,247,.3)', borderRadius: '16px', padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+              <div onClick={() => setActiveTab('schedule')} style={{ background: 'white', border: '1.5px solid rgba(13,148,136,.3)', borderRadius: '16px', padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(168,85,247,.15)', border: '1px solid rgba(168,85,247,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', flexShrink: 0 }}>&#x1F501;</div>
+                  <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(13,148,136,.15)', border: '1px solid rgba(13,148,136,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', flexShrink: 0 }}>&#x1F501;</div>
                   <div>
-                    <div style={{ fontSize: '.7rem', fontWeight: '700', color: '#a855f7', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '2px' }}>Next Recurring Cleaning</div>
-                    <div style={{ fontWeight: '700', color: 'white', fontSize: '.9rem' }}>{upcomingSchedule[0].date}</div>
+                    <div style={{ fontSize: '.7rem', fontWeight: '700', color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '2px' }}>Next Recurring Cleaning</div>
+                    <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '.9rem' }}>{upcomingSchedule[0].date}</div>
                     <div style={{ fontSize: '.72rem', color: '#9ca3af' }}>{upcomingSchedule[0].time !== 'TBD' ? upcomingSchedule[0].time + ' \u00b7 ' : ''}{upcomingSchedule.length} cleanings scheduled</div>
                   </div>
                 </div>
-                <span style={{ color: '#a855f7', fontSize: '1rem', flexShrink: 0 }}>&#x2192;</span>
+                <span style={{ color: 'var(--blue)', fontSize: '1rem', flexShrink: 0 }}>&#x2192;</span>
               </div>
             )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               {latest && !isDone && (
-                <div onClick={() => setActiveTab('messages')} style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div onClick={() => setActiveTab('messages')} style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(26,111,212,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>&#x1F4AC;</div>
-                  <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>Messages</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>Chat with us</div></div>
+                  <div><div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '.85rem' }}>Messages</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>Chat with us</div></div>
                 </div>
               )}
               {latest && !isDone && (
-                <div onClick={() => setActiveTab('request')} style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div onClick={() => setActiveTab('request')} style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(219,39,119,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>&#x1F4CB;</div>
-                  <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>My Quote</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>View details</div></div>
+                  <div><div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '.85rem' }}>My Quote</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>View details</div></div>
                 </div>
               )}
-              <div onClick={() => router.push('/book')} style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div onClick={() => router.push('/book')} style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(16,185,129,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>&#x2728;</div>
-                <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>{(isDone || isCancelled) ? 'New Quote' : latest ? 'New Quote' : 'Get a Quote'}</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>Instant estimate</div></div>
+                <div><div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '.85rem' }}>{(isDone || isCancelled) ? 'New Quote' : latest ? 'New Quote' : 'Get a Quote'}</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>Instant estimate</div></div>
               </div>
-              <div onClick={() => setActiveTab('settings')} style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div onClick={() => setActiveTab('settings')} style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '14px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(156,163,175,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>&#x2699;&#xFE0F;</div>
-                <div><div style={{ fontWeight: '700', color: 'white', fontSize: '.85rem' }}>Settings</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>Update your info</div></div>
+                <div><div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '.85rem' }}>Settings</div><div style={{ fontSize: '.72rem', color: '#6b7280' }}>Update your info</div></div>
               </div>
             </div>
 
@@ -720,8 +700,8 @@ export default function DashboardPage() {
         {/* ── MESSAGES TAB ── */}
         {safeTab === 'messages' && latest && !isDone && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>Messages</div>
-            <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: '700', color: 'var(--text)' }}>Messages</div>
+            <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
               <Chat requestId={latest.id} currentUser={user} senderRole="customer" onClose={null} inline={true} />
             </div>
           </div>
@@ -730,12 +710,12 @@ export default function DashboardPage() {
         {/* ── MY QUOTE TAB ── */}
         {safeTab === 'request' && latest && !isDone && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>Quote Details</div>
-            <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
-              <div style={{ background: '#151515', padding: '18px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: '700', color: 'var(--text)' }}>Quote Details</div>
+            <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
+              <div style={{ background: 'white', padding: '18px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <div style={{ fontSize: '.7rem', color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>Your Estimate</div>
-                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '2.2rem', fontWeight: '900', color: 'var(--pink-deep)' }}>{'$' + latest.estimate}</div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', fontWeight: '900', color: 'var(--pink-deep)' }}>{'$' + latest.estimate}</div>
                   <div style={{ fontSize: '.7rem', color: '#6b7280', marginTop: '3px' }}>Final price confirmed before service</div>
                 </div>
                 <span className={'badge badge-' + latest.status}>{statusLabel}</span>
@@ -753,7 +733,7 @@ export default function DashboardPage() {
                 ].map(([k, v]) => (
                   <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', padding: '10px 0', borderBottom: '1px solid #2a2a2a' }}>
                     <span style={{ fontSize: '.78rem', color: '#6b7280', fontWeight: '600', minWidth: '100px' }}>{k}</span>
-                    <span style={{ fontSize: '.82rem', fontWeight: '600', color: '#d1d5db', textAlign: 'right' }}>{v}</span>
+                    <span style={{ fontSize: '.82rem', fontWeight: '600', color: 'var(--text)', textAlign: 'right' }}>{v}</span>
                   </div>
                 ))}
               </div>
@@ -767,17 +747,17 @@ export default function DashboardPage() {
                       Request a Reschedule
                     </button>
                   ) : (
-                    <div style={{ background: '#1a1a1a', borderRadius: '14px', padding: '16px', border: '1.5px solid #2a2a2a' }}>
-                      <div style={{ fontWeight: '700', color: 'white', fontSize: '.88rem', marginBottom: '12px' }}>Request a Reschedule</div>
+                    <div style={{ background: 'white', borderRadius: '14px', padding: '16px', border: '1px solid var(--border)' }}>
+                      <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '.88rem', marginBottom: '12px' }}>Request a Reschedule</div>
                       <div style={{ marginBottom: '10px' }}>
                         <label style={{ display: 'block', fontSize: '.78rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>Preferred Dates / Times</label>
                         <input type="text" value={reschedDates} onChange={e => setReschedDates(e.target.value)} placeholder="e.g. Any morning next week, or March 10-12"
-                          style={{ width: '100%', padding: '9px 12px', background: '#141414', border: '1.5px solid #333', borderRadius: '9px', color: 'white', fontSize: '.83rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
+                          style={{ width: '100%', padding: '9px 12px', background: 'white', border: '1.5px solid var(--border)', borderRadius: '9px', color: 'var(--text)', fontSize: '.83rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
                       </div>
                       <div style={{ marginBottom: '12px' }}>
                         <label style={{ display: 'block', fontSize: '.78rem', fontWeight: '700', color: '#9ca3af', marginBottom: '5px' }}>Reason (optional)</label>
                         <input type="text" value={reschedReason} onChange={e => setReschedReason(e.target.value)} placeholder="e.g. Work conflict, family event..."
-                          style={{ width: '100%', padding: '9px 12px', background: '#141414', border: '1.5px solid #333', borderRadius: '9px', color: 'white', fontSize: '.83rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
+                          style={{ width: '100%', padding: '9px 12px', background: 'white', border: '1.5px solid var(--border)', borderRadius: '9px', color: 'var(--text)', fontSize: '.83rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
                       </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button onClick={submitReschedule} disabled={reschedBusy || !reschedDates.trim()} className={reschedDates.trim() ? 'btn btn-primary wide' : 'btn wide'} style={{ flex: 1 }}>
@@ -812,7 +792,7 @@ export default function DashboardPage() {
                   )
                 )}
                 {cancelDone && (
-                  <div style={{ background: 'rgba(107,114,128,.08)', border: '1px solid #2a2a2a', borderRadius: '12px', padding: '12px 16px', fontSize: '.83rem', color: '#9ca3af', textAlign: 'center' }}>
+                  <div style={{ background: 'rgba(107,114,128,.08)', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 16px', fontSize: '.83rem', color: '#9ca3af', textAlign: 'center' }}>
                     Booking cancelled. You can submit a new request any time.
                   </div>
                 )}
@@ -820,11 +800,11 @@ export default function DashboardPage() {
             </div>
 
             {/* Before Photos card */}
-            <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
+            <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
               <div style={{ padding: '14px 20px', borderBottom: '1px solid #2a2a2a', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ fontSize: '1.1rem' }}>📸</span>
                 <div>
-                  <div style={{ fontWeight: '700', color: 'white', fontSize: '.9rem' }}>Before Photos</div>
+                  <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '.9rem' }}>Before Photos</div>
                   <div style={{ fontSize: '.72rem', color: '#6b7280' }}>Upload photos of your space for the cleaner</div>
                 </div>
               </div>
@@ -832,7 +812,7 @@ export default function DashboardPage() {
                 {(latest.beforePhotos || []).length > 0 && (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '14px' }}>
                     {(latest.beforePhotos || []).map((url, i) => (
-                      <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', aspectRatio: '1', borderRadius: '10px', overflow: 'hidden', border: '1px solid #2a2a2a' }}>
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', aspectRatio: '1', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border)' }}>
                         <img src={url} alt={'Before photo ' + (i + 1)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       </a>
                     ))}
@@ -842,7 +822,7 @@ export default function DashboardPage() {
                   <div style={{ fontSize: '.8rem', color: '#6b7280', textAlign: 'center', padding: '8px 0' }}>✓ Max 5 photos uploaded</div>
                 ) : (
                   <>
-                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '20px', background: '#1f1f1f', border: '2px dashed #333', borderRadius: '12px', cursor: 'pointer', marginBottom: '12px' }}>
+                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '20px', background: 'white', border: '2px dashed var(--border)', borderRadius: '12px', cursor: 'pointer', marginBottom: '12px' }}>
                       <span style={{ fontSize: '1.8rem' }}>📷</span>
                       <span style={{ fontSize: '.82rem', color: '#9ca3af', fontWeight: '600' }}>
                         {photoFiles.length > 0 ? photoFiles.length + ' photo' + (photoFiles.length > 1 ? 's' : '') + ' selected' : 'Tap to choose photos'}
@@ -866,14 +846,14 @@ export default function DashboardPage() {
         {/* ── SCHEDULE TAB ── */}
         {safeTab === 'schedule' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: '700', color: 'var(--text)' }}>
               &#x1F501; Your Recurring Schedule
             </div>
-            <div style={{ background: 'rgba(168,85,247,.07)', border: '1px solid rgba(168,85,247,.2)', borderRadius: '12px', padding: '13px 18px', fontSize: '.83rem', color: '#c4b5fd' }}>
-              These are your automatically scheduled future cleanings based on your <strong style={{ color: 'white' }}>{schedule[0]?.frequency}</strong> plan.
+            <div style={{ background: 'rgba(13,148,136,.07)', border: '1px solid rgba(13,148,136,.2)', borderRadius: '12px', padding: '13px 18px', fontSize: '.83rem', color: 'var(--blue)' }}>
+              These are your automatically scheduled future cleanings based on your <strong style={{ color: 'var(--text)' }}>{schedule[0]?.frequency}</strong> plan.
             </div>
             {upcomingSchedule.length > 0 && (
-              <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
+              <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
                 <div style={{ padding: '13px 20px', borderBottom: '1px solid #2a2a2a', fontSize: '.72rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.5px' }}>
                   Upcoming ({upcomingSchedule.length})
                 </div>
@@ -883,13 +863,13 @@ export default function DashboardPage() {
                   const diff = Math.round((new Date(entry.date).setHours(0,0,0,0) - now2.setHours(0,0,0,0)) / 86400000);
                   return (
                     <div key={entry.id} style={{ padding: '14px 20px', borderBottom: '1px solid #1e1e1e', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                      <div style={{ width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Playfair Display, serif', fontWeight: '900', fontSize: '.9rem', background: isNext ? 'var(--blue)' : '#1f1f1f', color: isNext ? 'white' : '#6b7280' }}>
+                      <div style={{ width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: '900', fontSize: '.9rem', background: isNext ? 'var(--blue)' : 'var(--soft)', color: isNext ? 'white' : 'var(--text-muted)' }}>
                         {i + 1}
                       </div>
                       <div style={{ flex: 1, minWidth: '120px' }}>
-                        <div style={{ fontWeight: '700', color: isNext ? 'white' : '#d1d5db', fontSize: '.86rem', marginBottom: '2px' }}>
+                        <div style={{ fontWeight: '700', color: isNext ? 'white' : 'var(--text)', fontSize: '.86rem', marginBottom: '2px' }}>
                           {entry.date}
-                          {isNext && <span style={{ marginLeft: '7px', fontSize: '.62rem', background: 'rgba(26,111,212,.2)', color: '#60a5fa', border: '1px solid rgba(26,111,212,.3)', borderRadius: '99px', padding: '2px 7px', fontWeight: '700' }}>NEXT</span>}
+                          {isNext && <span style={{ marginLeft: '7px', fontSize: '.62rem', background: 'rgba(26,111,212,.2)', color: 'var(--blue)', border: '1px solid rgba(26,111,212,.3)', borderRadius: '99px', padding: '2px 7px', fontWeight: '700' }}>NEXT</span>}
                         </div>
                         <div style={{ fontSize: '.73rem', color: '#6b7280' }}>
                           {entry.time !== 'TBD' ? entry.time + ' \u00b7 ' : ''}{entry.address?.split(',')[0]}
@@ -901,7 +881,7 @@ export default function DashboardPage() {
                             {diff === 0 ? 'Today!' : diff === 1 ? 'Tomorrow' : 'In ' + diff + 'd'}
                           </div>
                         )}
-                        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '.9rem', fontWeight: '900', color: '#60a5fa' }}>{'$' + entry.estimate}</div>
+                        <div style={{ fontFamily: 'var(--font-display)', fontSize: '.9rem', fontWeight: '900', color: 'var(--blue)' }}>{'$' + entry.estimate}</div>
                         <button onClick={() => cancelScheduleEntry(entry.id)} title="Cancel this appointment" className="btn btn-icon btn-danger-icon" style={{ flexShrink: 0 }}>✕</button>
                       </div>
                     </div>
@@ -915,7 +895,7 @@ export default function DashboardPage() {
               </button>
             )}
             {schedule.filter(e => e.status === 'done').length > 0 && (
-              <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', overflow: 'hidden' }}>
+              <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
                 <div style={{ padding: '13px 20px', borderBottom: '1px solid #2a2a2a', fontSize: '.72rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.5px' }}>
                   Completed ({schedule.filter(e => e.status === 'done').length})
                 </div>
@@ -926,7 +906,7 @@ export default function DashboardPage() {
                       <div style={{ fontWeight: '600', color: '#6b7280', fontSize: '.83rem' }}>{entry.date}</div>
                       <div style={{ fontSize: '.72rem', color: '#555' }}>{entry.time}</div>
                     </div>
-                    <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '.9rem', fontWeight: '700', color: '#555' }}>{'$' + entry.estimate}</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '.9rem', fontWeight: '700', color: '#555' }}>{'$' + entry.estimate}</div>
                   </div>
                 ))}
               </div>
@@ -942,10 +922,10 @@ export default function DashboardPage() {
         {/* ── SETTINGS TAB ── */}
         {safeTab === 'settings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>Account Settings</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: '700', color: 'var(--text)' }}>Account Settings</div>
             {settingsMsg && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: 'rgba(16,185,129,.12)', color: '#10b981', border: '1px solid rgba(16,185,129,.2)' }}>{settingsMsg}</div>}
             {settingsErr && <div style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '.84rem', fontWeight: '600', background: 'rgba(239,68,68,.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,.2)' }}>⚠️ {settingsErr}</div>}
-            <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '20px' }}>
+            <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px' }}>
               <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '16px' }}>Profile</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '18px', paddingBottom: '18px', borderBottom: '1px solid #2a2a2a' }}>
                 {user?.photoURL
@@ -953,27 +933,27 @@ export default function DashboardPage() {
                   : <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'var(--blue)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '1.1rem' }}>{firstName[0]?.toUpperCase()}</div>
                 }
                 <div>
-                  <div style={{ fontWeight: '700', color: 'white', fontSize: '.9rem' }}>{user?.displayName || 'No name set'}</div>
+                  <div style={{ fontWeight: '700', color: 'var(--text)', fontSize: '.9rem' }}>{user?.displayName || 'No name set'}</div>
                   <div style={{ fontSize: '.78rem', color: '#9ca3af', marginTop: '2px' }}>{user?.email}</div>
                 </div>
               </div>
               <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '.8rem', fontWeight: '700', color: '#d1d5db', marginBottom: '6px' }}>Display Name</label>
+                <label style={{ display: 'block', fontSize: '.8rem', fontWeight: '700', color: 'var(--text)', marginBottom: '6px' }}>Display Name</label>
                 <input type="text" value={settingsName} onChange={e => setSettingsName(e.target.value)} placeholder="Your full name"
-                  style={{ width: '100%', padding: '10px 13px', background: '#1f1f1f', border: '1.5px solid #2a2a2a', borderRadius: '10px', color: 'white', fontSize: '.87rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
+                  style={{ width: '100%', padding: '10px 13px', background: 'white', border: '1px solid var(--border)', borderRadius: '10px', color: 'var(--text)', fontSize: '.87rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
               </div>
               <button onClick={saveName} disabled={settingsBusy} className="btn btn-primary">
                 {settingsBusy ? 'Saving...' : 'Save Name'}
               </button>
             </div>
             {!isGoogleUser && (
-              <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '20px' }}>
+              <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px' }}>
                 <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '16px' }}>Change Password</div>
                 {[['Current Password', currentPass, setCurrentPass, ''], ['New Password', newPass, setNewPass, 'At least 6 characters']].map(([label, val, setter, ph]) => (
                   <div key={label} style={{ marginBottom: '12px' }}>
-                    <label style={{ display: 'block', fontSize: '.8rem', fontWeight: '700', color: '#d1d5db', marginBottom: '6px' }}>{label}</label>
+                    <label style={{ display: 'block', fontSize: '.8rem', fontWeight: '700', color: 'var(--text)', marginBottom: '6px' }}>{label}</label>
                     <input type="password" value={val} onChange={e => setter(e.target.value)} placeholder={ph}
-                      style={{ width: '100%', padding: '10px 13px', background: '#1f1f1f', border: '1.5px solid #2a2a2a', borderRadius: '10px', color: 'white', fontSize: '.87rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
+                      style={{ width: '100%', padding: '10px 13px', background: 'white', border: '1px solid var(--border)', borderRadius: '10px', color: 'var(--text)', fontSize: '.87rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
                   </div>
                 ))}
                 <button onClick={savePassword} disabled={settingsBusy} className="btn btn-primary">
@@ -982,12 +962,12 @@ export default function DashboardPage() {
               </div>
             )}
             {isGoogleUser && (
-              <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '20px' }}>
+              <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px' }}>
                 <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '8px' }}>Password</div>
                 <p style={{ color: '#9ca3af', fontSize: '.84rem' }}>You signed in with Google. Manage your password through your Google account.</p>
               </div>
             )}
-            <div style={{ background: '#181818', border: '1.5px solid #2a2a2a', borderRadius: '16px', padding: '20px' }}>
+            <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px' }}>
               <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '8px' }}>Sign Out</div>
               <p style={{ color: '#9ca3af', fontSize: '.84rem', marginBottom: '14px' }}>This will sign you out on this device.</p>
               <button onClick={() => { signOut(auth); router.push('/'); }} className="btn btn-danger-outline">
@@ -998,6 +978,6 @@ export default function DashboardPage() {
         )}
 
       </div>
-    </div>
+    </PortalShell>
   );
 }
