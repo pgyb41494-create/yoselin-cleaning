@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
-import { isAdminEmail, needsEmailVerification } from '../../lib/authHelpers';
+import { isAdminEmail, needsEmailVerification, whenAuthReady } from '../../lib/authHelpers';
 import SiteHeader from '../../components/SiteHeader';
 import SiteFooter from '../../components/SiteFooter';
 import BookingWizard from '../../components/BookingWizard';
@@ -20,38 +20,56 @@ export default function BookPage() {
   const [authMode, setAuthMode] = useState(null);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      if (!u) { router.push('/'); return; }
-      if (isAdminEmail(u.email)) {
-        router.push('/admin');
-        return;
-      }
-      if (needsEmailVerification(u)) {
-        setUser(u);
-        setNeedsVerify(true);
-        setLoading(false);
-        return;
-      }
-      setNeedsVerify(false);
-      try {
-        const q = query(collection(db, 'requests'), where('userId', '==', u.uid));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-          docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-          const latest = docs[0];
-          if (latest.status !== 'done' && latest.status !== 'cancelled') {
-            router.push('/dashboard');
-            return;
-          }
+    let cancelled = false;
+    let unsub = () => {};
+
+    (async () => {
+      await whenAuthReady();
+      if (cancelled) return;
+
+      unsub = onAuthStateChanged(auth, async (u) => {
+        if (!u) {
+          if (!cancelled) router.replace('/');
+          return;
         }
-      } catch {
-        // continue to booking form if request lookup fails
-      }
-      setUser(u);
-      setLoading(false);
-    });
-    return () => unsub();
+        if (isAdminEmail(u.email)) {
+          router.replace('/admin');
+          return;
+        }
+        if (needsEmailVerification(u)) {
+          if (cancelled) return;
+          setUser(u);
+          setNeedsVerify(true);
+          setLoading(false);
+          return;
+        }
+        if (cancelled) return;
+        setNeedsVerify(false);
+        try {
+          const q = query(collection(db, 'requests'), where('userId', '==', u.uid));
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+            docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            const latest = docs[0];
+            if (latest.status !== 'done' && latest.status !== 'cancelled') {
+              router.replace('/dashboard');
+              return;
+            }
+          }
+        } catch {
+          // continue to booking form if request lookup fails
+        }
+        if (cancelled) return;
+        setUser(u);
+        setLoading(false);
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+      unsub();
+    };
   }, [router]);
 
   if (loading) {

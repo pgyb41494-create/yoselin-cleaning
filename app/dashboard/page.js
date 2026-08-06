@@ -7,7 +7,7 @@ import { auth, db, storage, ADMIN_EMAILS } from '../../lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Chat from '../../components/Chat';
 import VerifyGate from '../../components/VerifyGate';
-import { isAdminEmail, needsEmailVerification, hasPasswordProvider, hasGoogleProvider, isStrongPassword, MIN_PASSWORD_LENGTH, mapAuthError } from '../../lib/authHelpers';
+import { isAdminEmail, needsEmailVerification, hasPasswordProvider, hasGoogleProvider, isStrongPassword, MIN_PASSWORD_LENGTH, mapAuthError, whenAuthReady } from '../../lib/authHelpers';
 import PortalShell from '../../components/PortalShell';
 import { useUnreadCount } from '../../lib/useUnreadCount';
 
@@ -219,47 +219,66 @@ export default function DashboardPage() {
   }, [activeTab, requests]);
 
   useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, (u) => {
-      if (!u) { router.push('/'); return; }
-      if (isAdminEmail(u.email)) { router.push('/admin'); return; }
-      if (needsEmailVerification(u)) {
-        setUser(u);
-        setNeedsVerify(true);
-        setLoading(false);
-        return;
-      }
-      setNeedsVerify(false);
-      setUser(u);
-      setSettingsName(u.displayName || '');
-      const qById = query(collection(db, 'requests'), where('userId', '==', u.uid));
-      const qByEmail = query(collection(db, 'requests'), where('userEmail', '==', u.email));
-      const mergeSnaps = (snaps) => {
-        const map = new Map();
-        snaps.forEach(snap => snap.docs.forEach(d => map.set(d.id, { id: d.id, ...d.data() })));
-        const docs = Array.from(map.values());
-        docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-        setRequests(docs);
-        setLoading(false);
-      };
-      let snapA = null, snapB = null;
-      const unsubA = onSnapshot(qById, s => { snapA = s; if (snapB) mergeSnaps([snapA, snapB]); else { setRequests(s.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); } }, () => setLoading(false));
-      const unsubB = onSnapshot(qByEmail, s => { snapB = s; if (snapA) mergeSnaps([snapA, snapB]); }, () => {});
-      const unsubReq = () => { unsubA(); unsubB(); };
+    let cancelled = false;
+    let unsubAuth = () => {};
 
-      Promise.all([
-        getDocs(query(collection(db, 'schedule'), where('userId', '==', u.uid))),
-        getDocs(query(collection(db, 'schedule'), where('clientEmail', '==', u.email))),
-      ]).then(([sA, sB]) => {
-        const map = new Map();
-        sA.docs.forEach(d => map.set(d.id, { id: d.id, ...d.data() }));
-        sB.docs.forEach(d => map.set(d.id, { id: d.id, ...d.data() }));
-        const entries = Array.from(map.values());
-        entries.sort((a, b) => (a.sequenceIndex || 0) - (b.sequenceIndex || 0));
-        setSchedule(entries);
-      }).catch(() => {});
-      unsubReqRef.current = unsubReq;
-    });
-    return () => { unsubAuth(); if (unsubReqRef.current) unsubReqRef.current(); };
+    (async () => {
+      await whenAuthReady();
+      if (cancelled) return;
+
+      unsubAuth = onAuthStateChanged(auth, (u) => {
+        if (!u) {
+          if (!cancelled) router.replace('/');
+          return;
+        }
+        if (isAdminEmail(u.email)) {
+          router.replace('/admin');
+          return;
+        }
+        if (needsEmailVerification(u)) {
+          setUser(u);
+          setNeedsVerify(true);
+          setLoading(false);
+          return;
+        }
+        setNeedsVerify(false);
+        setUser(u);
+        setSettingsName(u.displayName || '');
+        const qById = query(collection(db, 'requests'), where('userId', '==', u.uid));
+        const qByEmail = query(collection(db, 'requests'), where('userEmail', '==', u.email));
+        const mergeSnaps = (snaps) => {
+          const map = new Map();
+          snaps.forEach(snap => snap.docs.forEach(d => map.set(d.id, { id: d.id, ...d.data() })));
+          const docs = Array.from(map.values());
+          docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+          setRequests(docs);
+          setLoading(false);
+        };
+        let snapA = null, snapB = null;
+        const unsubA = onSnapshot(qById, s => { snapA = s; if (snapB) mergeSnaps([snapA, snapB]); else { setRequests(s.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); } }, () => setLoading(false));
+        const unsubB = onSnapshot(qByEmail, s => { snapB = s; if (snapA) mergeSnaps([snapA, snapB]); }, () => {});
+        const unsubReq = () => { unsubA(); unsubB(); };
+
+        Promise.all([
+          getDocs(query(collection(db, 'schedule'), where('userId', '==', u.uid))),
+          getDocs(query(collection(db, 'schedule'), where('clientEmail', '==', u.email))),
+        ]).then(([sA, sB]) => {
+          const map = new Map();
+          sA.docs.forEach(d => map.set(d.id, { id: d.id, ...d.data() }));
+          sB.docs.forEach(d => map.set(d.id, { id: d.id, ...d.data() }));
+          const entries = Array.from(map.values());
+          entries.sort((a, b) => (a.sequenceIndex || 0) - (b.sequenceIndex || 0));
+          setSchedule(entries);
+        }).catch(() => {});
+        unsubReqRef.current = unsubReq;
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+      unsubAuth();
+      if (unsubReqRef.current) unsubReqRef.current();
+    };
   }, [router]);
 
   useEffect(() => {

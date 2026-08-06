@@ -209,7 +209,7 @@ export default function HomePage() {
         mode={authMode}
         onClose={() => setAuthMode(null)}
         onModeChange={setAuthMode}
-        redirectTo="/book"
+        redirectTo="/dashboard"
       />
     </>
   );

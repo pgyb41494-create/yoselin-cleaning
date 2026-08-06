@@ -6,6 +6,7 @@ import { collection, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimest
 import { auth, db, storage, ADMIN_EMAIL, ADMIN_EMAILS } from '../../lib/firebase';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { notifyBookingConfirmed, notifyBookingCancelled } from '../../lib/notifications';
+import { whenAuthReady } from '../../lib/authHelpers';
 import Chat from '../../components/Chat';
 import BookingWizard from '../../components/BookingWizard';
 import PortalShell from '../../components/PortalShell';
@@ -165,13 +166,28 @@ export default function AdminPage() {
   const [priceSaved, setPriceSaved] = useState(false);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      const isAdmin = ADMIN_EMAILS.includes(u?.email?.toLowerCase()) || ADMIN_EMAILS.includes(u?.email);
-      if (!u || !isAdmin) { router.push('/'); return; }
-      setUser(u);
-      setLoading(false);
-    });
-    return () => unsub();
+    let cancelled = false;
+    let unsub = () => {};
+
+    (async () => {
+      await whenAuthReady();
+      if (cancelled) return;
+
+      unsub = onAuthStateChanged(auth, (u) => {
+        const isAdmin = ADMIN_EMAILS.includes(u?.email?.toLowerCase()) || ADMIN_EMAILS.includes(u?.email);
+        if (!u || !isAdmin) {
+          if (!cancelled) router.replace('/');
+          return;
+        }
+        setUser(u);
+        setLoading(false);
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+      unsub();
+    };
   }, [router]);
 
   useEffect(() => {

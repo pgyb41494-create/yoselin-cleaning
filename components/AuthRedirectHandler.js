@@ -1,7 +1,12 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { completeGoogleRedirect, isAdminEmail, needsEmailVerification } from '../lib/authHelpers';
+import {
+  completeGoogleRedirect,
+  isAdminEmail,
+  needsEmailVerification,
+  whenAuthReady,
+} from '../lib/authHelpers';
 
 /**
  * Completes Firebase Google redirect sign-in after returning to the app on mobile.
@@ -16,14 +21,16 @@ export default function AuthRedirectHandler() {
     ran.current = true;
 
     (async () => {
+      await whenAuthReady();
       const result = await completeGoogleRedirect();
       if (result?.error) return;
-      if (!result) return;
-      if (isAdminEmail(result.email)) {
+      const user = result || null;
+      if (!user) return;
+      if (isAdminEmail(user.email)) {
         router.replace('/admin');
         return;
       }
-      if (needsEmailVerification(result)) {
+      if (needsEmailVerification(user)) {
         router.replace('/dashboard');
         return;
       }

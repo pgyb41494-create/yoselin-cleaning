@@ -16,6 +16,7 @@ import {
   needsEmailVerification,
   getSignInMethods,
   consumeGoogleRedirectError,
+  whenAuthReady,
   MIN_PASSWORD_LENGTH,
 } from '../lib/authHelpers';
 
@@ -69,9 +70,12 @@ export default function AuthModal({ mode, onClose, onModeChange, redirectTo = '/
   const [verifyResent, setVerifyResent] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
-  const redirectUser = useCallback((user) => {
+  const redirectUser = useCallback(async (user) => {
+    if (!user) return;
+    await whenAuthReady();
     if (isAdminEmail(user.email)) {
-      router.push('/admin');
+      onClose?.();
+      router.replace('/admin');
       return;
     }
     if (needsEmailVerification(user)) {
@@ -79,8 +83,9 @@ export default function AuthModal({ mode, onClose, onModeChange, redirectTo = '/
       setBusy(false);
       return;
     }
-    router.push(redirectTo || '/dashboard');
-  }, [onModeChange, redirectTo, router]);
+    onClose?.();
+    router.replace(redirectTo || '/dashboard');
+  }, [onClose, onModeChange, redirectTo, router]);
 
   useEffect(() => {
     if (!mode) return;
@@ -141,7 +146,7 @@ export default function AuthModal({ mode, onClose, onModeChange, redirectTo = '/
         setHint('Redirecting to Google…');
         return;
       }
-      redirectUser(result.user);
+      await redirectUser(result.user);
     } catch (e) {
       setError(mapAuthError(e));
       setBusy(false);
@@ -159,9 +164,9 @@ export default function AuthModal({ mode, onClose, onModeChange, redirectTo = '/
       return;
     }
     try {
-      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+      await setPersistence(auth, browserLocalPersistence);
       const r = await signInWithEmailAndPassword(auth, email.trim(), password);
-      redirectUser(r.user);
+      await redirectUser(r.user);
     } catch (e) {
       if (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') {
         const methods = await getSignInMethods(email);
@@ -196,11 +201,11 @@ export default function AuthModal({ mode, onClose, onModeChange, redirectTo = '/
       return;
     }
     try {
-      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+      await setPersistence(auth, browserLocalPersistence);
       const r = await createUserWithEmailAndPassword(auth, email.trim(), password);
       await updateProfile(r.user, { displayName: name.trim() });
       await sendEmailVerification(r.user);
-      redirectUser(r.user);
+      await redirectUser(r.user);
     } catch (e) {
       if (e.code === 'auth/email-already-in-use') {
         const methods = await getSignInMethods(email);
