@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc, getDoc, runTransaction } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { notifyNewBooking } from '../lib/notifications';
-import { SERVICE_TYPES, CLEANING_LEVELS, PROJECT_SCOPES, LANDSCAPE_OPTIONS, isCleaningService, hasCleaningService, hasNonCleaningService, getServiceById, getServiceNames } from '../lib/services';
+import { SERVICE_TYPES, CLEANING_LEVELS, LANDSCAPE_OPTIONS, isCleaningService, hasCleaningService, hasNonCleaningService, getServiceById, getServiceNames, getProjectScopes } from '../lib/services';
 import ServiceIcon from './ServiceIcon';
 
 const BPRICES = { half: 15, small: 50, medium: 65, large: 80 };
@@ -382,7 +382,8 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
         }
         const est = Math.round((service.from || 150) * mult);
         otherSub += est;
-        lines.push(`${service.name} — ${PROJECT_SCOPES.find((s) => s.id === projectScope)?.label || 'Medium'} scope`);
+        const scopes = getProjectScopes([id]);
+        lines.push(`${service.name} — ${scopes.find((s) => s.id === projectScope)?.label || 'Medium'} scope`);
       });
     }
 
@@ -644,6 +645,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   const cleaningFlow = hasCleaningService(serviceTypes);
   const otherFlow = hasNonCleaningService(serviceTypes);
   const landscapeFlow = serviceTypes.includes('landscaping');
+  const projectScopes = getProjectScopes(serviceTypes);
   const serviceLabel = getServiceNames(serviceTypes) || 'Select a service';
   const selectedHold = activeHolds.find(h => slotHoldId(h.date, h.time) === slotHoldId(form.date, form.time));
   const selectedHoldOwnedByMe = !!selectedHold && isOwnedHold(selectedHold);
@@ -1074,7 +1076,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                   <div className="fg">
                     <label>Project size</label>
                     <div className="level-pills">
-                      {PROJECT_SCOPES.map((sc) => (
+                      {projectScopes.map((sc) => (
                         <button
                           key={sc.id}
                           type="button"
