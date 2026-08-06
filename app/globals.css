@@ -354,9 +354,14 @@ input, select, textarea, button { font-family: var(--font); }
 .simple-counters { display: flex; flex-direction: column; gap: 12px; }
 .simple-counter {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 12px 0; border-bottom: 1px solid var(--border);
+  padding: 12px 0; border-bottom: 1px solid var(--border); min-width: 0;
 }
+.simple-counter > div:first-child { min-width: 0; flex: 1; }
 .simple-counter:last-child { border-bottom: none; }
+.field-note {
+  font-size: .75rem; color: var(--text-muted); line-height: 1.45;
+  margin: 0 0 10px;
+}
 .fg-label { display: block; font-size: .82rem; font-weight: 700; margin-bottom: 8px; }
 .level-pills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 4px; }
 .level-pill {
@@ -554,7 +559,7 @@ tr:hover td { background: var(--soft); }
 .bath-row:last-child { border-bottom: none; padding-bottom: 0; }
 .bname { font-size: .86rem; font-weight: 700; color: #111827; }
 .bdesc { font-size: .72rem; color: #4b5563; margin-top: 2px; }
-.qctrl { display: flex; align-items: center; gap: 9px; }
+.qctrl { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
 .qbtn { width: 30px; height: 30px; border-radius: 8px; border: 1.5px solid var(--border); background: white; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--blue); transition: all .15s; }
 .qbtn:hover { background: var(--blue); color: white; border-color: var(--blue); }
 .qdis { font-size: 1rem; font-weight: 700; min-width: 22px; text-align: center; color: #111827; }

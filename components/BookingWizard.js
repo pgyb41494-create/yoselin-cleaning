@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { collection, addDoc, onSnapshot, serverTimestamp, query, where, getDocs, deleteDoc, doc, getDoc, runTransaction } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { notifyNewBooking } from '../lib/notifications';
-import { SERVICE_TYPES, CLEANING_LEVELS, PROJECT_SCOPES, isCleaningService, getServiceById } from '../lib/services';
+import { SERVICE_TYPES, CLEANING_LEVELS, PROJECT_SCOPES, LANDSCAPE_OPTIONS, isCleaningService, hasCleaningService, hasNonCleaningService, getServiceById, getServiceNames } from '../lib/services';
 import ServiceIcon from './ServiceIcon';
 
 const BPRICES = { half: 15, small: 50, medium: 65, large: 80 };
@@ -68,12 +68,14 @@ function holdIsActive(hold, nowMs = Date.now()) {
 
 export default function BookingWizard({ user, onDone, adminMode = false }) {
   const [step,         setStep]         = useState(0);
-  const [serviceType,  setServiceType]  = useState('house_cleaning');
-  const [simpleBeds,   setSimpleBeds]   = useState(2);
-  const [simpleBaths,  setSimpleBaths]  = useState(1);
+  const [serviceTypes, setServiceTypes] = useState(['house_cleaning']);
+  const [simpleBeds,   setSimpleBeds]   = useState(0);
+  const [simpleBaths,  setSimpleBaths]  = useState(0);
+  const [simpleHalfBaths, setSimpleHalfBaths] = useState(0);
   const [cleaningLevel,setCleaningLevel]= useState('standard');
   const [projectScope, setProjectScope] = useState('medium');
   const [projectDetails,setProjectDetails]= useState('');
+  const [landscapeOpts, setLandscapeOpts] = useState({});
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [baths,        setBaths]        = useState(initBaths());
   const [rooms,        setRooms]        = useState(initRooms());
@@ -308,69 +310,108 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     return () => clearInterval(renewTimer);
   }, [adminMode, heldSlotKey, holdToken, user?.uid]);
 
-  const calcPrice = () => {
-    const service = getServiceById(serviceType);
-
-    if (!isCleaningService(serviceType)) {
-      const scopeMult = { small: 1, medium: 1.6, large: 2.8 }[projectScope] || 1.6;
-      const est = Math.round((service.from || 150) * scopeMult);
-      return {
-        final: est,
-        sub: est,
-        hasDiscount: false,
-        lines: [`${service.name} — ${PROJECT_SCOPES.find(s => s.id === projectScope)?.label || 'Medium'} scope`],
-        extraNames: [],
-        isCustomQuote: true,
-      };
-    }
-
-    const BP = livePrices?.bathrooms || BPRICES;
-    const RP = livePrices?.rooms || RPRICES;
-    const EP = livePrices?.extras || {};
-    const bedPrice = RP.bed_medium ?? 30;
-    const bathPrice = BP.medium ?? 65;
-    let base = simpleBeds * bedPrice + simpleBaths * bathPrice;
-    const levelMult = { standard: 1, deep: 1.35, move: 1.55 }[cleaningLevel] || 1;
-    if (serviceType === 'move_clean') base *= 1.55;
-    else base *= levelMult;
-
-    const lines = [];
-    if (simpleBeds > 0) lines.push(`${simpleBeds} bedroom${simpleBeds > 1 ? 's' : ''}`);
-    if (simpleBaths > 0) lines.push(`${simpleBaths} bathroom${simpleBaths > 1 ? 's' : ''}`);
-    lines.push(CLEANING_LEVELS.find(l => l.id === cleaningLevel)?.label || 'Standard');
-
-    if (showAdvanced) {
-      Object.keys(baths).forEach(t => {
-        if (baths[t] > 0) { base += baths[t] * (BP[t] ?? BPRICES[t]); lines.push(BNAMES[t] + ' x' + baths[t]); }
-      });
-      Object.keys(rooms).forEach(r => {
-        if (rooms[r] > 0) { base += rooms[r] * (RP[r] ?? RPRICES[r]); lines.push(RNAMES[r] + ' x' + rooms[r]); }
-      });
-    }
-
-    let extTotal = 0;
-    const extraNames = [];
-    EXTRAS.forEach(e => {
-      if (extras[e.id]) {
-        const liveP = EP[e.id] ?? e.price;
-        const qty = e.hasQty ? (windowQty || 1) : 1;
-        extTotal += liveP * qty;
-        const label = e.hasQty ? `${e.name} x${qty}` : e.name;
-        extraNames.push(label);
-        lines.push(label);
-      }
+  const toggleService = (id) => {
+    setServiceTypes((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      return [...prev, id];
     });
-    const sub = base + extTotal;
-    const fq = FREQS.find(f => f.val === freq);
-    const freqPctMap = { biweekly: (livePrices?.discounts?.biweekly ?? 15) / 100, weekly: (livePrices?.discounts?.weekly ?? 17.5) / 100, monthly: (livePrices?.discounts?.monthly ?? 12.5) / 100 };
-    let discAmt = fq && fq.val !== 'once' ? sub * (freqPctMap[fq.val] || 0) : 0;
+    if (id === 'move_clean') setCleaningLevel('move');
+  };
+
+  const calcPrice = () => {
+    const cleaningIds = serviceTypes.filter(isCleaningService);
+    const otherIds = serviceTypes.filter((id) => !isCleaningService(id));
+    const lines = [];
+    const extraNames = [];
+    let cleaningSub = 0;
+    let otherSub = 0;
+
+    if (cleaningIds.length > 0) {
+      const BP = livePrices?.bathrooms || BPRICES;
+      const RP = livePrices?.rooms || RPRICES;
+      const EP = livePrices?.extras || {};
+      const bedPrice = RP.bed_medium ?? 30;
+      const bathPrice = BP.medium ?? 65;
+      const halfPrice = BP.half ?? 15;
+      let base = simpleBeds * bedPrice + simpleBaths * bathPrice + simpleHalfBaths * halfPrice;
+      const levelMult = { standard: 1, deep: 1.35, move: 1.55 }[cleaningLevel] || 1;
+      if (cleaningIds.includes('move_clean')) base *= 1.55;
+      else base *= levelMult;
+
+      if (simpleBeds > 0) lines.push(`${simpleBeds} bedroom${simpleBeds > 1 ? 's' : ''}`);
+      if (simpleBaths > 0) lines.push(`${simpleBaths} full bathroom${simpleBaths > 1 ? 's' : ''}`);
+      if (simpleHalfBaths > 0) lines.push(`${simpleHalfBaths} half bath${simpleHalfBaths > 1 ? 's' : ''}`);
+      lines.push(CLEANING_LEVELS.find((l) => l.id === cleaningLevel)?.label || 'Standard');
+      cleaningIds.forEach((id) => lines.push(getServiceById(id).name));
+
+      if (showAdvanced) {
+        Object.keys(baths).forEach((t) => {
+          if (baths[t] > 0) { base += baths[t] * (BP[t] ?? BPRICES[t]); lines.push(BNAMES[t] + ' x' + baths[t]); }
+        });
+        Object.keys(rooms).forEach((r) => {
+          if (rooms[r] > 0) { base += rooms[r] * (RP[r] ?? RPRICES[r]); lines.push(RNAMES[r] + ' x' + rooms[r]); }
+        });
+      }
+
+      let extTotal = 0;
+      EXTRAS.forEach((e) => {
+        if (extras[e.id]) {
+          const liveP = EP[e.id] ?? e.price;
+          const qty = e.hasQty ? (windowQty || 1) : 1;
+          extTotal += liveP * qty;
+          const label = e.hasQty ? `${e.name} x${qty}` : e.name;
+          extraNames.push(label);
+          lines.push(label);
+        }
+      });
+      cleaningSub = base + extTotal;
+    }
+
+    if (otherIds.length > 0) {
+      const scopeMult = { small: 1, medium: 1.6, large: 2.8 }[projectScope] || 1.6;
+      otherIds.forEach((id) => {
+        const service = getServiceById(id);
+        let mult = scopeMult;
+        if (id === 'landscaping') {
+          const picked = Object.keys(landscapeOpts).filter((k) => landscapeOpts[k]);
+          mult = picked.length > 0 ? Math.max(1, 0.85 + picked.length * 0.35) : scopeMult;
+          picked.forEach((k) => {
+            const opt = LANDSCAPE_OPTIONS.find((o) => o.id === k);
+            if (opt) { lines.push(opt.name); extraNames.push(opt.name); }
+          });
+        }
+        const est = Math.round((service.from || 150) * mult);
+        otherSub += est;
+        lines.push(`${service.name} — ${PROJECT_SCOPES.find((s) => s.id === projectScope)?.label || 'Medium'} scope`);
+      });
+    }
+
+    const sub = cleaningSub + otherSub;
+    if (sub <= 0 && serviceTypes.length === 0) {
+      return { final: 0, sub: 0, hasDiscount: false, lines: [], extraNames: [], isCustomQuote: false };
+    }
+
+    const fq = FREQS.find((f) => f.val === freq);
+    const freqPctMap = {
+      biweekly: (livePrices?.discounts?.biweekly ?? 15) / 100,
+      weekly: (livePrices?.discounts?.weekly ?? 17.5) / 100,
+      monthly: (livePrices?.discounts?.monthly ?? 12.5) / 100,
+    };
+    let discAmt = fq && fq.val !== 'once' && cleaningIds.length > 0 ? sub * (freqPctMap[fq.val] || 0) : 0;
     const ftPct = (livePrices?.discounts?.firstTime ?? 10) / 100;
     const srPct = (livePrices?.discounts?.senior ?? 10) / 100;
     if (firstTime === 'yes') discAmt += sub * ftPct;
-    if (senior    === 'yes') discAmt += sub * srPct;
+    if (senior === 'yes') discAmt += sub * srPct;
     const hasDiscount = discAmt > 0;
     const final = Math.max(0, Math.round(sub - discAmt));
-    return { final, sub: Math.round(sub), hasDiscount, lines, extraNames, isCustomQuote: false };
+    return {
+      final,
+      sub: Math.round(sub),
+      hasDiscount,
+      lines,
+      extraNames,
+      isCustomQuote: otherIds.length > 0,
+    };
   };
 
   const price = calcPrice();
@@ -429,7 +470,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   };
 
   const goTo = (s) => {
-    if (s >= 1 && !serviceType) { alert('Please choose a service.'); return; }
+    if (s >= 1 && serviceTypes.length === 0) { alert('Please choose at least one service.'); return; }
     if (s >= 2) {
       if (!form.firstName.trim()) { alert('Please enter your first name.'); return; }
       if (!form.phone.trim())     { alert('Please enter your phone number.'); return; }
@@ -437,16 +478,25 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       if (availDates.length > 0 && !form.time) { alert('Please choose a preferred time.'); return; }
     }
     if (s >= 3) {
-      if (isCleaningService(serviceType)) {
-        if (simpleBeds < 1 && simpleBaths < 1 && !showAdvanced) {
+      if (hasCleaningService(serviceTypes)) {
+        if (simpleBeds < 1 && simpleBaths < 1 && simpleHalfBaths < 1 && !showAdvanced) {
           alert('Please add at least one bedroom or bathroom.'); return;
         }
         if (showAdvanced) {
           const hasRoom = Object.values(rooms).some(v => v > 0) || Object.values(baths).some(v => v > 0);
           if (!hasRoom) { alert('Please select at least one room or bathroom.'); return; }
         }
-      } else if (!projectDetails.trim()) {
-        alert('Please describe your project so we can quote accurately.'); return;
+      }
+      if (hasNonCleaningService(serviceTypes)) {
+        if (serviceTypes.includes('landscaping') && !Object.values(landscapeOpts).some(Boolean) && !projectDetails.trim()) {
+          alert('Please pick landscaping options or describe the yard work.'); return;
+        }
+        if (!serviceTypes.includes('landscaping') || serviceTypes.some((id) => !isCleaningService(id) && id !== 'landscaping')) {
+          const needsDetails = serviceTypes.some((id) => !isCleaningService(id) && id !== 'landscaping');
+          if (needsDetails && !projectDetails.trim()) {
+            alert('Please describe your project so we can quote accurately.'); return;
+          }
+        }
       }
     }
     setStep(s);
@@ -457,21 +507,30 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
     if (!form.firstName.trim()) { alert('Please enter a name.'); return; }
     if (!form.phone.trim())     { alert('Please enter a phone number.'); return; }
     if (availDates.length > 0 && !form.time) { alert('Please choose a preferred time.'); return; }
-    if (!isCleaningService(serviceType) && !projectDetails.trim()) {
+    if (hasNonCleaningService(serviceTypes) && !projectDetails.trim() && !Object.values(landscapeOpts).some(Boolean)) {
       alert('Please describe your project.'); return;
     }
     setSubmitting(true);
-    const service = getServiceById(serviceType);
-    const bathDesc = isCleaningService(serviceType)
+    const primaryId = serviceTypes[0] || 'house_cleaning';
+    const service = getServiceById(primaryId);
+    const landscapeNames = LANDSCAPE_OPTIONS.filter((o) => landscapeOpts[o.id]).map((o) => o.name);
+    const bathDesc = hasCleaningService(serviceTypes)
       ? (showAdvanced
         ? Object.keys(baths).filter(k => baths[k] > 0).map(k => baths[k] + ' ' + BNAMES[k]).join(', ') || 'None'
-        : `${simpleBaths} bathroom${simpleBaths !== 1 ? 's' : ''}`)
+        : [
+            simpleBaths > 0 ? `${simpleBaths} full bathroom${simpleBaths !== 1 ? 's' : ''}` : null,
+            simpleHalfBaths > 0 ? `${simpleHalfBaths} half bath${simpleHalfBaths !== 1 ? 's' : ''}` : null,
+          ].filter(Boolean).join(', ') || 'None')
       : 'N/A';
-    const roomDesc = isCleaningService(serviceType)
+    const roomDesc = hasCleaningService(serviceTypes)
       ? (showAdvanced
         ? Object.keys(rooms).filter(k => rooms[k] > 0).map(k => rooms[k] + ' ' + RNAMES[k]).join(', ') || 'None'
         : `${simpleBeds} bedroom${simpleBeds !== 1 ? 's' : ''}`)
       : projectDetails.trim() || 'N/A';
+    const projectParts = [];
+    if (projectDetails.trim()) projectParts.push(projectDetails.trim());
+    if (landscapeNames.length) projectParts.push('Landscaping: ' + landscapeNames.join(', '));
+    if (hasCleaningService(serviceTypes) && form.otherReqs) projectParts.push(form.otherReqs);
     const req = {
       userId:         user?.uid    || 'admin-created',
       userEmail:      user?.email  || form.email,
@@ -481,12 +540,15 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
       address:        form.address || 'N/A',
       date:           form.date    || 'N/A',
       time:           form.time    || 'N/A',
-      serviceType,
-      serviceName:    service.name,
-      projectScope:   isCleaningService(serviceType) ? cleaningLevel : projectScope,
-      projectDetails: isCleaningService(serviceType) ? (form.otherReqs || 'None') : projectDetails.trim(),
+      serviceType:    primaryId,
+      serviceTypes,
+      serviceName:    getServiceNames(serviceTypes) || service.name,
+      projectScope:   hasCleaningService(serviceTypes) ? cleaningLevel : projectScope,
+      projectDetails: projectParts.join(' · ') || 'None',
       bathrooms:      bathDesc,
+      halfBathrooms:  simpleHalfBaths,
       rooms:          roomDesc,
+      landscaping:    landscapeNames.join(', ') || 'None',
       addons:         price.extraNames.join(', ') || 'None',
       pets:           form.pets,
       otherRequests:  form.otherReqs || 'None',
@@ -578,8 +640,11 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
   };
 
   const stepLabels = ['Service', 'Contact', 'Details', 'Review'];
-  const selectedService = getServiceById(serviceType);
-  const cleaningFlow = isCleaningService(serviceType);
+  const selectedService = getServiceById(serviceTypes[0] || 'house_cleaning');
+  const cleaningFlow = hasCleaningService(serviceTypes);
+  const otherFlow = hasNonCleaningService(serviceTypes);
+  const landscapeFlow = serviceTypes.includes('landscaping');
+  const serviceLabel = getServiceNames(serviceTypes) || 'Select a service';
   const selectedHold = activeHolds.find(h => slotHoldId(h.date, h.time) === slotHoldId(form.date, form.time));
   const selectedHoldOwnedByMe = !!selectedHold && isOwnedHold(selectedHold);
 
@@ -619,27 +684,35 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
         {step === 0 && (
           <div>
             <div className="page-title">What do you need?</div>
-            <div className="page-sub">Pick a service — we&apos;ll tailor your quote from there</div>
+            <div className="page-sub">Select one or more services — we&apos;ll tailor your quote from there</div>
             <div className="service-grid">
-              {SERVICE_TYPES.map((svc) => (
-                <button
-                  key={svc.id}
-                  type="button"
-                  className={'service-tile' + (serviceType === svc.id ? ' service-tile--active' : '')}
-                  onClick={() => {
-                    setServiceType(svc.id);
-                    if (svc.id === 'move_clean') setCleaningLevel('move');
-                  }}
-                >
-                  <span className="service-tile__icon"><ServiceIcon id={svc.id} size={28} /></span>
-                  <span className="service-tile__name">{svc.name}</span>
-                  <span className="service-tile__desc">{svc.desc}</span>
-                  <span className="service-tile__from">From ${svc.from}</span>
-                </button>
-              ))}
+              {SERVICE_TYPES.map((svc) => {
+                const active = serviceTypes.includes(svc.id);
+                return (
+                  <button
+                    key={svc.id}
+                    type="button"
+                    className={'service-tile' + (active ? ' service-tile--active' : '')}
+                    aria-pressed={active}
+                    onClick={() => toggleService(svc.id)}
+                  >
+                    <span className="service-tile__icon"><ServiceIcon id={svc.id} size={28} /></span>
+                    <span className="service-tile__name">{svc.name}</span>
+                    <span className="service-tile__desc">{svc.desc}</span>
+                    <span className="service-tile__from">From ${svc.from}</span>
+                  </button>
+                );
+              })}
             </div>
+            {serviceTypes.length > 0 && (
+              <p className="field-note" style={{ marginTop: 4, marginBottom: 12 }}>
+                Selected: {serviceLabel}
+              </p>
+            )}
             <div className="nav-btns">
-              <button type="button" className="btn-next" onClick={() => goTo(1)}>Next: Contact info</button>
+              <button type="button" className="btn-next" onClick={() => goTo(1)} disabled={serviceTypes.length === 0}>
+                Next: Contact info
+              </button>
             </div>
           </div>
         )}
@@ -652,7 +725,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                 <div className="page-sub">How to reach you and when you&apos;d like us there</div>
               </div>
               <div className="quote-badge">
-                {selectedService.name} · {price.isCustomQuote ? `est. $${price.final}+` : (price.final > 0 ? `$${price.final} est.` : 'Free estimate')}
+                {serviceLabel} · {price.isCustomQuote ? `est. $${price.final}+` : (price.final > 0 ? `$${price.final} est.` : 'Free estimate')}
               </div>
             </div>
             <div className="wcard">
@@ -687,6 +760,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                 {availDates.length > 0 ? (
                   <div style={{ marginTop: '4px' }}>
                     <label style={{ marginBottom: '8px', display: 'block' }}>Preferred Date <span style={{ color: '#ef4444' }}>*</span></label>
+                    <p className="field-note">This is your preferred date — Yoselin will confirm the final appointment date.</p>
                     <div className="cal-widget">
                       {/* Month nav */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
@@ -789,6 +863,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                   <div className="row2">
                     <div className="fg">
                       <label>Preferred Date <span style={{ color: '#ef4444' }}>*</span></label>
+                      <p className="field-note">This is your preferred date — Yoselin will confirm the final appointment date.</p>
                       <input type="text" value={form.date} onChange={e => setF('date', e.target.value)} placeholder="e.g. Monday, March 10" />
                     </div>
                     <div className="fg">
@@ -842,10 +917,14 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
           <div>
             <div className="page-title">Job details</div>
             <div className="page-sub">
-              {cleaningFlow ? 'Tell us about the space — keep it simple' : 'Describe your project'}
+              {cleaningFlow && otherFlow
+                ? 'Tell us about the space and any other work you need'
+                : cleaningFlow
+                  ? 'Tell us about the space — keep it simple'
+                  : 'Describe your project'}
             </div>
 
-            {cleaningFlow ? (
+            {cleaningFlow && (
               <>
                 <div className="wcard">
                   <div className="card-body">
@@ -859,10 +938,17 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                       </div>
                       <div className="simple-counter">
                         <div>
-                          <div className="bname">Bathrooms</div>
-                          <div className="bdesc">Half baths count too</div>
+                          <div className="bname">Full bathrooms</div>
+                          <div className="bdesc">Shower or tub</div>
                         </div>
                         <QCtrl val={simpleBaths} onInc={() => setSimpleBaths(n => n + 1)} onDec={() => setSimpleBaths(n => Math.max(0, n - 1))} />
+                      </div>
+                      <div className="simple-counter">
+                        <div>
+                          <div className="bname">Half bathrooms</div>
+                          <div className="bdesc">Toilet + sink only</div>
+                        </div>
+                        <QCtrl val={simpleHalfBaths} onInc={() => setSimpleHalfBaths(n => n + 1)} onDec={() => setSimpleHalfBaths(n => Math.max(0, n - 1))} />
                       </div>
                     </div>
                     <div className="divider" />
@@ -962,9 +1048,29 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                   </>
                 )}
               </>
-            ) : (
+            )}
+
+            {otherFlow && (
               <div className="wcard">
                 <div className="card-body">
+                  {landscapeFlow && (
+                    <div className="fg" style={{ marginBottom: 16 }}>
+                      <label className="fg-label">Landscaping options</label>
+                      <p className="field-note">Pick everything you need — grass cutting, trimming, and more.</p>
+                      <div className="extras-grid">
+                        {LANDSCAPE_OPTIONS.map((opt) => (
+                          <div
+                            key={opt.id}
+                            className={'eitem ' + (landscapeOpts[opt.id] ? 'selected' : '')}
+                            onClick={() => setLandscapeOpts((x) => ({ ...x, [opt.id]: !x[opt.id] }))}
+                          >
+                            <input type="checkbox" readOnly checked={!!landscapeOpts[opt.id]} />
+                            <div className="ename">{opt.name}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="fg">
                     <label>Project size</label>
                     <div className="level-pills">
@@ -982,18 +1088,29 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                     </div>
                   </div>
                   <div className="fg">
-                    <label>Describe your project <span style={{ color: '#ef4444' }}>*</span></label>
+                    <label>
+                      Describe your project
+                      {!landscapeFlow || serviceTypes.some((id) => !isCleaningService(id) && id !== 'landscaping') ? (
+                        <span style={{ color: '#ef4444' }}> *</span>
+                      ) : (
+                        <span className="opt"> (optional if you picked landscaping options)</span>
+                      )}
+                    </label>
                     <textarea
                       value={projectDetails}
                       onChange={e => setProjectDetails(e.target.value)}
-                      placeholder={'e.g. Pressure wash driveway and back patio, or paint 2 bedrooms and hallway...'}
+                      placeholder={landscapeFlow
+                        ? 'e.g. Front and back lawn, trim bushes along the driveway...'
+                        : 'e.g. Pressure wash driveway and back patio, or paint 2 bedrooms and hallway...'}
                       rows={5}
                     />
                   </div>
-                  <div className="fg">
-                    <label>Anything else? <span className="opt">(optional)</span></label>
-                    <input type="text" value={form.otherReqs} onChange={e => setF('otherReqs', e.target.value)} placeholder="Access notes, materials, timeline..." />
-                  </div>
+                  {!cleaningFlow && (
+                    <div className="fg">
+                      <label>Anything else? <span className="opt">(optional)</span></label>
+                      <input type="text" value={form.otherReqs} onChange={e => setF('otherReqs', e.target.value)} placeholder="Access notes, materials, timeline..." />
+                    </div>
+                  )}
                   <p className="custom-quote-note">Final price confirmed after Yoselin reviews your project — this is a starting estimate only.</p>
                 </div>
               </div>
@@ -1031,13 +1148,23 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               <div className="review-summary__row">
                 <span>Service</span>
                 <strong className="review-summary__service">
-                  <ServiceIcon id={selectedService.id} size={18} /> {selectedService.name}
+                  {serviceTypes.length <= 1 ? (
+                    <><ServiceIcon id={selectedService.id} size={18} /> {selectedService.name}</>
+                  ) : (
+                    serviceLabel
+                  )}
                 </strong>
               </div>
-              {!cleaningFlow && projectDetails && (
+              {(otherFlow || projectDetails) && projectDetails && (
                 <div className="review-summary__row review-summary__row--stack">
                   <span>Project</span>
                   <strong>{projectDetails}</strong>
+                </div>
+              )}
+              {landscapeFlow && Object.values(landscapeOpts).some(Boolean) && (
+                <div className="review-summary__row review-summary__row--stack">
+                  <span>Landscaping</span>
+                  <strong>{LANDSCAPE_OPTIONS.filter((o) => landscapeOpts[o.id]).map((o) => o.name).join(', ')}</strong>
                 </div>
               )}
             </div>
@@ -1050,6 +1177,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
               const dayNum = parsed && !isNaN(parsed) ? parsed.getDate() : '';
               const year = parsed && !isNaN(parsed) ? parsed.getFullYear() : '';
               return (
+                <>
                 <div className="review-date-card">
                     <div className="review-date-card__head">Preferred Date & Time</div>
                   <div className="review-date-card__body">
@@ -1083,6 +1211,10 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                     </div>
                   </div>
                 </div>
+                <p className="field-note" style={{ marginTop: 10, marginBottom: 0 }}>
+                  Preferred timing only — Yoselin will confirm the final date.
+                </p>
+                </>
               );
             })()}
             <div className="wcard">
@@ -1147,7 +1279,8 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                     </div>
                   </div>
                   <div className="fg">
-                    <label style={{ marginBottom: '8px', display: 'block' }}>Senior discount?</label>
+                    <label style={{ marginBottom: '4px', display: 'block' }}>65 years old or older?</label>
+                    <p className="field-note">Senior discount if the primary resident is 65+.</p>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {['no', 'yes'].map(v => (
                         <button key={v} type="button" onClick={() => setSenior(v)} style={{
@@ -1157,7 +1290,7 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                           background: senior === v ? (v === 'yes' ? 'rgba(16,185,129,.12)' : 'var(--soft)') : 'white',
                           color: senior === v ? (v === 'yes' ? '#059669' : 'var(--text)') : 'var(--text-muted)',
                           transition: 'all .15s',
-                        }}>{v === 'yes' ? 'Yes' : 'No'}</button>
+                        }}>{v === 'yes' ? 'Yes, 65+' : 'No'}</button>
                       ))}
                     </div>
                   </div>

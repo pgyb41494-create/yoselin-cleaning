@@ -89,6 +89,17 @@ const ICONS = {
       <path d="M18 6 L18.5 7.3 L20 7.8 L18.5 8.3 L18 9.6 L17.5 8.3 L16 7.8 L17.5 7.3 Z" fill="currentColor" />
     </g>
   ),
+  landscaping: (
+    <g>
+      <path d="M4 19 H20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M7 19 V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M12 19 V11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M17 19 V13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M7 14 C4.5 11 5.5 7 7 7 C8.5 7 9.5 11 7 14Z" fill="currentColor" />
+      <path d="M12 11 C9.2 8 10.5 4.5 12 4.5 C13.5 4.5 14.8 8 12 11Z" fill="currentColor" />
+      <path d="M17 13 C14.8 10.5 15.8 7.5 17 7.5 C18.2 7.5 19.2 10.5 17 13Z" fill="currentColor" />
+    </g>
+  ),
 };
 
 export default function ServiceIcon({ id, size = 28, className = '' }) {
