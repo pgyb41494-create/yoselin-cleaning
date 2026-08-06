@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
-import { auth, db, ADMIN_EMAILS } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
+import { isAdminEmail } from '../lib/authHelpers';
 import { THUMBTACK_REVIEWS, THUMBTACK_RATING } from '../lib/reviews';
 import { SERVICE_TYPES } from '../lib/services';
 import SiteHeader from '../components/SiteHeader';
@@ -41,6 +42,14 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('login') === '1') setAuthMode('login');
+      else if (params.get('signup') === '1') setAuthMode('signup');
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
     const unsub = onSnapshot(
       query(collection(db, 'reviews'), orderBy('createdAt', 'desc')),
       (snap) => setLiveReviews(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
@@ -49,7 +58,7 @@ export default function HomePage() {
     return () => unsub();
   }, []);
 
-  const isAdmin = user && (ADMIN_EMAILS.includes(user.email?.toLowerCase()) || ADMIN_EMAILS.includes(user.email));
+  const isAdmin = user && isAdminEmail(user.email);
   const reviews = [...liveReviews, ...FALLBACK_REVIEWS.filter(
     (fb) => !liveReviews.some((lr) => lr.name === fb.name)
   )];

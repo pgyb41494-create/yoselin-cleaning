@@ -1,36 +1,52 @@
 ﻿'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { auth, ADMIN_EMAILS } from '../../lib/firebase';
+import { auth, db } from '../../lib/firebase';
+import { isAdminEmail, needsEmailVerification } from '../../lib/authHelpers';
 import SiteHeader from '../../components/SiteHeader';
 import SiteFooter from '../../components/SiteFooter';
 import BookingWizard from '../../components/BookingWizard';
+import VerifyGate from '../../components/VerifyGate';
+import AuthModal from '../../components/AuthModal';
 
 export default function BookPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
+  const [needsVerify, setNeedsVerify] = useState(false);
+  const [authMode, setAuthMode] = useState(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (!u) { router.push('/'); return; }
-      if (ADMIN_EMAILS.includes(u.email?.toLowerCase()) || ADMIN_EMAILS.includes(u.email)) {
+      if (isAdminEmail(u.email)) {
         router.push('/admin');
         return;
       }
-      const q = query(collection(db, 'requests'), where('userId', '==', u.uid));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-        const latest = docs[0];
-        if (latest.status !== 'done' && latest.status !== 'cancelled') {
-          router.push('/dashboard');
-          return;
+      if (needsEmailVerification(u)) {
+        setUser(u);
+        setNeedsVerify(true);
+        setLoading(false);
+        return;
+      }
+      setNeedsVerify(false);
+      try {
+        const q = query(collection(db, 'requests'), where('userId', '==', u.uid));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+          const latest = docs[0];
+          if (latest.status !== 'done' && latest.status !== 'cancelled') {
+            router.push('/dashboard');
+            return;
+          }
         }
+      } catch {
+        // continue to booking form if request lookup fails
       }
       setUser(u);
       setLoading(false);
@@ -43,6 +59,19 @@ export default function BookPage() {
       <div className="spinner-page">
         <div className="spinner" />
       </div>
+    );
+  }
+
+  if (needsVerify && user) {
+    return (
+      <VerifyGate
+        user={user}
+        onLoginClick={setAuthMode}
+        onVerified={(u) => {
+          setUser(u);
+          setNeedsVerify(false);
+        }}
+      />
     );
   }
 
@@ -68,7 +97,7 @@ export default function BookPage() {
 
   return (
     <>
-      <SiteHeader />
+      <SiteHeader onLoginClick={setAuthMode} />
       <main className="book-page">
         <div className="container book-page__head">
           <h1>Get your free quote</h1>
@@ -77,6 +106,7 @@ export default function BookPage() {
         <BookingWizard user={user} onDone={() => setSubmitted(true)} />
       </main>
       <SiteFooter />
+      <AuthModal mode={authMode} onClose={() => setAuthMode(null)} onModeChange={setAuthMode} redirectTo="/book" />
     </>
   );
 }

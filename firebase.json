@@ -3,6 +3,7 @@
     "rules": "firestore.rules"
   },
   "storage": {
-    "rules": "storage.rules"
+    "rules": "storage.rules",
+    "bucket": "yoselinscleaning-cdee8.firebasestorage.app"
   }
 }

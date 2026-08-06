@@ -1,11 +1,13 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, GoogleAuthProvider, reauthenticateWithPopup, linkWithCredential } from 'firebase/auth';
 import { collection, query, where, onSnapshot, addDoc, getDocs, serverTimestamp, doc, updateDoc, setDoc } from 'firebase/firestore';
 import { auth, db, storage, ADMIN_EMAILS } from '../../lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Chat from '../../components/Chat';
+import VerifyGate from '../../components/VerifyGate';
+import { isAdminEmail, needsEmailVerification, hasPasswordProvider, hasGoogleProvider, isStrongPassword, MIN_PASSWORD_LENGTH, mapAuthError } from '../../lib/authHelpers';
 import PortalShell from '../../components/PortalShell';
 import { useUnreadCount } from '../../lib/useUnreadCount';
 
@@ -184,6 +186,8 @@ export default function DashboardPage() {
   const [settingsMsg,  setSettingsMsg]  = useState('');
   const [settingsErr,  setSettingsErr]  = useState('');
   const [settingsBusy, setSettingsBusy] = useState(false);
+  const [needsVerify, setNeedsVerify] = useState(false);
+  const [confirmPass, setConfirmPass] = useState('');
 
   const [cancelOpen,   setCancelOpen]   = useState(false);
   const [cancelBusy,   setCancelBusy]   = useState(false);
@@ -217,7 +221,14 @@ export default function DashboardPage() {
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (u) => {
       if (!u) { router.push('/'); return; }
-      if (ADMIN_EMAILS.includes(u.email?.toLowerCase()) || ADMIN_EMAILS.includes(u.email)) { router.push('/admin'); return; }
+      if (isAdminEmail(u.email)) { router.push('/admin'); return; }
+      if (needsEmailVerification(u)) {
+        setUser(u);
+        setNeedsVerify(true);
+        setLoading(false);
+        return;
+      }
+      setNeedsVerify(false);
       setUser(u);
       setSettingsName(u.displayName || '');
       const qById = query(collection(db, 'requests'), where('userId', '==', u.uid));
@@ -341,15 +352,35 @@ export default function DashboardPage() {
 
   const savePassword = async () => {
     if (!currentPass || !newPass) { setSettingsErr('Fill in both fields.'); return; }
-    if (newPass.length < 6) { setSettingsErr('At least 6 characters required.'); return; }
+    if (!isStrongPassword(newPass)) { setSettingsErr('Password must be at least ' + MIN_PASSWORD_LENGTH + ' characters and include a letter and a number.'); return; }
+    if (newPass !== confirmPass) { setSettingsErr('Passwords do not match.'); return; }
     setSettingsBusy(true); setSettingsErr(''); setSettingsMsg('');
     try {
       const cred = EmailAuthProvider.credential(user.email, currentPass);
       await reauthenticateWithCredential(user, cred);
       await updatePassword(user, newPass);
-      setSettingsMsg('Password updated!'); setCurrentPass(''); setNewPass('');
+      setSettingsMsg('Password updated!'); setCurrentPass(''); setNewPass(''); setConfirmPass('');
     } catch (e) {
-      setSettingsErr(e.code === 'auth/wrong-password' ? 'Current password is incorrect.' : 'Failed to update password.');
+      setSettingsErr(e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential' ? 'Current password is incorrect.' : mapAuthError(e));
+    }
+    setSettingsBusy(false);
+  };
+
+  const addPasswordForGoogle = async () => {
+    if (!newPass) { setSettingsErr('Enter a new password.'); return; }
+    if (!isStrongPassword(newPass)) { setSettingsErr('Password must be at least ' + MIN_PASSWORD_LENGTH + ' characters and include a letter and a number.'); return; }
+    if (newPass !== confirmPass) { setSettingsErr('Passwords do not match.'); return; }
+    setSettingsBusy(true); setSettingsErr(''); setSettingsMsg('');
+    try {
+      await reauthenticateWithPopup(user, new GoogleAuthProvider());
+      const cred = EmailAuthProvider.credential(user.email, newPass);
+      await linkWithCredential(user, cred);
+      await user.reload();
+      setUser(auth.currentUser);
+      setSettingsMsg('Password added! You can now also log in with email and this password.');
+      setNewPass(''); setConfirmPass('');
+    } catch (e) {
+      setSettingsErr(mapAuthError(e));
     }
     setSettingsBusy(false);
   };
@@ -357,6 +388,14 @@ export default function DashboardPage() {
   const unreadFromAdmin = useUnreadCount(requests[0]?.id || null, 'customer');
 
   if (loading) return <div className="spinner-page"><div className="spinner"></div></div>;
+  if (needsVerify && user) {
+    return (
+      <VerifyGate
+        user={user}
+        onVerified={(u) => { setUser(u); setNeedsVerify(false); window.location.reload(); }}
+      />
+    );
+  }
 
   // Prefer any active (new/confirmed) booking so a freshly-submitted quote
   // always takes precedence over a previously-completed one, even when the
@@ -373,7 +412,9 @@ export default function DashboardPage() {
   const firstName    = user?.displayName?.split(' ')[0] || 'there';
   const loyalty      = getLoyaltyTier(allDone);
   const countdown    = isConfirmed ? getCountdown(latest?.date) : null;
-  const isGoogleUser = user?.providerData?.[0]?.providerId === 'google.com';
+  const hasPassword = hasPasswordProvider(user);
+  const hasGoogle = hasGoogleProvider(user);
+  const googleOnly = hasGoogle && !hasPassword;
 
   const upcomingSchedule = schedule.filter(e => e.status === 'upcoming');
   const TABS = [
@@ -946,25 +987,51 @@ export default function DashboardPage() {
                 {settingsBusy ? 'Saving...' : 'Save Name'}
               </button>
             </div>
-            {!isGoogleUser && (
-              <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px' }}>
-                <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '16px' }}>Change Password</div>
-                {[['Current Password', currentPass, setCurrentPass, ''], ['New Password', newPass, setNewPass, 'At least 6 characters']].map(([label, val, setter, ph]) => (
-                  <div key={label} style={{ marginBottom: '12px' }}>
-                    <label style={{ display: 'block', fontSize: '.8rem', fontWeight: '700', color: 'var(--text)', marginBottom: '6px' }}>{label}</label>
-                    <input type="password" value={val} onChange={e => setter(e.target.value)} placeholder={ph}
-                      style={{ width: '100%', padding: '10px 13px', background: 'white', border: '1px solid var(--border)', borderRadius: '10px', color: 'var(--text)', fontSize: '.87rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' }} />
-                  </div>
-                ))}
-                <button onClick={savePassword} disabled={settingsBusy} className="btn btn-primary">
+            {hasPassword && (
+              <div className="portal-card settings-card">
+                <div className="settings-card__label">Change Password</div>
+                <p className="portal-muted" style={{ marginBottom: 12 }}>Use a strong password you will remember. Google sign-in still works if linked.</p>
+                <div className="form-field">
+                  <label htmlFor="dash-current-pass">Current Password</label>
+                  <input id="dash-current-pass" type="password" autoComplete="current-password" value={currentPass} onChange={e => setCurrentPass(e.target.value)} />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="dash-new-pass">New Password</label>
+                  <input id="dash-new-pass" type="password" autoComplete="new-password" value={newPass} onChange={e => setNewPass(e.target.value)} placeholder={'At least ' + MIN_PASSWORD_LENGTH + ' characters'} />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="dash-confirm-pass">Confirm New Password</label>
+                  <input id="dash-confirm-pass" type="password" autoComplete="new-password" value={confirmPass} onChange={e => setConfirmPass(e.target.value)} />
+                </div>
+                <button type="button" onClick={savePassword} disabled={settingsBusy} className="btn btn-primary">
                   {settingsBusy ? 'Updating...' : 'Update Password'}
                 </button>
               </div>
             )}
-            {isGoogleUser && (
-              <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px' }}>
-                <div style={{ fontSize: '.75rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: '8px' }}>Password</div>
-                <p style={{ color: '#9ca3af', fontSize: '.84rem' }}>You signed in with Google. Manage your password through your Google account.</p>
+            {googleOnly && (
+              <div className="portal-card settings-card">
+                <div className="settings-card__label">Add a Password</div>
+                <p className="portal-muted" style={{ marginBottom: 12 }}>
+                  You signed in with Google, so there is no automatic password. Add one here if you also want to log in with email.
+                  You will confirm with Google first.
+                </p>
+                <div className="form-field">
+                  <label htmlFor="dash-add-pass">New Password</label>
+                  <input id="dash-add-pass" type="password" autoComplete="new-password" value={newPass} onChange={e => setNewPass(e.target.value)} placeholder={'At least ' + MIN_PASSWORD_LENGTH + ' characters'} />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="dash-add-confirm">Confirm Password</label>
+                  <input id="dash-add-confirm" type="password" autoComplete="new-password" value={confirmPass} onChange={e => setConfirmPass(e.target.value)} />
+                </div>
+                <button type="button" onClick={addPasswordForGoogle} disabled={settingsBusy} className="btn btn-primary">
+                  {settingsBusy ? 'Saving...' : 'Add password'}
+                </button>
+              </div>
+            )}
+            {hasGoogle && hasPassword && (
+              <div className="portal-card settings-card">
+                <div className="settings-card__label">Sign-in methods</div>
+                <p className="portal-muted">This account can use Google and email/password.</p>
               </div>
             )}
             <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px' }}>

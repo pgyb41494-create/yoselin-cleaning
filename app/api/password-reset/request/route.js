@@ -1,103 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getAdminAuth } from '../../../../lib/firebaseAdmin';
 
-const RESET_RESPONSE = {
-  ok: true,
-  message: 'If that email exists, a reset link has been sent.',
-};
-
-function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function getSiteOrigin(request) {
-  try {
-    return new URL(request.url).origin;
-  } catch {
-    return process.env.NEXT_PUBLIC_SITE_URL || 'https://yoselinscleaning.com';
-  }
-}
-
-function getFirebaseProjectId() {
-  return process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '';
-}
-
-function getActionCodeSettings(siteOrigin) {
-  const projectId = getFirebaseProjectId();
-  const actionCodeSettings = {
-    url: `${siteOrigin}/reset-password`,
-    handleCodeInApp: true,
-  };
-
-  if (projectId) {
-    actionCodeSettings.linkDomain = `${projectId}.firebaseapp.com`;
-  }
-
-  return actionCodeSettings;
-}
-
-function buildResetLink(origin, firebaseLink, email) {
-  const firebaseUrl = new URL(firebaseLink);
-  const oobCode = firebaseUrl.searchParams.get('oobCode');
-
-  if (!oobCode) {
-    throw new Error('Missing password reset code.');
-  }
-
-  const resetUrl = new URL('/reset-password', origin);
-  resetUrl.searchParams.set('oobCode', oobCode);
-  resetUrl.searchParams.set('mode', 'resetPassword');
-  resetUrl.searchParams.set('email', email);
-
-  return resetUrl.toString();
-}
-
-export async function POST(request) {
-  let body = {};
-
-  try {
-    body = await request.json();
-  } catch {
-    body = {};
-  }
-
-  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
-  if (!email || !isValidEmail(email)) {
-    return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
-  }
-
-  const siteOrigin = getSiteOrigin(request);
-
-  try {
-    const adminAuth = getAdminAuth();
-    try {
-      await adminAuth.getUserByEmail(email);
-    } catch (error) {
-      if (error?.code === 'auth/user-not-found') {
-        return NextResponse.json(RESET_RESPONSE);
-      }
-      throw error;
-    }
-
-    const actionCodeSettings = getActionCodeSettings(siteOrigin);
-
-    const firebaseLink = await adminAuth.generatePasswordResetLink(
-      email,
-      actionCodeSettings,
-    );
-
-    const resetLink = buildResetLink(siteOrigin, firebaseLink, email);
-    return NextResponse.json({
-      ...RESET_RESPONSE,
-      resetLink,
-      supportEmail: process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'support',
-    });
-  } catch (error) {
-    if (error?.code === 'auth/user-not-found') {
-      return NextResponse.json(RESET_RESPONSE);
-    }
-
-    console.error('[password-reset] request failed:', error);
-    return NextResponse.json({ error: error?.message || 'Unable to send the reset email right now.' }, { status: 500 });
-  }
+/**
+ * Deprecated: returning reset links to the browser was unsafe.
+ * Clients must use Firebase Auth sendPasswordResetEmail instead.
+ */
+export async function POST() {
+  return NextResponse.json(
+    {
+      error: 'This endpoint has been disabled. Use the in-app forgot-password form, which emails a reset link securely through Firebase Auth.',
+    },
+    { status: 410 },
+  );
 }

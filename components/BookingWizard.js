@@ -528,15 +528,18 @@ export default function BookingWizard({ user, onDone, adminMode = false }) {
                 throw new Error('That time was just taken by someone else. Please go back and choose another time.');
               }
             }
-            transaction.delete(holdRef);
           }
 
+          // Delete availability while the active hold still exists so security rules can authorize it.
           for (const slotDoc of slotSnap.docs) {
             const slotCheck = await transaction.get(slotDoc.ref);
             if (!slotCheck.exists()) {
               throw new Error('That time is no longer available.');
             }
             transaction.delete(slotDoc.ref);
+          }
+          if (holdSnap.exists()) {
+            transaction.delete(holdRef);
           }
           transaction.set(docRef, req);
         });

@@ -39,7 +39,7 @@ export default function SiteHeader({ onLoginClick, transparent = false }) {
     if (user && !isAdmin) router.push('/book');
     else if (user && isAdmin) router.push('/admin');
     else if (onLoginClick) onLoginClick('signup');
-    else router.push('/book');
+    else router.push('/?signup=1');
   };
 
   return (
@@ -66,7 +66,14 @@ export default function SiteHeader({ onLoginClick, transparent = false }) {
               </button>
             </>
           ) : (
-            <button type="button" className="site-nav__link" onClick={() => onLoginClick?.('login')}>
+            <button
+              type="button"
+              className="site-nav__link"
+              onClick={() => {
+                if (onLoginClick) onLoginClick('login');
+                else router.push('/?login=1');
+              }}
+            >
               Log in
             </button>
           )}
